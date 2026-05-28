@@ -1067,3 +1067,59 @@ input[type="checkbox"] {
 
 /* ── Transfers workflow wrapper spacing ───────────────────── */
 .transfers-workflow { margin-top: 4px; }
+
+/* ── Safe to Spend card ────────────────────────────────────── */
+.sts-card {
+  border-width: 2px;
+  text-align: center;
+}
+
+.sts-card.sts-positive { border-color: var(--neon-green); }
+.sts-card.sts-negative { border-color: var(--neon-red);   }
+
+.sts-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.sts-amount {
+  font-size: 2.4rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  margin-bottom: 16px;
+}
+
+.sts-card.sts-positive .sts-amount { color: var(--neon-green); }
+.sts-card.sts-negative .sts-amount { color: var(--neon-red);   }
+
+.sts-breakdown {
+  text-align: left;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sts-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.sts-row.sts-minus { color: var(--text-secondary); }
+
+.sts-row.sts-result {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sts-val { font-family: var(--font-mono); }

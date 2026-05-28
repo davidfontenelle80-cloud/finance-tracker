@@ -68,6 +68,77 @@
 
     return { investments, cash, debt };
   }
+  // ── Safe to Spend calculation ─────────────────────────────
+  // "How much can I actually spend today without breaking anything?"
+  // Cash on hand - upcoming fixed bills (14 days) - vault balances
+  function calcSafeToSpend(state) {
+    const accts  = state.accounts || {};
+    const today  = new Date(); today.setHours(0,0,0,0);
+
+    // Liquid cash = all bank accounts tagged 'immediate'
+    // Fall back to all bank accounts if no tiers assigned yet
+    const bank = accts.bank || [];
+    const liquidAccts = bank.filter(a => a.liquidityTier === 'immediate');
+    const cashOnHand  = (liquidAccts.length ? liquidAccts : bank)
+      .reduce((s, a) => s + (Number(a.balance) || 0), 0);
+
+    // Upcoming fixed bills due in next 14 days
+    // Uses effectiveDate if present, otherwise treats as always-due
+    const fixed = state.fixedMonthlyExpenses || [];
+    const upcomingFixed = fixed.reduce((s, f) => {
+      if (!f.effectiveDate) return s + (Number(f.amount) || 0);
+      const eff = new Date(f.effectiveDate + 'T12:00:00');
+      const diff = (eff - today) / 86400000;
+      if (diff >= 0 && diff <= 14) return s + (Number(f.amount) || 0);
+      return s;
+    }, 0);
+
+    // Total vault balances = money already allocated to goals
+    const vaultTotal = (accts.vaults || [])
+      .reduce((s, v) => s + (Number(v.balance) || 0), 0);
+
+    const discretionary = cashOnHand - upcomingFixed - vaultTotal;
+
+    return {
+      cashOnHand,
+      upcomingFixed,
+      vaultTotal,
+      discretionary
+    };
+  }
+
+
+
+  // ── Safe to Spend card HTML ───────────────────────────────
+  function buildSafeToSpendCard(state) {
+    const { cashOnHand, upcomingFixed, vaultTotal, discretionary } = calcSafeToSpend(state);
+    const cls    = discretionary >= 0 ? 'sts-positive' : 'sts-negative';
+    const arrow  = discretionary >= 0 ? '✓' : '⚠';
+    return `
+      <div class="card sts-card ${cls}">
+        <div class="sts-label">SAFE TO SPEND TODAY</div>
+        <div class="sts-amount">${fmt(discretionary)}</div>
+        <div class="sts-breakdown">
+          <div class="sts-row">
+            <span>💵 Cash on hand</span>
+            <span class="sts-val">${fmt(cashOnHand)}</span>
+          </div>
+          <div class="sts-row sts-minus">
+            <span>📋 Upcoming fixed bills</span>
+            <span class="sts-val">− ${fmt(upcomingFixed)}</span>
+          </div>
+          <div class="sts-row sts-minus">
+            <span>🏺 Allocated to vaults</span>
+            <span class="sts-val">− ${fmt(vaultTotal)}</span>
+          </div>
+          <div class="sts-row sts-result">
+            <span>\${arrow} Discretionary</span>
+            <span class="sts-val">${fmt(discretionary)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
@@ -119,6 +190,10 @@
           </div>
         </div>
       </div>
+
+
+      <!-- Safe to Spend card -->
+      ${buildSafeToSpendCard(state)}
 
       <!-- Monthly summary -->
       <div class="card">
