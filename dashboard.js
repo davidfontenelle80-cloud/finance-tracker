@@ -42,12 +42,15 @@
     const { investments, cash, debt } = calcNetWorthComponents(state);
     const netWorth = investments + cash - debt;
 
-    const ns = App.getState();
+    // Write directly to storage without firing the event bus
+    // (avoids re-render loop: Dashboard open → setState → state:changed → Dashboard re-render)
+    const ns = App.Storage.cloneState(state);
     if (!ns.netWorthHistory) ns.netWorthHistory = [];
     ns.netWorthHistory.push({ date: today, netWorth, investments, cash, debt });
-    // Keep last 36 months
     if (ns.netWorthHistory.length > 36) ns.netWorthHistory.shift();
-    App.setState(ns);
+    App.Storage.saveState(ns);
+    // Patch the live state reference without emitting events
+    state.netWorthHistory = ns.netWorthHistory;
   }
 
   // ── Net worth calculation ─────────────────────────────────

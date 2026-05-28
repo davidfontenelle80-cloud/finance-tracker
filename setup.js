@@ -646,11 +646,11 @@
           const amount = parseFloat(container.querySelector('#fx-new-amount').value) || 0;
           const date   = container.querySelector('#fx-new-date').value;
           const check  = parseInt(container.querySelector('#fx-new-check').value, 10);
-          if (!name)   { App.showToast('Expense name is required.', 'error'); return; }
-          if (!date)   { App.showToast('Effective date is required.', 'error'); return; }
+          if (!name) { App.showToast('Expense name is required.', 'error'); return; }
+          // effectiveDate is optional — default to today if blank
           const ns = App.getState();
           ns.fixedMonthlyExpenses.push({
-            id: S().generateId(), name, amount, effectiveDate: date, paycheckAssign: check
+            id: S().generateId(), name, amount, effectiveDate: date || S().toISODate(new Date()), paycheckAssign: check
           });
           App.setState(ns);
           App.refreshCurrentTab();
@@ -968,6 +968,14 @@
         <label for="m-bank-bal">Current Balance ($)</label>
         <input type="number" id="m-bank-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" />
       </div>
+      <div class="form-group">
+        <label for="m-bank-tier">Liquidity Tier</label>
+        <select id="m-bank-tier">
+          <option value="immediate" ${existing && existing.liquidityTier === 'immediate' ? 'selected' : ''}>💵 Immediate (checking)</option>
+          <option value="short"     ${existing && existing.liquidityTier === 'short'     ? 'selected' : ''}>🏦 Available (savings)</option>
+          <option value="locked"    ${existing && existing.liquidityTier === 'locked'    ? 'selected' : ''}>🔒 Locked (retirement)</option>
+        </select>
+      </div>
       <div class="toggle-row">
         <div class="toggle-label">Transfer Account</div>
         <input type="checkbox" id="m-bank-transfer" ${existing && existing.isTransferAccount ? 'checked' : ''} />
@@ -978,17 +986,17 @@
       const name     = content.querySelector('#m-bank-name').value.trim();
       const balance  = parseFloat(content.querySelector('#m-bank-bal').value) || 0;
       const isXfer   = content.querySelector('#m-bank-transfer').checked;
+      const tier     = content.querySelector('#m-bank-tier').value || 'immediate';
       if (!name) { App.showToast('Account name required.', 'error'); return; }
       const fresh = App.getState();
       if (isNew) {
-        // If marking as transfer, unmark others
         if (isXfer) fresh.accounts.bank.forEach(a => a.isTransferAccount = false);
-        fresh.accounts.bank.push({ id: S().generateId(), name, balance, isTransferAccount: isXfer });
+        fresh.accounts.bank.push({ id: S().generateId(), name, balance, isTransferAccount: isXfer, liquidityTier: tier });
       } else {
         const idx = fresh.accounts.bank.findIndex(a => a.id === existing.id);
         if (idx !== -1) {
           if (isXfer) fresh.accounts.bank.forEach(a => a.isTransferAccount = false);
-          Object.assign(fresh.accounts.bank[idx], { name, balance, isTransferAccount: isXfer });
+          Object.assign(fresh.accounts.bank[idx], { name, balance, isTransferAccount: isXfer, liquidityTier: tier });
         }
       }
       App.setState(fresh);

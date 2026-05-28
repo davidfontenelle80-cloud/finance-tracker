@@ -409,6 +409,19 @@
   }
 
   // ── Expose public API ─────────────────────────────────────
+
+  // ── Deep clone state ──────────────────────────────────────
+  // Returns a deep copy of state so modules can mutate it safely
+  // before calling App.setState(). Avoids accidental reference mutations.
+  function cloneState(state) {
+    try {
+      return JSON.parse(JSON.stringify(state));
+    } catch (_) {
+      // Fallback: shallow clone if JSON fails (shouldn't happen)
+      return Object.assign({}, state);
+    }
+  }
+
   App.Storage = {
     generateId,
     toISODate,
@@ -421,7 +434,8 @@
     saveState,
     exportJSON,
     importJSON,
-    formatCurrency
+    formatCurrency,
+    cloneState
   };
 
 })(window.App = window.App || {});
