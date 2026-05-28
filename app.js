@@ -202,6 +202,14 @@
 
   // ── Bootstrap ─────────────────────────────────────────────
   function initApp() {
+    // 0. Restore saved theme before anything renders
+    (function() {
+      try {
+        const t = localStorage.getItem('financeApp_theme') || 'dark-neon';
+        if (App.Setup && App.Setup.applyTheme) App.Setup.applyTheme(t);
+      } catch(_) {}
+    })();
+
     // 1. Load state
     _state = App.Storage.loadState();
 

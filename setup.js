@@ -459,6 +459,17 @@
 
   // ── Settings Tab ──────────────────────────────────────────
   // Separate from Setup — rendered in the Settings tab pane.
+  // ── Apply theme ──────────────────────────────────────────
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'dark-neon' : 'light');
+    } else {
+      root.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark-neon');
+    }
+  }
+
   function renderSettings(state, container) {
     container.innerHTML = `
       <h1 class="section-title" style="margin-bottom:20px;">⚙️ Settings</h1>
@@ -490,8 +501,14 @@
 
       <div class="card">
         <div class="card-title mb-8">🎨 Theme</div>
-        <div class="badge badge--cyan">Dark Neon (Locked)</div>
-        <div class="text-secondary text-xs mt-8">Theme is locked for v1. Future versions may add options.</div>
+        <div class="theme-toggle-row">
+          <span class="text-secondary text-sm">Appearance</span>
+          <div class="theme-segment" id="theme-segment">
+            <button class="theme-seg-btn" data-theme="dark-neon">🌙 Dark</button>
+            <button class="theme-seg-btn" data-theme="light">☀️ Light</button>
+            <button class="theme-seg-btn" data-theme="system">⚙️ System</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -1071,6 +1088,6 @@
   }
 
   // ── Public API ────────────────────────────────────────────
-  App.Setup = { render, renderSettings };
+  App.Setup = { render, renderSettings, applyTheme };
 
 })(window.App = window.App || {});

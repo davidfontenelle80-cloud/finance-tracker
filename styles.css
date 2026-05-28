@@ -45,6 +45,25 @@
   --font-mono: "SF Mono", "Fira Code", Consolas, monospace;
 }
 
+/* ── Light mode overrides (Step 11) ───────────────────────── */
+[data-theme="light"] {
+  --bg-primary:    #f4f6fb;
+  --bg-secondary:  #ffffff;
+  --bg-tertiary:   #eef1f7;
+  --text-primary:  #0a0e1a;
+  --text-secondary: #5a6478;
+  --neon-cyan:     #006eff;
+  --neon-magenta:  #c100b8;
+  --neon-green:    #00a854;
+  --neon-red:      #d6244d;
+  --border:        #d8dde6;
+  --glow-cyan:     0 2px 12px rgba(0,110,255,0.15);
+  --glow-magenta:  0 2px 12px rgba(193,0,184,0.15);
+  --glow-green:    0 2px 12px rgba(0,168,84,0.15);
+  --glow-red:      0 2px 12px rgba(214,36,77,0.15);
+}
+
+
 /* ── Reset & Base ──────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -64,6 +83,7 @@ body {
   color: var(--text-primary);
   min-height: 100dvh;           /* dvh = dynamic viewport height (mobile safe) */
   overflow-x: hidden;
+  transition: background-color 0.3s, color 0.2s;
   padding-top: 0;
   padding-bottom: calc(var(--tab-nav-height) + env(safe-area-inset-bottom, 0px));
 }
@@ -1216,3 +1236,48 @@ input[type="checkbox"] {
   border-bottom: 1px solid rgba(42,51,70,0.5);
 }
 .uc-row:last-child { border-bottom: none; }
+
+/* ── Theme toggle (Step 11) ────────────────────────────────── */
+.theme-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-segment {
+  display: flex;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.theme-seg-btn {
+  flex: 1;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.theme-seg-btn:last-child { border-right: none; }
+
+.theme-seg-btn:hover { color: var(--text-primary); }
+
+.theme-seg-btn.active {
+  background: var(--neon-cyan);
+  color: #0a0e1a;
+}
+
+/* Ensure cards transition smoothly on theme switch */
+.card {
+  transition: background-color 0.3s, border-color 0.2s;
+}
