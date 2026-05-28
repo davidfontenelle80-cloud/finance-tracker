@@ -11,26 +11,27 @@
   'use strict';
 
   // ── Module-level state ────────────────────────────────────
-  // Tracks which workflow mode is active so re-renders don't reset it.
   let _mode = null;
+
+  // ── Currency formatter ────────────────────────────────────
+  function fmt(n) {
+    return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
 
   // ── Main render ───────────────────────────────────────────
   function render(state, container) {
     container.innerHTML = '';
-
     const wrap = document.createElement('div');
     wrap.className = 'tab-inner';
     wrap.innerHTML =
       '<h2 class="tab-title">Transfers</h2>' +
       buildModeSelector() +
       '<div id="transfers-workflow" class="transfers-workflow"></div>';
-
     container.appendChild(wrap);
 
-    // Wire mode buttons
     wrap.querySelectorAll('.mode-card').forEach(function(card) {
       card.addEventListener('click', function() {
-        var mode = card.dataset.mode;
+        const mode = card.dataset.mode;
         if (mode === _mode) return;
         _mode = mode;
         wrap.querySelectorAll('.mode-card').forEach(function(c) {
@@ -40,9 +41,8 @@
       });
     });
 
-    // Auto-select first mode on fresh render
     if (!_mode) {
-      var first = wrap.querySelector('.mode-card');
+      const first = wrap.querySelector('.mode-card');
       if (first) first.click();
     } else {
       wrap.querySelectorAll('.mode-card').forEach(function(c) {
@@ -54,7 +54,7 @@
 
   // ── Mode selector ─────────────────────────────────────────
   function buildModeSelector() {
-    var modes = [
+    const modes = [
       { id: 'paycheck',  icon: '💰', label: 'Paycheck Arrived' },
       { id: 'paycards',  icon: '💳', label: 'Pay Credit Cards' },
       { id: 'movemoney', icon: '🏦', label: 'Move Money'       },
@@ -63,11 +63,8 @@
     ];
     return '<div class="mode-selector">' +
       modes.map(function(m) {
-        return '<button class="mode-card' + (_mode === m.id ? ' active' : '') +
-          '" data-mode="' + m.id + '">' +
-          '<span class="mode-icon">' + m.icon + '</span>' +
-          '<span class="mode-label">' + m.label + '</span>' +
-          '</button>';
+        return '<button class="mode-card" data-mode="' + m.id + '" tabindex="0">' +
+          '<span class="mode-icon">' + m.icon + '</span>' + m.label + '</button>';
       }).join('') +
       '</div>';
   }
@@ -76,516 +73,703 @@
   function renderWorkflow(state, container, mode) {
     if      (mode === 'paycheck')  renderPaycheckArrived(state, container);
     else if (mode === 'paycards')  renderPayCards(state, container);
-    else if (mode === 'movemoney') renderStub(container, '🏦 Move Money');
-    else if (mode === 'fundvault') renderStub(container, '🎯 Fund a Vault');
-    else if (mode === 'withdraw')  renderStub(container, '📤 Withdraw / Spend Cash');
+    else if (mode === 'movemoney') renderMoveMoney(state, container);
+    else if (mode === 'fundvault') renderFundVault(state, container);
+    else if (mode === 'withdraw')  renderWithdraw(state, container);
   }
 
-  // ── WORKFLOW 1: Paycheck Arrived ──────────────────────────
+  // ═════════════════════════════════════════════════════════
+  // WORKFLOW 1: Paycheck Arrived
+  // ═════════════════════════════════════════════════════════
   function renderPaycheckArrived(state, container) {
-    var periods     = getUpcomingPeriods(state);
-    var bankAccts   = (state.accounts && state.accounts.bank)  || [];
-    var defaultAmt  = (state.income   && state.income.defaultPaycheckAmount) || 3000;
-    var today       = App.Storage.toISODate(new Date());
+    const periods    = getUpcomingPeriods(state);
+    const bankAccts  = (state.accounts && state.accounts.bank) || [];
+    const defaultAmt = (state.income && state.income.defaultPaycheckAmount) || 3000;
+    const today      = App.Storage.toISODate(new Date());
 
-    var periodOptions = periods.length
+    const periodOptions = periods.length
       ? periods.map(function(p) { return '<option value="' + p.key + '">' + p.label + '</option>'; }).join('')
       : '<option value="">No upcoming periods found</option>';
 
-    var acctOptions = bankAccts.map(function(b) {
-      return '<option value="' + b.id + '">' + b.name + ' (' + App.Storage.formatCurrency(b.balance) + ')</option>';
-    }).join('');
+    const bankOptions = bankAccts.map(function(a) {
+      return '<option value="' + a.id + '">' + a.name + ' (' + fmt(a.balance) + ')</option>';
+    }).join('') || '<option value="">No bank accounts configured</option>';
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3 class="workflow-title">💰 Paycheck Arrived</h3>' +
-        '<div class="form-grid">' +
-          '<label class="form-label">Which paycheck period?</label>' +
-          '<select id="xfr-period" class="form-input">' + periodOptions + '</select>' +
-          '<label class="form-label">Amount received</label>' +
-          '<div class="input-prefix-wrap">' +
-            '<span class="input-prefix">$</span>' +
-            '<input id="xfr-amount" type="number" step="0.01" min="0" class="form-input prefix-input" value="' + defaultAmt + '">' +
-          '</div>' +
-          '<label class="form-label">Date deposited</label>' +
-          '<input id="xfr-date" type="date" class="form-input" value="' + today + '">' +
-          '<label class="form-label">Deposit to account</label>' +
-          '<select id="xfr-account" class="form-input">' + acctOptions + '</select>' +
+        '<h3>💰 Paycheck Arrived</h3>' +
+        '<div class="form-group"><label class="form-label">Pay Period</label>' +
+          '<select id="pc-period" class="form-control">' + periodOptions + '</select></div>' +
+        '<div class="form-group"><label class="form-label">Amount Received</label>' +
+          '<input id="pc-amount" type="number" class="form-control" value="' + defaultAmt + '" min="0" step="0.01" /></div>' +
+        '<div class="form-group"><label class="form-label">Date Deposited</label>' +
+          '<input id="pc-date" type="date" class="form-control" value="' + today + '" /></div>' +
+        '<div class="form-group"><label class="form-label">Deposit To</label>' +
+          '<select id="pc-account" class="form-control">' + bankOptions + '</select></div>' +
+        '<div class="alloc-section">' +
+          '<div class="alloc-header"><span></span><span>Category</span><span>Amount</span></div>' +
+          '<div id="pc-alloc-list" class="allocation-list"></div>' +
         '</div>' +
-        '<div class="allocation-section">' +
-          '<div class="allocation-header">' +
-            '<h4>Suggested Allocation</h4>' +
-            '<p class="allocation-hint">Based on your yearly goals and fixed expenses. Uncheck any line to skip it this paycheck. Edit amounts for a one-time override.</p>' +
-          '</div>' +
-          '<div id="allocation-list" class="allocation-list"></div>' +
-          '<div id="allocation-totals" class="allocation-totals"></div>' +
-        '</div>' +
+        '<div id="pc-totals" class="totals-row"></div>' +
         '<div class="workflow-actions">' +
-          '<button id="btn-smart-balance" class="btn btn-secondary">⚖ Smart Balance</button>' +
-          '<button id="btn-reset-alloc"   class="btn btn-secondary">↺ Reset</button>' +
-          '<button id="btn-execute-paycheck" class="btn btn-primary">✓ Execute</button>' +
+          '<button id="pc-smart" class="btn-secondary">Smart Balance</button>' +
+          '<button id="pc-reset" class="btn-secondary">Reset</button>' +
+          '<button id="pc-execute" class="btn-execute">Execute</button>' +
         '</div>' +
       '</div>';
 
-    buildAllocationList(state);
-    updateAllocationTotals();
+    const amtInput = container.querySelector('#pc-amount');
+    const allocList = container.querySelector('#pc-alloc-list');
 
-    document.getElementById('xfr-amount').addEventListener('input', function() { updateAllocationTotals(); });
-    document.getElementById('xfr-period').addEventListener('change', function() { buildAllocationList(state); updateAllocationTotals(); });
-    document.getElementById('btn-smart-balance').addEventListener('click', smartBalance);
-    document.getElementById('btn-reset-alloc').addEventListener('click', function() { buildAllocationList(state); updateAllocationTotals(); });
-    document.getElementById('btn-execute-paycheck').addEventListener('click', function() { executePaycheck(state); });
-  }
-
-  // Build the allocation rows from yearly categories + fixed expenses
-  function buildAllocationList(state) {
-    var list = document.getElementById('allocation-list');
-    if (!list) return;
-
-    var periodKey  = (document.getElementById('xfr-period') || {}).value || '';
-    var suggestions = getSuggestedAllocations(state, periodKey);
-
-    list.innerHTML = suggestions.map(function(s, i) {
-      return '<div class="alloc-row" data-index="' + i + '">' +
-        '<label class="alloc-check-wrap">' +
-          '<input type="checkbox" class="alloc-check" data-index="' + i + '" checked>' +
-        '</label>' +
-        '<span class="alloc-name">' + s.name + '</span>' +
-        '<div class="alloc-amount-wrap">' +
-          '<span class="input-prefix small">$</span>' +
-          '<input type="number" step="0.01" min="0" class="alloc-amount-input form-input prefix-input" data-index="' + i + '" value="' + s.amount.toFixed(2) + '">' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    // Wire events on all rows
-    list.querySelectorAll('.alloc-check').forEach(function(cb) {
-      cb.addEventListener('change', function() {
-        var idx = cb.dataset.index;
-        var inp = list.querySelector('.alloc-amount-input[data-index="' + idx + '"]');
-        if (inp) inp.disabled = !cb.checked;
-        updateAllocationTotals();
+    function buildAllocRows() {
+      const available = parseFloat(amtInput.value) || 0;
+      const allocs = getSuggestedAllocations(state, available);
+      allocList.innerHTML = allocs.map(function(a, i) {
+        return '<div class="alloc-row" data-idx="' + i + '">' +
+          '<input type="checkbox" class="alloc-check" checked />' +
+          '<span class="alloc-name">' + a.name + '</span>' +
+          '<input type="number" class="alloc-amount" value="' + a.amount.toFixed(2) + '" min="0" step="0.01" />' +
+          '</div>';
+      }).join('');
+      allocList.querySelectorAll('.alloc-check, .alloc-amount').forEach(function(el) {
+        el.addEventListener('change', updateTotals);
+        el.addEventListener('input',  updateTotals);
       });
-    });
-    list.querySelectorAll('.alloc-amount-input').forEach(function(inp) {
-      inp.addEventListener('input', updateAllocationTotals);
-    });
-  }
-
-  // Generate suggested amounts: yearly categories + this paycheck's fixed expenses
-  function getSuggestedAllocations(state, periodKey) {
-    var suggestions = [];
-    var perYear = (state.income && state.income.paychecksPerYear) || 26;
-
-    // Yearly categories
-    (state.yearlyCategories || []).forEach(function(cat) {
-      var perCheck = Math.round((cat.annualGoal || 0) / perYear * 100) / 100;
-      if (perCheck > 0) {
-        suggestions.push({ type: 'category', id: cat.id, name: cat.name, amount: perCheck });
-      }
-    });
-
-    // Fixed expenses for this paycheck number
-    var checkNum = getCheckNumFromKey(periodKey);
-    (state.fixedMonthlyExpenses || []).forEach(function(exp) {
-      var assign = exp.paycheckAssign || 1;
-      if (assign === checkNum) {
-        suggestions.push({ type: 'fixed', id: exp.id, name: exp.name + ' (fixed)', amount: exp.amount || 0 });
-      }
-    });
-
-    return suggestions;
-  }
-
-  function getCheckNumFromKey(key) {
-    if (!key) return 1;
-    var parts = key.split('-');
-    return parseInt(parts[2], 10) || 1;
-  }
-
-  // Update the Allocated / Available / Remaining totals display
-  function updateAllocationTotals() {
-    var totalsEl = document.getElementById('allocation-totals');
-    var amtEl    = document.getElementById('xfr-amount');
-    if (!totalsEl || !amtEl) return;
-
-    var available  = parseFloat(amtEl.value) || 0;
-    var allocated  = 0;
-    document.querySelectorAll('.alloc-check:checked').forEach(function(cb) {
-      var inp = document.querySelector('.alloc-amount-input[data-index="' + cb.dataset.index + '"]');
-      if (inp) allocated += parseFloat(inp.value) || 0;
-    });
-    allocated = Math.round(allocated * 100) / 100;
-
-    var diff = Math.round((available - allocated) * 100) / 100;
-    var over = diff < 0;
-
-    totalsEl.innerHTML =
-      '<div class="totals-row"><span>Allocated</span><span class="' + (over ? 'text-danger' : '') + '">' + App.Storage.formatCurrency(allocated) + '</span></div>' +
-      '<div class="totals-row"><span>Available</span><span>' + App.Storage.formatCurrency(available) + '</span></div>' +
-      '<div class="totals-row ' + (over ? 'totals-over' : 'totals-under') + '">' +
-        '<span>' + (over ? '⚠ Over by' : '✓ Remaining') + '</span>' +
-        '<span class="' + (over ? 'text-danger' : 'text-success') + '">' + App.Storage.formatCurrency(Math.abs(diff)) + '</span>' +
-      '</div>';
-  }
-
-  // Scale all checked amounts proportionally to fit available
-  function smartBalance() {
-    var available = parseFloat((document.getElementById('xfr-amount') || {}).value) || 0;
-    if (available <= 0) return;
-
-    var inputs = [];
-    var currentTotal = 0;
-    document.querySelectorAll('.alloc-check:checked').forEach(function(cb) {
-      var inp = document.querySelector('.alloc-amount-input[data-index="' + cb.dataset.index + '"]');
-      if (inp) { inputs.push(inp); currentTotal += parseFloat(inp.value) || 0; }
-    });
-    if (currentTotal === 0 || inputs.length === 0) return;
-
-    var scale = available / currentTotal;
-    inputs.forEach(function(inp) {
-      inp.value = (Math.round((parseFloat(inp.value) || 0) * scale * 100) / 100).toFixed(2);
-    });
-    updateAllocationTotals();
-  }
-
-  // Execute the paycheck allocation
-  function executePaycheck(state) {
-    var amtEl    = document.getElementById('xfr-amount');
-    var acctEl   = document.getElementById('xfr-account');
-    var dateEl   = document.getElementById('xfr-date');
-    var periodEl = document.getElementById('xfr-period');
-    var listEl   = document.getElementById('allocation-list');
-    if (!amtEl || !acctEl || !dateEl || !periodEl || !listEl) return;
-
-    var depositAmt  = Math.round(parseFloat(amtEl.value) * 100) / 100 || 0;
-    var accountId   = acctEl.value;
-    var depositDate = dateEl.value;
-    var periodKey   = periodEl.value;
-
-    if (depositAmt <= 0) { App.showToast('Enter a paycheck amount.', 'error'); return; }
-    if (!accountId)      { App.showToast('Select a deposit account.', 'error'); return; }
-
-    var ns = App.getState();
-
-    // Credit the deposit account first
-    var bankAcct = (ns.accounts.bank || []).find(function(b) { return b.id === accountId; });
-    if (bankAcct) bankAcct.balance = Math.round((bankAcct.balance + depositAmt) * 100) / 100;
-
-    var movements    = [{ accountId: accountId, accountName: bankAcct ? bankAcct.name : '', change: +depositAmt }];
-    var relatedTxIds = [];
-
-    // Process each checked allocation line
-    listEl.querySelectorAll('.alloc-check:checked').forEach(function(cb) {
-      var idx      = cb.dataset.index;
-      var inp      = listEl.querySelector('.alloc-amount-input[data-index="' + idx + '"]');
-      var nameEl   = listEl.querySelector('.alloc-row[data-index="' + idx + '"] .alloc-name');
-      if (!inp || !nameEl) return;
-
-      var allocAmt  = Math.round(parseFloat(inp.value) * 100) / 100 || 0;
-      if (allocAmt <= 0) return;
-      var allocName = nameEl.textContent.replace(' (fixed)', '').trim();
-
-      // Debit the bank account for this allocation
-      if (bankAcct) bankAcct.balance = Math.round((bankAcct.balance - allocAmt) * 100) / 100;
-      movements.push({ accountId: accountId, accountName: bankAcct ? bankAcct.name : '', change: -allocAmt });
-
-      // Credit matching vault (fuzzy match on name)
-      var vault = (ns.accounts.vaults || []).find(function(v) {
-        var vn = v.name.toLowerCase();
-        var an = allocName.toLowerCase();
-        return vn.includes(an) || an.includes(vn);
+      allocList.querySelectorAll('.alloc-check').forEach(function(chk) {
+        chk.addEventListener('change', function() {
+          const row = chk.closest('.alloc-row');
+          row.classList.toggle('disabled', !chk.checked);
+        });
       });
-      if (vault) {
-        vault.balance = Math.round((vault.balance + allocAmt) * 100) / 100;
-        movements.push({ accountId: vault.id, accountName: vault.name, change: +allocAmt });
-      }
-
-      // Log individual transaction
-      var txId = App.Storage.generateId();
-      relatedTxIds.push(txId);
-      if (!ns.transactions) ns.transactions = [];
-      ns.transactions.push({
-        id:            txId,
-        date:          depositDate,
-        categoryName:  allocName,
-        amount:        allocAmt,
-        accountId:     accountId,
-        accountName:   bankAcct ? bankAcct.name : '',
-        note:          'Paycheck allocation — ' + periodKey,
-        paycheckPeriod: periodKey
-      });
-    });
-
-    // Append-only journal entry
-    if (!ns.journal) ns.journal = [];
-    ns.journal.push({
-      id:           App.Storage.generateId(),
-      timestamp:    new Date().toISOString(),
-      type:         'allocation',
-      description:  'Paycheck arrived — ' + periodKey,
-      movements:    movements,
-      relatedTxIds: relatedTxIds,
-      canReverse:   true
-    });
-
-    // Mark paycheck period as deposited in state.paychecks
-    if (!ns.paychecks) ns.paychecks = {};
-    var parts    = periodKey.split('-');
-    var monthKey = parts[0] + '-' + parts[1];
-    var ckNum    = parts[2] || '1';
-    if (!ns.paychecks[monthKey]) ns.paychecks[monthKey] = {};
-    if (!ns.paychecks[monthKey][ckNum]) ns.paychecks[monthKey][ckNum] = {};
-    ns.paychecks[monthKey][ckNum].deposited     = true;
-    ns.paychecks[monthKey][ckNum].depositedDate = depositDate;
-    ns.paychecks[monthKey][ckNum].amount        = depositAmt;
-
-    App.setState(ns);
-    App.showToast('Paycheck allocated ✓', 'success');
-    if (App.events) {
-      App.events.emit('paycheck:allocated', { periodKey: periodKey, depositAmt: depositAmt });
-      App.events.emit('account:balanceChanged', {});
+      updateTotals();
     }
 
-    _mode = null;
-    App.refreshCurrentTab();
+    function updateTotals() {
+      const available  = parseFloat(amtInput.value) || 0;
+      let   allocated  = 0;
+      allocList.querySelectorAll('.alloc-row').forEach(function(row) {
+        const checked = row.querySelector('.alloc-check').checked;
+        if (checked) allocated += parseFloat(row.querySelector('.alloc-amount').value) || 0;
+      });
+      allocated = Math.round(allocated * 100) / 100;
+      const diff = Math.round((allocated - available) * 100) / 100;
+      const over = diff > 0;
+      const totals = container.querySelector('#pc-totals');
+      totals.innerHTML =
+        '<div class="total-line"><span>Available</span><span>' + fmt(available) + '</span></div>' +
+        '<div class="total-line"><span>Allocated</span><span>' + fmt(allocated) + '</span></div>' +
+        '<div class="total-line ' + (over ? 'over' : 'ok') + ' emphasis"><span>' +
+          (over ? '⚠ Over by' : '✓ Surplus') +
+        '</span><span>' + fmt(Math.abs(diff)) + '</span></div>';
+    }
+
+    amtInput.addEventListener('input', buildAllocRows);
+    buildAllocRows();
+
+    // Smart Balance: scale checked amounts proportionally to fit available
+    container.querySelector('#pc-smart').addEventListener('click', function() {
+      const available = parseFloat(amtInput.value) || 0;
+      const rows = allocList.querySelectorAll('.alloc-row');
+      let total = 0;
+      rows.forEach(function(row) {
+        if (row.querySelector('.alloc-check').checked)
+          total += parseFloat(row.querySelector('.alloc-amount').value) || 0;
+      });
+      if (total <= 0) return;
+      const scale = available / total;
+      rows.forEach(function(row) {
+        if (row.querySelector('.alloc-check').checked) {
+          const inp = row.querySelector('.alloc-amount');
+          inp.value = ((parseFloat(inp.value) || 0) * scale).toFixed(2);
+        }
+      });
+      updateTotals();
+    });
+
+    container.querySelector('#pc-reset').addEventListener('click', buildAllocRows);
+
+    container.querySelector('#pc-execute').addEventListener('click', function() {
+      const available = parseFloat(amtInput.value) || 0;
+      const acctId    = container.querySelector('#pc-account').value;
+      const date      = container.querySelector('#pc-date').value;
+      const periodKey = container.querySelector('#pc-period').value;
+      if (available <= 0) { App.showToast('Enter a paycheck amount.', 'error'); return; }
+
+      const rows = allocList.querySelectorAll('.alloc-row');
+      const movements = [{ account: acctId, change: +available }];
+      const txIds = [];
+
+      const s = App.Storage.cloneState(App.getState());
+      if (!s.transactions) s.transactions = [];
+      if (!s.journal)      s.journal      = [];
+      if (!s.paychecks)    s.paychecks    = {};
+
+      // Credit the deposit account
+      const destAcct = (s.accounts.bank || []).find(function(a) { return a.id === acctId; });
+      if (destAcct) destAcct.balance = Math.round((destAcct.balance + available) * 100) / 100;
+
+      // Process each checked allocation
+      rows.forEach(function(row) {
+        if (!row.querySelector('.alloc-check').checked) return;
+        const amt    = parseFloat(row.querySelector('.alloc-amount').value) || 0;
+        if (amt <= 0) return;
+        const name   = row.querySelector('.alloc-name').textContent;
+
+        // Find vault matching this category name and fund it
+        const vault = (s.accounts.vaults || []).find(function(v) {
+          return v.name.toLowerCase() === name.toLowerCase();
+        });
+        const vaultId = vault ? vault.id : null;
+        if (vault) {
+          vault.balance = Math.round((vault.balance + amt) * 100) / 100;
+          // Debit the bank account for this allocation
+          if (destAcct) destAcct.balance = Math.round((destAcct.balance - amt) * 100) / 100;
+          movements.push({ account: vaultId, change: +amt });
+          movements.push({ account: acctId,  change: -amt });
+        }
+
+        const txId = App.Storage.generateId();
+        txIds.push(txId);
+        s.transactions.unshift({
+          id: txId, date: date,
+          category: name, amount: amt,
+          account: acctId, note: 'Paycheck allocation'
+        });
+      });
+
+      // Mark period as deposited
+      if (periodKey) {
+        if (!s.paychecks[periodKey]) s.paychecks[periodKey] = {};
+        s.paychecks[periodKey].deposited = true;
+        s.paychecks[periodKey].depositedAmount = available;
+        s.paychecks[periodKey].depositDate = date;
+      }
+
+      s.journal.push({
+        id: App.Storage.generateId(),
+        timestamp: new Date().toISOString(),
+        type: 'allocation',
+        description: 'Paycheck ' + fmt(available) + ' allocated (' + (periodKey || date) + ')',
+        movements: movements,
+        relatedTxIds: txIds,
+        canReverse: true
+      });
+
+      App.setState(s);
+      App.showToast('Paycheck allocated — ' + fmt(available) + ' distributed.', 'success');
+      _mode = 'paycheck';
+      renderPaycheckArrived(App.getState(), container);
+    });
   }
 
-  // ── WORKFLOW 2: Pay Credit Cards ──────────────────────────
-  function renderPayCards(state, container) {
-    var cards    = (state.accounts && state.accounts.cards) || [];
-    var bankAccts = (state.accounts && state.accounts.bank)  || [];
-    var transfer  = bankAccts.find(function(b) { return b.isTransferAccount; }) || bankAccts[0];
+  // Suggested allocations: per-paycheck amounts from yearly categories
+  function getSuggestedAllocations(state, available) {
+    const cats    = state.yearlyCategories || [];
+    const perYear = 26;
+    return cats.map(function(c) {
+      return { name: c.name, amount: Math.round((c.annualGoal / perYear) * 100) / 100 };
+    });
+  }
 
-    var acctOptions = bankAccts.map(function(b) {
-      return '<option value="' + b.id + '"' + (transfer && b.id === transfer.id ? ' selected' : '') + '>' +
-        b.name + ' (' + App.Storage.formatCurrency(b.balance) + ')</option>';
+  // ═════════════════════════════════════════════════════════
+  // WORKFLOW 2: Pay Credit Cards
+  // ═════════════════════════════════════════════════════════
+  function renderPayCards(state, container) {
+    const bank  = (state.accounts && state.accounts.bank)  || [];
+    const cards = (state.accounts && state.accounts.cards) || [];
+
+    // Find transfer account; fall back to first bank account
+    const transferAcct = bank.find(function(a) { return a.isTransferAccount; }) || bank[0] || { id: '', name: 'No account', balance: 0 };
+
+    const bankOptions = bank.map(function(a) {
+      return '<option value="' + a.id + '"' + (a.id === transferAcct.id ? ' selected' : '') + '>' +
+        a.name + ' (' + fmt(a.balance) + ')</option>';
     }).join('');
 
-    var withBalance = cards.filter(function(c) { return c.balance > 0; });
-    var zeroBal     = cards.filter(function(c) { return c.balance <= 0; });
+    const cardRows = cards.filter(function(c) { return c.balance > 0; }).map(function(c) {
+      return buildCardPayRow(c);
+    }).join('') || '<p class="text-dim" style="padding:16px 0">All cards show $0 balance. Nothing to pay.</p>';
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3 class="workflow-title">💳 Pay Credit Cards</h3>' +
-        '<div class="form-grid">' +
-          '<label class="form-label">Pay from account</label>' +
-          '<select id="pay-from-acct" class="form-input">' + acctOptions + '</select>' +
-        '</div>' +
-        '<div class="card-payments-list" id="card-payments-list">' +
-          (withBalance.length
-            ? withBalance.map(buildCardPayRow).join('')
-            : '<p class="text-secondary" style="padding:16px 0">All cards have $0 balance. Nothing to pay.</p>') +
-          zeroBal.map(function(c) {
-            return '<div class="card-pay-row zero-bal">' +
-              '<span class="alloc-check-wrap" style="opacity:.3">☐</span>' +
-              '<div class="card-pay-info"><span class="card-pay-name">' + c.name + '</span>' +
-              '<span class="card-pay-bal text-secondary">$0.00 balance</span></div>' +
-            '</div>';
-          }).join('') +
-        '</div>' +
-        '<div id="card-pay-totals" class="allocation-totals"></div>' +
+        '<h3>💳 Pay Credit Cards</h3>' +
+        '<div class="form-group"><label class="form-label">Pay From</label>' +
+          '<select id="cp-from" class="form-control">' + bankOptions + '</select>' +
+          '<span id="cp-from-bal" class="field-hint">Balance: ' + fmt(transferAcct.balance) + '</span></div>' +
+        '<div id="cp-card-rows">' + cardRows + '</div>' +
+        '<div id="cp-totals" class="totals-row"></div>' +
         '<div class="workflow-actions">' +
-          '<button id="btn-execute-cards" class="btn btn-primary">✓ Execute Payments</button>' +
+          '<button id="cp-execute" class="btn-execute">Execute Payments</button>' +
         '</div>' +
       '</div>';
 
-    updateCardPayTotals(state);
-
-    document.querySelectorAll('.card-pay-check, .card-pay-amount').forEach(function(el) {
-      el.addEventListener('change', function() { updateCardPayTotals(state); });
-      el.addEventListener('input',  function() { updateCardPayTotals(state); });
-    });
-    document.querySelectorAll('.pay-mode-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var row    = btn.closest('.card-pay-row');
-        var cardId = row.dataset.cardId;
-        var card   = cards.find(function(c) { return c.id === cardId; });
-        if (!card) return;
-        var inp  = row.querySelector('.card-pay-amount');
-        var mode = btn.dataset.payMode;
-        if      (mode === 'full') inp.value = card.balance.toFixed(2);
-        else if (mode === 'min')  inp.value = Math.max(25, Math.round(card.balance * 0.02 * 100) / 100).toFixed(2);
-        else if (mode === 'custom') inp.focus();
-        updateCardPayTotals(state);
-      });
-    });
-    document.getElementById('pay-from-acct').addEventListener('change', function() { updateCardPayTotals(state); });
-    document.getElementById('btn-execute-cards').addEventListener('click', function() { executeCardPayments(state); });
+    wireCardPayRows(state, container, bank);
   }
 
   function buildCardPayRow(card) {
-    var util    = card.limit > 0 ? (card.balance / card.limit) * 100 : 0;
-    var health  = util < 30 ? '✓ Good'    : util < 50 ? '⚠ Caution' : '🚨 High';
-    var hClass  = util < 30 ? 'text-success' : util < 50 ? 'text-warning' : 'text-danger';
-    return '<div class="card-pay-row" data-card-id="' + card.id + '">' +
-      '<label class="alloc-check-wrap">' +
-        '<input type="checkbox" class="card-pay-check" data-id="' + card.id + '" checked>' +
-      '</label>' +
-      '<div class="card-pay-info">' +
+    const util = card.limit > 0 ? (card.balance / card.limit) : 0;
+    const utilPct = (util * 100).toFixed(1) + '%';
+    let utilClass = 'util-good', utilLabel = '✓ ' + utilPct;
+    if (util >= 0.5) { utilClass = 'util-bad';  utilLabel = '🚨 ' + utilPct; }
+    else if (util >= 0.3) { utilClass = 'util-warn'; utilLabel = '⚠ ' + utilPct; }
+
+    return '<div class="card-pay-row" data-card-id="' + card.id + '" data-full="' + card.balance + '">' +
+      '<div class="card-pay-header">' +
+        '<input type="checkbox" class="cp-check" checked />' +
         '<span class="card-pay-name">' + card.name + '</span>' +
-        '<span class="card-pay-bal">Balance: ' + App.Storage.formatCurrency(card.balance) +
-          ' &nbsp;<span class="' + hClass + '">' + health + ' (' + util.toFixed(1) + '%)</span></span>' +
+        '<span class="card-pay-util ' + utilClass + '">' + utilLabel + '</span>' +
       '</div>' +
-      '<div class="card-pay-controls">' +
-        '<div class="pay-mode-btns">' +
-          '<button class="pay-mode-btn" data-pay-mode="min">Min</button>' +
-          '<button class="pay-mode-btn pay-mode-active" data-pay-mode="full">Full</button>' +
-          '<button class="pay-mode-btn" data-pay-mode="custom">Custom</button>' +
-        '</div>' +
-        '<div class="alloc-amount-wrap">' +
-          '<span class="input-prefix small">$</span>' +
-          '<input type="number" step="0.01" min="0" class="card-pay-amount form-input prefix-input" data-id="' + card.id + '" value="' + card.balance.toFixed(2) + '">' +
-        '</div>' +
+      '<div class="pay-mode-btns">' +
+        '<button class="pay-mode-btn active" data-pmode="full">Full</button>' +
+        '<button class="pay-mode-btn" data-pmode="min">Min</button>' +
+        '<button class="pay-mode-btn" data-pmode="custom">Custom</button>' +
+      '</div>' +
+      '<div class="card-pay-amount-row">' +
+        '<label>Balance: ' + fmt(card.balance) + '</label>' +
+        '<input type="number" class="cp-amount" value="' + card.balance.toFixed(2) + '" min="0" step="0.01" />' +
       '</div>' +
     '</div>';
   }
 
-  function updateCardPayTotals(state) {
-    var totalsEl = document.getElementById('card-pay-totals');
-    var fromEl   = document.getElementById('pay-from-acct');
-    if (!totalsEl || !fromEl) return;
-
-    var fromAcct  = (state.accounts.bank || []).find(function(b) { return b.id === fromEl.value; });
-    var available = fromAcct ? fromAcct.balance : 0;
-    var total     = 0;
-
-    document.querySelectorAll('.card-pay-check:checked').forEach(function(cb) {
-      var inp = document.querySelector('.card-pay-amount[data-id="' + cb.dataset.id + '"]');
-      if (inp) total += parseFloat(inp.value) || 0;
-    });
-    total = Math.round(total * 100) / 100;
-    var after = Math.round((available - total) * 100) / 100;
-    var short = after < 0;
-
-    totalsEl.innerHTML =
-      '<div class="totals-row"><span>Total payment</span><span>' + App.Storage.formatCurrency(total) + '</span></div>' +
-      '<div class="totals-row"><span>Source balance</span><span>' + App.Storage.formatCurrency(available) + '</span></div>' +
-      '<div class="totals-row ' + (short ? 'totals-over' : 'totals-under') + '">' +
-        '<span>' + (short ? '⚠ Would go negative' : '✓ Balance after') + '</span>' +
-        '<span class="' + (short ? 'text-danger' : 'text-success') + '">' + App.Storage.formatCurrency(after) + '</span>' +
-      '</div>';
-  }
-
-  function executeCardPayments(state) {
-    var fromEl = document.getElementById('pay-from-acct');
-    if (!fromEl) return;
-
-    var ns       = App.getState();
-    var fromAcct = (ns.accounts.bank || []).find(function(b) { return b.id === fromEl.value; });
-    if (!fromAcct) { App.showToast('Select a source account.', 'error'); return; }
-
-    // Validate: check total won't exceed balance
-    var totalPmt = 0;
-    document.querySelectorAll('.card-pay-check:checked').forEach(function(cb) {
-      var inp = document.querySelector('.card-pay-amount[data-id="' + cb.dataset.id + '"]');
-      if (inp) totalPmt += parseFloat(inp.value) || 0;
-    });
-    if (totalPmt <= 0) { App.showToast('No payments selected.', 'error'); return; }
-    if (totalPmt > fromAcct.balance) {
-      App.showToast('Payment would exceed source balance.', 'error');
-      return;
-    }
-
-    var movements    = [];
-    var relatedTxIds = [];
-
-    document.querySelectorAll('.card-pay-check:checked').forEach(function(cb) {
-      var cardId = cb.dataset.id;
-      var inp    = document.querySelector('.card-pay-amount[data-id="' + cardId + '"]');
-      if (!inp) return;
-      var pmtAmt = Math.round(parseFloat(inp.value) * 100) / 100 || 0;
-      if (pmtAmt <= 0) return;
-
-      var card = (ns.accounts.cards || []).find(function(c) { return c.id === cardId; });
-      if (!card) return;
-
-      card.balance     = Math.max(0, Math.round((card.balance - pmtAmt) * 100) / 100);
-      fromAcct.balance = Math.round((fromAcct.balance - pmtAmt) * 100) / 100;
-
-      movements.push({ accountId: fromAcct.id, accountName: fromAcct.name, change: -pmtAmt });
-      movements.push({ accountId: card.id,     accountName: card.name,     change: -pmtAmt });
-
-      var txId = App.Storage.generateId();
-      relatedTxIds.push(txId);
-      if (!ns.transactions) ns.transactions = [];
-      ns.transactions.push({
-        id:           txId,
-        date:         App.Storage.toISODate(new Date()),
-        categoryName: 'Credit Card Payment',
-        amount:       pmtAmt,
-        accountId:    fromAcct.id,
-        accountName:  fromAcct.name,
-        note:         'Payment to ' + card.name,
-        paycheckPeriod: ''
+  function wireCardPayRows(state, container, bank) {
+    // Wire pay-mode buttons
+    container.querySelectorAll('.card-pay-row').forEach(function(row) {
+      const fullAmt = parseFloat(row.dataset.full) || 0;
+      row.querySelectorAll('.pay-mode-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          row.querySelectorAll('.pay-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          const amtInput = row.querySelector('.cp-amount');
+          if (btn.dataset.pmode === 'full') amtInput.value = fullAmt.toFixed(2);
+          else if (btn.dataset.pmode === 'min') amtInput.value = Math.min(25, fullAmt).toFixed(2);
+          updateCardPayTotals(container, bank);
+        });
+      });
+      row.querySelector('.cp-check').addEventListener('change', function() {
+        updateCardPayTotals(container, bank);
+      });
+      row.querySelector('.cp-amount').addEventListener('input', function() {
+        updateCardPayTotals(container, bank);
       });
     });
+    updateCardPayTotals(container, bank);
 
-    if (!ns.journal) ns.journal = [];
-    ns.journal.push({
-      id:           App.Storage.generateId(),
-      timestamp:    new Date().toISOString(),
-      type:         'payment',
-      description:  'Credit card payments — ' + App.Storage.formatCurrency(totalPmt),
-      movements:    movements,
-      relatedTxIds: relatedTxIds,
-      canReverse:   true
+    container.querySelector('#cp-from').addEventListener('change', function() {
+      const acctId = this.value;
+      const acct   = bank.find(function(a) { return a.id === acctId; });
+      container.querySelector('#cp-from-bal').textContent = acct ? 'Balance: ' + fmt(acct.balance) : '';
+      updateCardPayTotals(container, bank);
     });
 
-    App.setState(ns);
-    App.showToast('Payments executed ✓', 'success');
-    if (App.events) {
-      App.events.emit('card:paid', { totalPaid: totalPmt });
-      App.events.emit('account:balanceChanged', {});
-    }
+    container.querySelector('#cp-execute').addEventListener('click', function() {
+      const fromId = container.querySelector('#cp-from').value;
+      const s      = App.Storage.cloneState(App.getState());
+      const from   = (s.accounts.bank || []).find(function(a) { return a.id === fromId; });
+      if (!from) { App.showToast('Select a payment account.', 'error'); return; }
 
-    _mode = null;
-    App.refreshCurrentTab();
+      let totalPaid = 0;
+      const movements = [];
+      const txIds     = [];
+      if (!s.transactions) s.transactions = [];
+      if (!s.journal)      s.journal      = [];
+
+      container.querySelectorAll('.card-pay-row').forEach(function(row) {
+        if (!row.querySelector('.cp-check').checked) return;
+        const cardId = row.dataset.cardId;
+        const amt    = parseFloat(row.querySelector('.cp-amount').value) || 0;
+        if (amt <= 0) return;
+        const card = (s.accounts.cards || []).find(function(c) { return c.id === cardId; });
+        if (!card) return;
+        card.balance  = Math.max(0, Math.round((card.balance - amt) * 100) / 100);
+        from.balance  = Math.round((from.balance - amt) * 100) / 100;
+        totalPaid    += amt;
+        movements.push({ account: cardId, change: -amt });
+        movements.push({ account: fromId, change: -amt });
+        const txId = App.Storage.generateId();
+        txIds.push(txId);
+        s.transactions.unshift({
+          id: txId, date: App.Storage.toISODate(new Date()),
+          category: 'Credit Card Payment', amount: amt,
+          account: fromId, note: 'Payment to ' + card.name
+        });
+      });
+
+      if (totalPaid === 0) { App.showToast('No payments selected.', 'error'); return; }
+      if (from.balance < 0) { App.showToast('Insufficient funds in payment account.', 'error'); return; }
+
+      s.journal.push({
+        id: App.Storage.generateId(),
+        timestamp: new Date().toISOString(),
+        type: 'payment',
+        description: 'Credit card payments — ' + fmt(totalPaid) + ' total',
+        movements: movements,
+        relatedTxIds: txIds,
+        canReverse: true
+      });
+
+      App.setState(s);
+      App.showToast('Paid ' + fmt(totalPaid) + ' across credit cards.', 'success');
+      _mode = 'paycards';
+      renderPayCards(App.getState(), container);
+    });
   }
 
-  // ── Stub for unbuilt workflows ────────────────────────────
-  function renderStub(container, title) {
+  function updateCardPayTotals(container, bank) {
+    const fromId = container.querySelector('#cp-from').value;
+    const from   = bank.find(function(a) { return a.id === fromId; }) || { balance: 0 };
+    let total = 0;
+    container.querySelectorAll('.card-pay-row').forEach(function(row) {
+      if (row.querySelector('.cp-check').checked)
+        total += parseFloat(row.querySelector('.cp-amount').value) || 0;
+    });
+    total = Math.round(total * 100) / 100;
+    const after  = Math.round((from.balance - total) * 100) / 100;
+    const danger = after < 0;
+    container.querySelector('#cp-totals').innerHTML =
+      '<div class="total-line"><span>Total payment</span><span>' + fmt(total) + '</span></div>' +
+      '<div class="total-line ' + (danger ? 'over' : 'ok') + ' emphasis"><span>Account after</span>' +
+        '<span>' + fmt(after) + (danger ? ' ⚠' : ' ✓') + '</span></div>';
+  }
+
+  // ═════════════════════════════════════════════════════════
+  // WORKFLOW 3: Move Money
+  // ═════════════════════════════════════════════════════════
+  function renderMoveMoney(state, container) {
+    const allAccounts = getAllAccounts(state);
+
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3 class="workflow-title">' + title + '</h3>' +
-        '<p class="workflow-coming-soon">🔧 This workflow is coming in the next build step.</p>' +
+        '<h3>🏦 Move Money</h3>' +
+        '<div class="form-group"><label class="form-label">From</label>' +
+          '<select id="mm-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
+          '<span id="mm-from-bal" class="field-hint"></span></div>' +
+        '<div class="form-group"><label class="form-label">Amount</label>' +
+          '<input id="mm-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+        '<div class="form-group"><label class="form-label">To</label>' +
+          '<select id="mm-to" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
+          '<span id="mm-to-bal" class="field-hint"></span></div>' +
+        '<div class="form-group"><label class="form-label">Note (optional)</label>' +
+          '<input id="mm-note" type="text" class="form-control" placeholder="e.g. Moving to cover rent" /></div>' +
+        '<div id="mm-preview" class="transfer-preview hidden"></div>' +
+        '<div class="workflow-actions">' +
+          '<button id="mm-execute" class="btn-execute">Execute Move</button>' +
+        '</div>' +
       '</div>';
+
+    const fromSel  = container.querySelector('#mm-from');
+    const toSel    = container.querySelector('#mm-to');
+    const amtInput = container.querySelector('#mm-amount');
+    const fromBal  = container.querySelector('#mm-from-bal');
+    const toBal    = container.querySelector('#mm-to-bal');
+    const preview  = container.querySelector('#mm-preview');
+
+    if (toSel.options.length > 1) toSel.selectedIndex = 1;
+
+    function updatePreview() {
+      const from = allAccounts.find(function(a) { return a.id === fromSel.value; });
+      const to   = allAccounts.find(function(a) { return a.id === toSel.value;   });
+      if (!from || !to) return;
+      fromBal.textContent = 'Balance: ' + fmt(from.balance);
+      toBal.textContent   = 'Balance: ' + fmt(to.balance);
+      const amt = parseFloat(amtInput.value) || 0;
+      if (amt <= 0 || fromSel.value === toSel.value) { preview.classList.add('hidden'); return; }
+      const afterFrom = from.balance - amt;
+      const afterTo   = to.balance   + amt;
+      const danger    = afterFrom < 0;
+      preview.classList.remove('hidden');
+      preview.className = 'transfer-preview' + (danger ? ' danger' : '');
+      preview.innerHTML =
+        from.label + ': <strong>' + fmt(afterFrom) + '</strong>' + (danger ? ' ⚠ OVER' : '') + '<br>' +
+        to.label   + ': <strong>' + fmt(afterTo)   + '</strong>';
+    }
+
+    fromSel.addEventListener('change', updatePreview);
+    toSel.addEventListener('change',   updatePreview);
+    amtInput.addEventListener('input',  updatePreview);
+    updatePreview();
+
+    container.querySelector('#mm-execute').addEventListener('click', function() {
+      const fromId = fromSel.value;
+      const toId   = toSel.value;
+      const amt    = parseFloat(amtInput.value) || 0;
+      const note   = container.querySelector('#mm-note').value.trim();
+      if (fromId === toId) { App.showToast('From and To cannot be the same.', 'error'); return; }
+      if (amt <= 0)        { App.showToast('Enter an amount greater than zero.', 'error'); return; }
+      const s    = App.Storage.cloneState(App.getState());
+      const from = findAccount(s, fromId);
+      const to   = findAccount(s, toId);
+      if (!from || !to) { App.showToast('Account not found.', 'error'); return; }
+      if (from.balance < amt) { App.showToast('Insufficient balance in ' + from.name, 'error'); return; }
+      from.balance = Math.round((from.balance - amt) * 100) / 100;
+      to.balance   = Math.round((to.balance   + amt) * 100) / 100;
+      if (!s.journal) s.journal = [];
+      s.journal.push({
+        id: App.Storage.generateId(), timestamp: new Date().toISOString(),
+        type: 'transfer',
+        description: note || ('Move ' + fmt(amt) + ': ' + from.name + ' → ' + to.name),
+        movements: [{ account: fromId, change: -amt }, { account: toId, change: +amt }],
+        relatedTxIds: [], canReverse: true
+      });
+      App.setState(s);
+      App.showToast('Moved ' + fmt(amt) + ' from ' + from.name + ' to ' + to.name, 'success');
+      _mode = 'movemoney';
+      renderMoveMoney(App.getState(), container);
+    });
   }
 
-  // ── Helper: upcoming pay periods ─────────────────────────
-  // Returns the 4 most relevant upcoming periods (±14 to +45 days from today).
-  function getUpcomingPeriods(state) {
-    var paydayDates = (state.income && state.income.paydayDates) || [];
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // ═════════════════════════════════════════════════════════
+  // WORKFLOW 4: Fund a Vault
+  // ═════════════════════════════════════════════════════════
+  function renderFundVault(state, container) {
+    const bank   = (state.accounts && state.accounts.bank)   || [];
+    const vaults = (state.accounts && state.accounts.vaults) || [];
+    const cats   = state.yearlyCategories || [];
 
-    var relevant = paydayDates.filter(function(d) {
-      var dt   = new Date(d + 'T12:00:00');
-      var diff = (dt - today) / 86400000;
+    const srcOptions = bank.map(function(a) {
+      return '<option value="' + a.id + '">' + a.name + ' (' + fmt(a.balance) + ')</option>';
+    }).join('') || '<option value="">No bank accounts</option>';
+
+    const vaultOptions = vaults.map(function(v) {
+      return '<option value="' + v.id + '">' + v.name + ' (' + fmt(v.balance) + ')</option>';
+    }).join('') || '<option value="">No vaults configured</option>';
+
+    container.innerHTML =
+      '<div class="workflow-card">' +
+        '<h3>🎯 Fund a Vault</h3>' +
+        '<div class="form-group"><label class="form-label">From (Bank Account)</label>' +
+          '<select id="fv-from" class="form-control">' + srcOptions + '</select>' +
+          '<span id="fv-from-bal" class="field-hint"></span></div>' +
+        '<div class="form-group"><label class="form-label">Vault</label>' +
+          '<select id="fv-vault" class="form-control">' + vaultOptions + '</select></div>' +
+        '<div id="fv-info" class="vault-info-card hidden"></div>' +
+        '<div class="form-group"><label class="form-label">Amount</label>' +
+          '<input id="fv-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+        '<div id="fv-preview" class="transfer-preview hidden"></div>' +
+        '<div class="workflow-actions">' +
+          '<button id="fv-execute" class="btn-execute">Fund Vault</button>' +
+        '</div>' +
+      '</div>';
+
+    const fromSel   = container.querySelector('#fv-from');
+    const vaultSel  = container.querySelector('#fv-vault');
+    const amtInput  = container.querySelector('#fv-amount');
+    const fromBalEl = container.querySelector('#fv-from-bal');
+    const vaultInfo = container.querySelector('#fv-info');
+    const preview   = container.querySelector('#fv-preview');
+
+    function updateVaultInfo() {
+      const vault = vaults.find(function(v) { return v.id === vaultSel.value; });
+      if (!vault) { vaultInfo.classList.add('hidden'); return; }
+      const cat = cats.find(function(c) { return c.name.toLowerCase() === vault.name.toLowerCase(); });
+      const perPaycheck = cat ? (cat.annualGoal / 26) : null;
+      vaultInfo.classList.remove('hidden');
+      vaultInfo.innerHTML =
+        '<span class="vi-label">Current:</span> <strong>' + fmt(vault.balance) + '</strong>' +
+        (cat
+          ? '&nbsp;&nbsp;<span class="vi-label">Annual goal:</span> <strong>' + fmt(cat.annualGoal) +
+            '</strong>&nbsp;&nbsp;<span class="vi-label">Per paycheck:</span> <strong>' + fmt(perPaycheck) + '</strong>'
+          : '');
+      if (perPaycheck && !amtInput.value) {
+        amtInput.value = perPaycheck.toFixed(2);
+        updatePreview();
+      }
+    }
+
+    function updatePreview() {
+      const from  = bank.find(function(a)   { return a.id === fromSel.value;  });
+      const vault = vaults.find(function(v) { return v.id === vaultSel.value; });
+      if (!from || !vault) return;
+      fromBalEl.textContent = 'Balance: ' + fmt(from.balance);
+      const amt = parseFloat(amtInput.value) || 0;
+      if (amt <= 0) { preview.classList.add('hidden'); return; }
+      const afterFrom  = from.balance  - amt;
+      const afterVault = vault.balance + amt;
+      const danger     = afterFrom < 0;
+      preview.classList.remove('hidden');
+      preview.className = 'transfer-preview' + (danger ? ' danger' : '');
+      preview.innerHTML =
+        from.name  + ': <strong>' + fmt(afterFrom)  + '</strong>' + (danger ? ' ⚠ INSUFFICIENT' : '') + '<br>' +
+        vault.name + ': <strong>' + fmt(afterVault)  + '</strong>';
+    }
+
+    vaultSel.addEventListener('change', function() { updateVaultInfo(); updatePreview(); });
+    fromSel.addEventListener('change',  updatePreview);
+    amtInput.addEventListener('input',  updatePreview);
+    updateVaultInfo();
+
+    container.querySelector('#fv-execute').addEventListener('click', function() {
+      const fromId  = fromSel.value;
+      const vaultId = vaultSel.value;
+      const amt     = parseFloat(amtInput.value) || 0;
+      if (amt <= 0) { App.showToast('Enter an amount.', 'error'); return; }
+      const s     = App.Storage.cloneState(App.getState());
+      const from  = (s.accounts.bank   || []).find(function(a) { return a.id === fromId;  });
+      const vault = (s.accounts.vaults || []).find(function(v) { return v.id === vaultId; });
+      if (!from || !vault) { App.showToast('Account not found.', 'error'); return; }
+      if (from.balance < amt) { App.showToast('Insufficient balance in ' + from.name, 'error'); return; }
+      from.balance  = Math.round((from.balance  - amt) * 100) / 100;
+      vault.balance = Math.round((vault.balance + amt) * 100) / 100;
+      if (!s.journal) s.journal = [];
+      s.journal.push({
+        id: App.Storage.generateId(), timestamp: new Date().toISOString(),
+        type: 'transfer',
+        description: 'Funded vault: ' + vault.name + ' +' + fmt(amt),
+        movements: [{ account: fromId, change: -amt }, { account: vaultId, change: +amt }],
+        relatedTxIds: [], canReverse: true
+      });
+      App.setState(s);
+      App.showToast('Funded ' + vault.name + ' with ' + fmt(amt), 'success');
+      _mode = 'fundvault';
+      renderFundVault(App.getState(), container);
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════
+  // WORKFLOW 5: Withdraw / Spend Cash
+  // ═════════════════════════════════════════════════════════
+  function renderWithdraw(state, container) {
+    const allAccounts = getAllAccounts(state);
+    const cats        = state.yearlyCategories || [];
+    const fixedCats   = state.fixedMonthlyExpenses || [];
+    const today       = App.Storage.toISODate(new Date());
+
+    const catOptions =
+      '<option value="">-- category (optional) --</option>' +
+      cats.map(function(c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('') +
+      '<optgroup label="Fixed Expenses">' +
+      fixedCats.map(function(f) { return '<option value="fx_' + f.id + '">' + f.name + '</option>'; }).join('') +
+      '</optgroup>';
+
+    container.innerHTML =
+      '<div class="workflow-card">' +
+        '<h3>📤 Withdraw / Spend Cash</h3>' +
+        '<div class="form-group"><label class="form-label">Pull From</label>' +
+          '<select id="wd-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
+          '<span id="wd-from-bal" class="field-hint"></span></div>' +
+        '<div class="form-group"><label class="form-label">Amount</label>' +
+          '<input id="wd-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+        '<div class="form-group"><label class="form-label">Category</label>' +
+          '<select id="wd-category" class="form-control">' + catOptions + '</select></div>' +
+        '<div class="form-group"><label class="form-label">Date</label>' +
+          '<input id="wd-date" type="date" class="form-control" value="' + today + '" /></div>' +
+        '<div class="form-group"><label class="form-label">Note (optional)</label>' +
+          '<input id="wd-note" type="text" class="form-control" placeholder="What was this for?" /></div>' +
+        '<div id="wd-preview" class="transfer-preview hidden"></div>' +
+        '<div class="workflow-actions">' +
+          '<button id="wd-execute" class="btn-execute">Record Withdrawal</button>' +
+        '</div>' +
+      '</div>';
+
+    const fromSel   = container.querySelector('#wd-from');
+    const amtInput  = container.querySelector('#wd-amount');
+    const fromBalEl = container.querySelector('#wd-from-bal');
+    const preview   = container.querySelector('#wd-preview');
+
+    function updatePreview() {
+      const from = allAccounts.find(function(a) { return a.id === fromSel.value; });
+      if (!from) return;
+      fromBalEl.textContent = 'Balance: ' + fmt(from.balance);
+      const amt = parseFloat(amtInput.value) || 0;
+      if (amt <= 0) { preview.classList.add('hidden'); return; }
+      const after  = from.balance - amt;
+      const danger = after < 0;
+      preview.classList.remove('hidden');
+      preview.className = 'transfer-preview' + (danger ? ' danger' : '');
+      preview.innerHTML = from.label + ' after: <strong>' + fmt(after) + '</strong>' + (danger ? ' ⚠ OVER' : '');
+    }
+
+    fromSel.addEventListener('change', updatePreview);
+    amtInput.addEventListener('input',  updatePreview);
+    updatePreview();
+
+    container.querySelector('#wd-execute').addEventListener('click', function() {
+      const fromId = fromSel.value;
+      const amt    = parseFloat(amtInput.value) || 0;
+      const catId  = container.querySelector('#wd-category').value;
+      const date   = container.querySelector('#wd-date').value;
+      const note   = container.querySelector('#wd-note').value.trim();
+      if (amt <= 0) { App.showToast('Enter an amount.', 'error'); return; }
+      const s    = App.Storage.cloneState(App.getState());
+      const from = findAccount(s, fromId);
+      if (!from) { App.showToast('Account not found.', 'error'); return; }
+      if (from.balance < amt) { App.showToast('Insufficient balance in ' + from.name, 'error'); return; }
+      from.balance = Math.round((from.balance - amt) * 100) / 100;
+      if (!s.transactions) s.transactions = [];
+      if (!s.journal)      s.journal      = [];
+      const txId = App.Storage.generateId();
+      s.transactions.unshift({
+        id: txId, date: date || today,
+        category: catId, amount: amt,
+        account: fromId, note: note || 'Withdrawal'
+      });
+      s.journal.push({
+        id: App.Storage.generateId(), timestamp: new Date().toISOString(),
+        type: 'withdrawal',
+        description: 'Withdrawal ' + fmt(amt) + ' from ' + from.name + (note ? ' — ' + note : ''),
+        movements: [{ account: fromId, change: -amt }],
+        relatedTxIds: [txId], canReverse: true
+      });
+      App.setState(s);
+      App.showToast('Recorded withdrawal of ' + fmt(amt) + ' from ' + from.name, 'success');
+      _mode = 'withdraw';
+      renderWithdraw(App.getState(), container);
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════
+  // SHARED HELPERS
+  // ═════════════════════════════════════════════════════════
+
+  // Flatten bank accounts + vaults into one list for dropdowns
+  function getAllAccounts(state) {
+    const bank   = (state.accounts && state.accounts.bank)   || [];
+    const vaults = (state.accounts && state.accounts.vaults) || [];
+    return bank.map(function(a) {
+      return { id: a.id, label: a.name, balance: a.balance, type: 'bank' };
+    }).concat(vaults.map(function(v) {
+      return { id: v.id, label: v.name + ' (vault)', balance: v.balance, type: 'vault' };
+    }));
+  }
+
+  // Build <option> string from account list
+  function buildAccountOptions(accounts) {
+    return accounts.map(function(a) {
+      return '<option value="' + a.id + '">' + a.label + ' (' + fmt(a.balance) + ')</option>';
+    }).join('');
+  }
+
+  // Find a bank account or vault by id in a mutable state clone
+  function findAccount(s, id) {
+    const bank   = (s.accounts && s.accounts.bank)   || [];
+    const vaults = (s.accounts && s.accounts.vaults) || [];
+    return bank.find(function(a)   { return a.id === id; }) ||
+           vaults.find(function(v) { return v.id === id; });
+  }
+
+  // Return upcoming payday dates as { key, label } for the period dropdown
+  function getUpcomingPeriods(state) {
+    const paydayDates = (state.income && state.income.paydayDates) || [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    let relevant = paydayDates.filter(function(d) {
+      const dt   = new Date(d + 'T12:00:00');
+      const diff = (dt - today) / 86400000;
       return diff >= -14 && diff <= 60;
     });
-
-    // Fallback: use first 5 periods if none are near today
     if (relevant.length === 0) relevant = paydayDates.slice(0, 5);
-
     return relevant.map(function(d) {
-      var idx = paydayDates.indexOf(d);
-      return {
-        key:   buildPeriodKey(state, d),
-        label: 'Period ' + (idx + 1) + ' — ' + d
-      };
+      const idx = paydayDates.indexOf(d);
+      return { key: buildPeriodKey(state, d), label: 'Period ' + (idx + 1) + ' — ' + d };
     });
   }
 
-  // Build "YYYY-MM-N" key for a given payday date
   function buildPeriodKey(state, dateStr) {
-    var d  = new Date(dateStr + 'T12:00:00');
-    var yr = d.getFullYear();
-    var mo = String(d.getMonth() + 1).padStart(2, '0');
-    var paydayDates = (state.income && state.income.paydayDates) || [];
-    var prefix      = yr + '-' + mo;
-    var inMonth     = paydayDates.filter(function(p) { return p.startsWith(prefix); });
-    var ck          = inMonth.indexOf(dateStr) + 1 || 1;
+    const d   = new Date(dateStr + 'T12:00:00');
+    const yr  = d.getFullYear();
+    const mo  = String(d.getMonth() + 1).padStart(2, '0');
+    const pay = (state.income && state.income.paydayDates) || [];
+    const pfx = yr + '-' + mo;
+    const inM = pay.filter(function(p) { return p.startsWith(pfx); });
+    const ck  = inM.indexOf(dateStr) + 1 || 1;
     return yr + '-' + mo + '-' + ck;
   }
 
