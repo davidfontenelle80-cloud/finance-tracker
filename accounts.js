@@ -1,16 +1,24 @@
 /* ══════════════════════════════════════════════════════════════
    ACCOUNTS.JS — Vaults + Bank + Credit Cards
-   Tab 5: Three sections with the critical safety-net banner at top.
-
-   SAFETY NET: Compares Transfer Account balance to total credit
-   card balance. Red if Transfer < Cards (you'd be short), green
-   if covered.
+   Phase 1 features built in:
+   1. Vault sub-items: named line items, balance = sum of items
+   2. Transfer Account CC coverage monitor + exclude toggle
+   3. Inline balance editing: tap any balance to edit in place
+   4. Credit card edit: enter by Available Credit OR Balance (live sync)
 ══════════════════════════════════════════════════════════════ */
 
 (function (App) {
   'use strict';
 
   const fmt = (n) => App.Storage.formatCurrency(n);
+
+  // Vault effective balance: sum of items when defined, else manual balance
+  function vaultBalance(vault) {
+    if (vault.items && vault.items.length > 0) {
+      return vault.items.reduce((s, item) => s + (Number(item.amount) || 0), 0);
+    }
+    return Number(vault.balance) || 0;
+  }
 
   // ── Entry point ───────────────────────────────────────────
   function render(state, container) {
@@ -22,7 +30,7 @@
   function buildHtml(state) {
     const accts = state.accounts || { bank: [], vaults: [], cards: [] };
     return `
-      ${renderSafetyBanner(accts)}
+      ${renderSafetyBanner(state, accts)}
       ${renderVaults(accts)}
       ${renderBank(accts)}
       ${renderCards(accts)}
@@ -30,21 +38,24 @@
   }
 
   // ── Safety net banner ─────────────────────────────────────
-  // THE critical feature. Always at top. Compares the designated
-  // Transfer Account balance vs total credit card balance.
-  function renderSafetyBanner(accts) {
+  // Transfer Account balance vs total CC balance.
+  // Toggle lets user exclude Transfer Account from the deficit calculation
+  // (e.g. when Transfer Account funds are already earmarked elsewhere).
+  function renderSafetyBanner(state, accts) {
+    const settings     = state.settings || {};
+    const excluded     = !!settings.excludeTransferFromDeficit;
     const transferAcct = (accts.bank || []).find(a => a.isTransferAccount);
     const transferBal  = transferAcct ? (Number(transferAcct.balance) || 0) : 0;
     const cardTotal    = (accts.cards || []).reduce((s, c) => s + (Number(c.balance) || 0), 0);
-    const delta        = transferBal - cardTotal;
-    const isOk         = delta >= 0;
+    const delta        = excluded ? -cardTotal : transferBal - cardTotal;
+    const isOk         = !excluded && delta >= 0;
 
     if (!transferAcct) {
       return `
         <div class="safety-banner" style="background:rgba(255,176,0,0.08);border:1px solid rgba(255,176,0,0.4);color:var(--neon-amber)">
-          <div class="safety-banner__headline">⚠ No Transfer Account Set</div>
+          <div class="safety-banner__headline">&#9888; No Transfer Account Set</div>
           <div class="text-sm" style="font-weight:400;margin-top:4px">
-            Go to Setup → Accounts and mark one bank account as your Transfer Account.
+            Go to Setup &rarr; Accounts and mark one bank account as your Transfer Account.
           </div>
         </div>`;
     }
@@ -53,7 +64,7 @@
       <div class="safety-banner safety-banner--${isOk ? 'ok' : 'warn'}">
         <div class="safety-banner__row">
           <span>Transfer Account (${esc(transferAcct.name)})</span>
-          <span class="font-mono">${fmt(transferBal)}</span>
+          <span class="font-mono">${excluded ? '<span class="text-secondary" style="font-style:italic">excluded</span>' : fmt(transferBal)}</span>
         </div>
         <div class="safety-banner__row">
           <span>Credit Cards Total (${(accts.cards || []).length} cards)</span>
@@ -62,8 +73,17 @@
         <div class="divider" style="margin:8px 0;opacity:0.4"></div>
         <div class="safety-banner__headline">
           ${isOk
-            ? `✓ COVERED — Surplus ${fmt(delta)}`
-            : `⚠ SHORT by ${fmt(Math.abs(delta))} — MOVE MONEY NOW`}
+            ? `&#10003; COVERED &mdash; Surplus ${fmt(delta)}`
+            : excluded
+            ? `&#9888; SHORT by ${fmt(cardTotal)} &mdash; Transfer excluded`
+            : `&#9888; SHORT by ${fmt(Math.abs(delta))} &mdash; MOVE MONEY NOW`}
+        </div>
+        <div style="margin-top:10px">
+          <button class="btn btn--sm ${excluded ? 'btn--primary' : 'btn--secondary'}"
+                  data-action="toggle-transfer-exclude"
+                  style="font-size:0.75rem">
+            ${excluded ? '&#10003; Transfer Excluded' : 'Exclude Transfer Acct'}
+          </button>
         </div>
       </div>`;
   }
@@ -71,28 +91,56 @@
   // ── Vaults section ────────────────────────────────────────
   function renderVaults(accts) {
     const vaults = accts.vaults || [];
-    const total  = vaults.reduce((s, v) => s + (Number(v.balance) || 0), 0);
+    const total  = vaults.reduce((s, v) => s + vaultBalance(v), 0);
 
-    const items = vaults.map(v => `
-      <div class="list-item">
-        <div style="flex:1">
-          <div class="font-bold text-sm">${esc(v.name)}</div>
-          <div class="font-mono text-cyan">${fmt(v.balance)}</div>
-        </div>
-        <button class="btn btn--secondary btn--sm" data-action="edit-vault-bal" data-id="${v.id}"
-                data-name="${esc(v.name)}" data-bal="${v.balance}">Edit</button>
-      </div>`).join('');
+    const rows = vaults.map(v => {
+      const bal      = vaultBalance(v);
+      const hasItems = v.items && v.items.length > 0;
+      return `
+        <details class="vault-row" style="border-bottom:1px solid var(--border);padding:2px 0">
+          <summary style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;cursor:pointer;list-style:none;-webkit-appearance:none">
+            <div style="flex:1">
+              <div class="font-bold text-sm">${esc(v.name)}</div>
+              ${hasItems ? `<div class="text-xs text-secondary">${v.items.length} item${v.items.length !== 1 ? 's' : ''}</div>` : ''}
+            </div>
+            <span class="font-mono text-cyan editable-balance"
+                  data-action="inline-edit"
+                  data-id="${v.id}"
+                  data-type="vault"
+                  data-bal="${bal}"
+                  title="Tap to edit"
+                  style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s"
+                  >${fmt(bal)}</span>
+            <span style="margin-left:8px;font-size:0.65rem;color:var(--text-secondary);user-select:none">&#9660;</span>
+          </summary>
+          <div style="padding:6px 4px 10px 12px">
+            ${renderVaultItems(v)}
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button class="btn btn--secondary btn--sm"
+                      data-action="add-vault-item"
+                      data-id="${v.id}"
+                      data-name="${esc(v.name)}">+ Add Item</button>
+              ${!hasItems ? `
+              <button class="btn btn--secondary btn--sm"
+                      data-action="edit-vault-bal"
+                      data-id="${v.id}"
+                      data-name="${esc(v.name)}"
+                      data-bal="${v.balance}">Edit Balance</button>` : ''}
+            </div>
+          </div>
+        </details>`;
+    }).join('');
 
     return `
       <details class="card" open>
         <summary>
           <div>
-            <div class="card-title">🏺 Vaults</div>
-            <div class="card-subtitle">${vaults.length} envelopes · ${fmt(total)} total</div>
+            <div class="card-title">&#127994; Vaults</div>
+            <div class="card-subtitle">${vaults.length} envelopes &middot; ${fmt(total)} total</div>
           </div>
         </summary>
         <div>
-          ${items || '<p class="text-secondary text-sm">No vaults. Add them in Setup → Accounts.</p>'}
+          ${rows || '<p class="text-secondary text-sm">No vaults. Add them in Setup &rarr; Accounts.</p>'}
           <div class="flex-between mt-12" style="padding-top:10px;border-top:1px solid var(--border)">
             <span class="text-secondary font-bold text-sm">Total Vaults</span>
             <span class="font-mono font-bold text-cyan">${fmt(total)}</span>
@@ -101,34 +149,75 @@
       </details>`;
   }
 
+  function renderVaultItems(vault) {
+    if (!vault.items || vault.items.length === 0) {
+      return '<p class="text-xs text-secondary" style="margin:4px 0 6px;opacity:0.7">No sub-items &mdash; balance is manual.</p>';
+    }
+    const subtotal = vault.items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const rows = vault.items.map(item => `
+      <div class="flex-between" style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <span class="text-sm">${esc(item.name)}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="font-mono text-sm text-cyan">${fmt(item.amount)}</span>
+          <button class="btn btn--icon btn--secondary"
+                  style="padding:1px 5px;font-size:0.7rem;line-height:1.4"
+                  data-action="edit-vault-item"
+                  data-vault-id="${vault.id}"
+                  data-item-id="${item.id}"
+                  data-item-name="${esc(item.name)}"
+                  data-item-amount="${item.amount}"
+                  title="Edit">&#9998;</button>
+          <button class="btn btn--icon btn--secondary"
+                  style="padding:1px 5px;font-size:0.7rem;line-height:1.4;color:var(--color-danger)"
+                  data-action="delete-vault-item"
+                  data-vault-id="${vault.id}"
+                  data-item-id="${item.id}"
+                  data-item-name="${esc(item.name)}"
+                  title="Delete">&#10005;</button>
+        </div>
+      </div>`).join('');
+
+    return `
+      ${rows}
+      <div class="flex-between" style="padding:6px 0 2px;font-weight:700">
+        <span class="text-xs text-secondary">Subtotal</span>
+        <span class="font-mono text-xs text-cyan">${fmt(subtotal)}</span>
+      </div>`;
+  }
+
   // ── Bank accounts section ─────────────────────────────────
   function renderBank(accts) {
     const bank  = accts.bank || [];
     const total = bank.reduce((s, a) => s + (Number(a.balance) || 0), 0);
 
-    const items = bank.map(a => `
+    const rows = bank.map(a => `
       <div class="list-item">
         <div style="flex:1">
           <div class="font-bold text-sm">
             ${esc(a.name)}
             ${a.isTransferAccount ? '<span class="badge badge--cyan" style="margin-left:6px">Transfer</span>' : ''}
           </div>
-          <div class="font-mono text-cyan">${fmt(a.balance)}</div>
+          <span class="font-mono text-cyan editable-balance"
+                data-action="inline-edit"
+                data-id="${a.id}"
+                data-type="bank"
+                data-bal="${a.balance}"
+                title="Tap to edit"
+                style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s"
+                >${fmt(a.balance)}</span>
         </div>
-        <button class="btn btn--secondary btn--sm" data-action="edit-bank-bal" data-id="${a.id}"
-                data-name="${esc(a.name)}" data-bal="${a.balance}">Edit</button>
       </div>`).join('');
 
     return `
       <details class="card">
         <summary>
           <div>
-            <div class="card-title">🏦 Bank Accounts</div>
-            <div class="card-subtitle">${bank.length} accounts · ${fmt(total)} total cash</div>
+            <div class="card-title">&#127970; Bank Accounts</div>
+            <div class="card-subtitle">${bank.length} accounts &middot; ${fmt(total)} total cash</div>
           </div>
         </summary>
         <div>
-          ${items || '<p class="text-secondary text-sm">No bank accounts. Add them in Setup → Accounts.</p>'}
+          ${rows || '<p class="text-secondary text-sm">No bank accounts. Add them in Setup &rarr; Accounts.</p>'}
           <div class="flex-between mt-12" style="padding-top:10px;border-top:1px solid var(--border)">
             <span class="text-secondary font-bold text-sm">Total Cash</span>
             <span class="font-mono font-bold text-cyan">${fmt(total)}</span>
@@ -143,11 +232,10 @@
     const total = cards.reduce((s, c) => s + (Number(c.balance) || 0), 0);
 
     const cardHtml = cards.map(c => {
-      const pct   = c.limit > 0 ? Math.min(100, (c.balance / c.limit) * 100) : 0;
-      // Health thresholds from spec: <30% good, 30-50% caution, >50% danger
-      const color     = pct >= 50 ? 'red' : pct >= 30 ? 'amber' : 'green';
-      const healthIcon = pct >= 50 ? '🚨' : pct >= 30 ? '⚠️' : '✓';
-      const avail = (c.limit || 0) - (c.balance || 0);
+      const pct        = c.limit > 0 ? Math.min(100, (c.balance / c.limit) * 100) : 0;
+      const color      = pct >= 50 ? 'red' : pct >= 30 ? 'amber' : 'green';
+      const healthIcon = pct >= 50 ? '&#128680;' : pct >= 30 ? '&#9888;&#65039;' : '&#10003;';
+      const avail      = (c.limit || 0) - (c.balance || 0);
 
       return `
         <details class="card" style="background:var(--bg-tertiary);margin-bottom:10px">
@@ -179,18 +267,23 @@
               </div>
             </div>
 
-            <!-- Recent transactions on this card -->
             ${renderCardTransactions(c.id)}
 
             <div style="display:flex;gap:8px;margin-top:12px">
               <button class="btn btn--secondary btn--sm" style="flex:1"
-                      data-action="edit-card-bal" data-id="${c.id}"
-                      data-name="${esc(c.name)}" data-bal="${c.balance}" data-limit="${c.limit}">
+                      data-action="edit-card-bal"
+                      data-id="${c.id}"
+                      data-name="${esc(c.name)}"
+                      data-bal="${c.balance}"
+                      data-limit="${c.limit}"
+                      data-avail="${avail}">
                 Edit Balance
               </button>
               <button class="btn btn--primary btn--sm" style="flex:1"
-                      data-action="add-payment" data-id="${c.id}"
-                      data-name="${esc(c.name)}" data-bal="${c.balance}">
+                      data-action="add-payment"
+                      data-id="${c.id}"
+                      data-name="${esc(c.name)}"
+                      data-bal="${c.balance}">
                 Add Payment
               </button>
             </div>
@@ -202,12 +295,12 @@
       <details class="card" open>
         <summary>
           <div>
-            <div class="card-title">💳 Credit Cards</div>
-            <div class="card-subtitle">${cards.length} cards · ${fmt(total)} total balance</div>
+            <div class="card-title">&#128179; Credit Cards</div>
+            <div class="card-subtitle">${cards.length} cards &middot; ${fmt(total)} total balance</div>
           </div>
         </summary>
         <div>
-          ${cardHtml || '<p class="text-secondary text-sm">No credit cards. Add them in Setup → Accounts.</p>'}
+          ${cardHtml || '<p class="text-secondary text-sm">No credit cards. Add them in Setup &rarr; Accounts.</p>'}
           <div class="flex-between mt-4" style="padding-top:10px;border-top:1px solid var(--border)">
             <span class="text-secondary font-bold text-sm">Total Debt</span>
             <span class="font-mono font-bold text-red">${fmt(total)}</span>
@@ -216,11 +309,11 @@
       </details>`;
   }
 
-  // Show the last 3 transactions on a card (from state)
+  // Last 5 transactions on a card
   function renderCardTransactions(cardId) {
     const state = App.getState();
     const txs   = (state.transactions || [])
-      .filter(tx => tx.accountId === `card-${cardId}`)
+      .filter(tx => tx.accountId === 'card-' + cardId)
       .slice(-5)
       .reverse();
     if (!txs.length) return '<p class="text-xs text-dim">No transactions on this card yet.</p>';
@@ -228,22 +321,26 @@
       <div style="border-top:1px solid var(--border);padding-top:8px">
         ${txs.map(tx => `
           <div class="flex-between" style="padding:4px 0">
-            <span class="text-xs text-secondary">${tx.date} · ${esc(tx.categoryName || '?')}</span>
+            <span class="text-xs text-secondary">${tx.date} &middot; ${esc(tx.categoryName || '?')}</span>
             <span class="font-mono text-xs text-red">${fmt(tx.amount)}</span>
           </div>`).join('')}
       </div>`;
   }
 
-  // ── Modals ────────────────────────────────────────────────
+  // ── Modal helpers ─────────────────────────────────────────
   function openModal(html, onSubmit) {
     const bd = document.getElementById('modal-backdrop');
     const mc = document.getElementById('modal-content');
     mc.innerHTML = html;
     bd.classList.remove('hidden');
     bd.setAttribute('aria-hidden', 'false');
-    mc.querySelector('[data-action="modal-close"]')?.addEventListener('click', closeModal);
-    mc.querySelector('[data-action="modal-submit"]')?.addEventListener('click', () => onSubmit(mc));
-    bd.addEventListener('click', function h(e) { if (e.target === bd) { closeModal(); bd.removeEventListener('click', h); } });
+    mc.querySelector('[data-action="modal-close"]')
+      .addEventListener('click', closeModal);
+    mc.querySelector('[data-action="modal-submit"]')
+      .addEventListener('click', () => onSubmit(mc));
+    bd.addEventListener('click', function h(e) {
+      if (e.target === bd) { closeModal(); bd.removeEventListener('click', h); }
+    });
     const fi = mc.querySelector('input, select');
     if (fi) setTimeout(() => fi.focus(), 50);
   }
@@ -255,125 +352,324 @@
     document.getElementById('modal-content').innerHTML = '';
   }
 
-  // ── Events ────────────────────────────────────────────────
-  function wireEvents(container, state) {
+  // ── Event wiring ──────────────────────────────────────────
+  function wireEvents(container) {
     container.addEventListener('click', e => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const { action, id, name, bal, limit } = btn.dataset;
+      const ds = btn.dataset;
 
-      switch (action) {
+      switch (ds.action) {
 
+        // ── Inline balance edit (vault or bank) ──────────
+        case 'inline-edit': {
+          const id     = ds.id;
+          const type   = ds.type;
+          const oldVal = parseFloat(ds.bal) || 0;
+          const input  = document.createElement('input');
+          input.type   = 'number';
+          input.step   = '0.01';
+          input.min    = '0';
+          input.value  = oldVal;
+          input.style.cssText = [
+            'width:90px',
+            'font-family:var(--font-mono,monospace)',
+            'font-size:0.9rem',
+            'background:var(--bg-tertiary,#1a1a2e)',
+            'border:1px solid var(--color-primary,#00f0ff)',
+            'border-radius:4px',
+            'padding:2px 6px',
+            'color:var(--text-primary,#e0e0e0)',
+            'text-align:right'
+          ].join(';');
+          btn.replaceWith(input);
+          input.focus();
+          input.select();
+
+          let saved = false;
+          function saveInline() {
+            if (saved) return;
+            saved = true;
+            const val = parseFloat(input.value);
+            if (isNaN(val)) { App.refreshCurrentTab(); return; }
+            const ns = App.Storage.cloneState(App.getState());
+            if (type === 'vault') {
+              const idx = ns.accounts.vaults.findIndex(v => v.id === id);
+              if (idx !== -1) ns.accounts.vaults[idx].balance = val;
+            } else if (type === 'bank') {
+              const idx = ns.accounts.bank.findIndex(a => a.id === id);
+              if (idx !== -1) ns.accounts.bank[idx].balance = val;
+            }
+            App.setState(ns);
+            App.showToast('Saved ✓', 'success');
+          }
+
+          input.addEventListener('blur',    saveInline);
+          input.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter')  { ev.preventDefault(); saveInline(); }
+            if (ev.key === 'Escape') { App.refreshCurrentTab(); }
+          });
+          break;
+        }
+
+        // ── Toggle Transfer Account exclude ──────────────
+        case 'toggle-transfer-exclude': {
+          const ns = App.Storage.cloneState(App.getState());
+          ns.settings = ns.settings || {};
+          ns.settings.excludeTransferFromDeficit = !ns.settings.excludeTransferFromDeficit;
+          App.setState(ns);
+          break;
+        }
+
+        // ── Vault: manual balance edit (no items) ────────
         case 'edit-vault-bal':
           openModal(`
             <div class="modal-header">
-              <div class="modal-title">Update ${esc(name)} Balance</div>
+              <div class="modal-title">Update ${esc(ds.name)} Balance</div>
               <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
             </div>
             <div class="form-group">
               <label>Current Balance ($)</label>
-              <input type="number" id="m-val" value="${bal}" min="0" step="0.01" />
+              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
             const val = parseFloat(mc.querySelector('#m-val').value) || 0;
-            const ns  = App.getState();
-            const idx = ns.accounts.vaults.findIndex(v => v.id === id);
+            const ns  = App.Storage.cloneState(App.getState());
+            const idx = ns.accounts.vaults.findIndex(v => v.id === ds.id);
             if (idx !== -1) ns.accounts.vaults[idx].balance = val;
             App.setState(ns);
             closeModal();
-            App.refreshCurrentTab();
-            App.showToast(`${name} updated ✓`, 'success');
+            App.showToast(ds.name + ' updated ✓', 'success');
           });
           break;
 
+        // ── Vault: add sub-item ──────────────────────────
+        case 'add-vault-item':
+          openModal(`
+            <div class="modal-header">
+              <div class="modal-title">Add Item to ${esc(ds.name)}</div>
+              <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
+            </div>
+            <div class="form-group">
+              <label>Item Name</label>
+              <input type="text" id="m-item-name" placeholder="e.g. Netflix, Claude..." />
+            </div>
+            <div class="form-group mt-8">
+              <label>Amount ($)</label>
+              <input type="number" id="m-item-amt" value="0" min="0" step="0.01" />
+            </div>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add Item</button>
+          `, mc => {
+            const name = mc.querySelector('#m-item-name').value.trim();
+            const amt  = parseFloat(mc.querySelector('#m-item-amt').value) || 0;
+            if (!name) { App.showToast('Enter a name', 'error'); return; }
+            const ns  = App.Storage.cloneState(App.getState());
+            const idx = ns.accounts.vaults.findIndex(v => v.id === ds.id);
+            if (idx !== -1) {
+              if (!ns.accounts.vaults[idx].items) ns.accounts.vaults[idx].items = [];
+              ns.accounts.vaults[idx].items.push({
+                id: App.Storage.generateId(), name: name, amount: amt
+              });
+              // Keep balance in sync for consumers that read vault.balance directly
+              ns.accounts.vaults[idx].balance =
+                ns.accounts.vaults[idx].items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+            }
+            App.setState(ns);
+            closeModal();
+            App.showToast('Item added ✓', 'success');
+          });
+          break;
+
+        // ── Vault: edit sub-item ─────────────────────────
+        case 'edit-vault-item':
+          openModal(`
+            <div class="modal-header">
+              <div class="modal-title">Edit ${esc(ds.itemName)}</div>
+              <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
+            </div>
+            <div class="form-group">
+              <label>Item Name</label>
+              <input type="text" id="m-item-name" value="${esc(ds.itemName)}" />
+            </div>
+            <div class="form-group mt-8">
+              <label>Amount ($)</label>
+              <input type="number" id="m-item-amt" value="${ds.itemAmount}" min="0" step="0.01" />
+            </div>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
+          `, mc => {
+            const name = mc.querySelector('#m-item-name').value.trim();
+            const amt  = parseFloat(mc.querySelector('#m-item-amt').value) || 0;
+            if (!name) { App.showToast('Enter a name', 'error'); return; }
+            const ns = App.Storage.cloneState(App.getState());
+            const vi = ns.accounts.vaults.findIndex(v => v.id === ds.vaultId);
+            if (vi !== -1) {
+              const ii = ns.accounts.vaults[vi].items.findIndex(i => i.id === ds.itemId);
+              if (ii !== -1) {
+                ns.accounts.vaults[vi].items[ii].name   = name;
+                ns.accounts.vaults[vi].items[ii].amount = amt;
+              }
+              ns.accounts.vaults[vi].balance =
+                ns.accounts.vaults[vi].items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+            }
+            App.setState(ns);
+            closeModal();
+            App.showToast('Item updated ✓', 'success');
+          });
+          break;
+
+        // ── Vault: delete sub-item ───────────────────────
+        case 'delete-vault-item': {
+          if (!confirm('Delete "' + ds.itemName + '" from this vault?')) break;
+          const ns = App.Storage.cloneState(App.getState());
+          const vi = ns.accounts.vaults.findIndex(v => v.id === ds.vaultId);
+          if (vi !== -1) {
+            ns.accounts.vaults[vi].items =
+              ns.accounts.vaults[vi].items.filter(i => i.id !== ds.itemId);
+            ns.accounts.vaults[vi].balance =
+              ns.accounts.vaults[vi].items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+          }
+          App.setState(ns);
+          App.showToast('Item removed ✓', 'success');
+          break;
+        }
+
+        // ── Bank: edit balance ───────────────────────────
         case 'edit-bank-bal':
           openModal(`
             <div class="modal-header">
-              <div class="modal-title">Update ${esc(name)} Balance</div>
+              <div class="modal-title">Update ${esc(ds.name)} Balance</div>
               <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
             </div>
             <div class="form-group">
               <label>Current Balance ($)</label>
-              <input type="number" id="m-val" value="${bal}" min="0" step="0.01" />
+              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
             const val = parseFloat(mc.querySelector('#m-val').value) || 0;
-            const ns  = App.getState();
-            const idx = ns.accounts.bank.findIndex(a => a.id === id);
+            const ns  = App.Storage.cloneState(App.getState());
+            const idx = ns.accounts.bank.findIndex(a => a.id === ds.id);
             if (idx !== -1) ns.accounts.bank[idx].balance = val;
             App.setState(ns);
             closeModal();
-            App.refreshCurrentTab();
-            App.showToast(`${name} updated ✓`, 'success');
+            App.showToast(ds.name + ' updated ✓', 'success');
           });
           break;
 
-        case 'edit-card-bal':
+        // ── Card: edit by balance OR available credit ────
+        // Both fields are shown. Entering one auto-calculates the other.
+        // Balance = Limit - Available Credit
+        case 'edit-card-bal': {
           openModal(`
             <div class="modal-header">
-              <div class="modal-title">Update ${esc(name)}</div>
+              <div class="modal-title">Update ${esc(ds.name)}</div>
               <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
             </div>
-            <div class="form-row">
+            <div class="form-group">
+              <label>Credit Limit ($)</label>
+              <input type="number" id="m-lim" value="${ds.limit}" min="0" step="1" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
               <div class="form-group">
-                <label>Current Balance ($)</label>
-                <input type="number" id="m-bal" value="${bal}" min="0" step="0.01" />
+                <label style="color:var(--color-success)">Available Credit ($)</label>
+                <input type="number" id="m-avail" value="${ds.avail}" min="0" step="0.01"
+                       style="border-color:var(--color-success)" />
               </div>
               <div class="form-group">
-                <label>Credit Limit ($)</label>
-                <input type="number" id="m-lim" value="${limit}" min="0" step="1" />
+                <label style="color:var(--color-danger)">Balance ($)</label>
+                <input type="number" id="m-bal" value="${ds.bal}" min="0" step="0.01"
+                       style="border-color:var(--color-danger)" />
               </div>
             </div>
+            <p class="text-xs text-secondary mt-4">Enter either field &mdash; the other updates automatically.</p>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
-            const newBal = parseFloat(mc.querySelector('#m-bal').value) || 0;
-            const newLim = parseFloat(mc.querySelector('#m-lim').value) || 0;
-            const ns     = App.getState();
-            const idx    = ns.accounts.cards.findIndex(c => c.id === id);
-            if (idx !== -1) { ns.accounts.cards[idx].balance = newBal; ns.accounts.cards[idx].limit = newLim; }
+            const newLim = parseFloat(mc.querySelector('#m-lim').value)   || 0;
+            const newBal = parseFloat(mc.querySelector('#m-bal').value)   || 0;
+            const ns     = App.Storage.cloneState(App.getState());
+            const idx    = ns.accounts.cards.findIndex(c => c.id === ds.id);
+            if (idx !== -1) {
+              ns.accounts.cards[idx].balance = newBal;
+              ns.accounts.cards[idx].limit   = newLim;
+            }
             App.setState(ns);
             closeModal();
-            App.refreshCurrentTab();
-            App.showToast(`${name} updated ✓`, 'success');
+            App.showToast(ds.name + ' updated ✓', 'success');
           });
-          break;
 
+          // Wire live sync after modal renders
+          setTimeout(function() {
+            const mc      = document.getElementById('modal-content');
+            if (!mc) return;
+            const limEl   = mc.querySelector('#m-lim');
+            const availEl = mc.querySelector('#m-avail');
+            const balEl   = mc.querySelector('#m-bal');
+            if (!limEl || !availEl || !balEl) return;
+
+            availEl.addEventListener('input', function() {
+              const lim   = parseFloat(limEl.value)   || 0;
+              const avail = parseFloat(availEl.value) || 0;
+              balEl.value = Math.max(0, lim - avail).toFixed(2);
+            });
+            balEl.addEventListener('input', function() {
+              const lim = parseFloat(limEl.value) || 0;
+              const bal = parseFloat(balEl.value) || 0;
+              availEl.value = Math.max(0, lim - bal).toFixed(2);
+            });
+            limEl.addEventListener('input', function() {
+              const lim = parseFloat(limEl.value) || 0;
+              const bal = parseFloat(balEl.value) || 0;
+              availEl.value = Math.max(0, lim - bal).toFixed(2);
+            });
+          }, 60);
+          break;
+        }
+
+        // ── Card: record payment ─────────────────────────
         case 'add-payment':
           openModal(`
             <div class="modal-header">
-              <div class="modal-title">Payment — ${esc(name)}</div>
+              <div class="modal-title">Payment &mdash; ${esc(ds.name)}</div>
               <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
             </div>
-            <p class="text-secondary text-sm mb-12">Current balance: <strong>${fmt(Number(bal))}</strong></p>
+            <p class="text-secondary text-sm mb-12">Current balance: <strong>${fmt(Number(ds.bal))}</strong></p>
             <div class="form-group">
               <label>Payment Amount ($)</label>
-              <input type="number" id="m-pay" value="${bal}" min="0" step="0.01" />
+              <input type="number" id="m-pay" value="${ds.bal}" min="0" step="0.01" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Record Payment</button>
           `, mc => {
             const payment = parseFloat(mc.querySelector('#m-pay').value) || 0;
-            const ns      = App.getState();
-            const idx     = ns.accounts.cards.findIndex(c => c.id === id);
+            const ns      = App.Storage.cloneState(App.getState());
+            const idx     = ns.accounts.cards.findIndex(c => c.id === ds.id);
             if (idx !== -1) {
               ns.accounts.cards[idx].balance = Math.max(0, ns.accounts.cards[idx].balance - payment);
             }
             App.setState(ns);
             closeModal();
-            App.refreshCurrentTab();
-            App.showToast(`${fmt(payment)} payment recorded ✓`, 'success');
+            App.showToast(fmt(payment) + ' payment recorded ✓', 'success');
           });
           break;
       }
     });
   }
 
+  // HTML escape helper
   function esc(s) {
-    return String(s || '').replace(/[&<>"']/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
   }
 
   App.Accounts = { render };
 
 })(window.App = window.App || {});
+          input.step   = '0.01';
+          input.min    = '0';
+          input.value  = oldVal;
+          input.style.cssText = [
+            'width:90px',
+            'font-family:var(--font-mono,monospace)',
+            'font-size:0.9rem',
+            'background:var(--bg-te

@@ -196,26 +196,37 @@
         // Envelope vaults — all 20 from House_Budgetper.xlsx Bank Accounts sheet (May 2026).
         // Total should reconcile to SoFi online balance.
         vaults: [
-          { id: generateId(), name: 'Gasoline',         balance: 250.00   },
-          { id: generateId(), name: 'Asamblea',         balance: 872.21   },
-          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52  },
-          { id: generateId(), name: 'Entertainment',    balance: 300.00   },
-          { id: generateId(), name: 'Food',             balance: 750.00   },
-          { id: generateId(), name: 'Car Maintenance',  balance: 247.99   },
-          { id: generateId(), name: 'Eversource',       balance: 274.71   },
-          { id: generateId(), name: 'CNG',              balance: 102.63   },
-          { id: generateId(), name: 'Car Taxes',        balance: 268.69   },
-          { id: generateId(), name: 'Hold Account',     balance: 183.99   },
-          { id: generateId(), name: 'Slush Fund',       balance: 32.00    },
-          { id: generateId(), name: 'Amica Insurance',  balance: 0.72     },
-          { id: generateId(), name: 'Vacation Fund',    balance: 0.00     },
-          { id: generateId(), name: 'Yamel Personal',   balance: 0.00     },
-          { id: generateId(), name: 'David Personal',   balance: 0.00     },
-          { id: generateId(), name: 'Investing',        balance: 0.00     },
-          { id: generateId(), name: 'Clothing',         balance: 0.00     },
-          { id: generateId(), name: 'Taxes',            balance: 17.30    },
-          { id: generateId(), name: 'Emergency',        balance: 0.00     },
-          { id: generateId(), name: 'Misc',             balance: 0.00     }
+          { id: generateId(), name: 'Gasoline',         balance: 250.00,  items: [] },
+          { id: generateId(), name: 'Asamblea',         balance: 872.21,  items: [] },
+          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52, items: [] },
+          { id: generateId(), name: 'Entertainment',    balance: 300.00,  items: [] },
+          { id: generateId(), name: 'Food',             balance: 750.00,  items: [] },
+          { id: generateId(), name: 'Car Maintenance',  balance: 247.99,  items: [] },
+          { id: generateId(), name: 'Eversource',       balance: 274.71,  items: [] },
+          { id: generateId(), name: 'CNG',              balance: 102.63,  items: [] },
+          { id: generateId(), name: 'Car Taxes',        balance: 268.69,  items: [] },
+          { id: generateId(), name: 'Hold Account',     balance: 183.99,  items: [
+            { id: generateId(), name: 'Viki',       amount: 6.99  },
+            { id: generateId(), name: 'YouTube',    amount: 22.99 },
+            { id: generateId(), name: 'Netflix',    amount: 10.00 },
+            { id: generateId(), name: 'ChatGPT',    amount: 22.00 },
+            { id: generateId(), name: 'Claude',     amount: 22.00 },
+            { id: generateId(), name: 'Apple',      amount: 3.99  },
+            { id: generateId(), name: 'Cox',        amount: 30.00 },
+            { id: generateId(), name: 'Visible',    amount: 25.00 },
+            { id: generateId(), name: 'Microsoft',  amount: 9.99  },
+            { id: generateId(), name: 'Costco',     amount: 31.03 }
+          ]},
+          { id: generateId(), name: 'Slush Fund',       balance: 32.00,   items: [] },
+          { id: generateId(), name: 'Amica Insurance',  balance: 0.72,    items: [] },
+          { id: generateId(), name: 'Vacation Fund',    balance: 0.00,    items: [] },
+          { id: generateId(), name: 'Yamel Personal',   balance: 0.00,    items: [] },
+          { id: generateId(), name: 'David Personal',   balance: 0.00,    items: [] },
+          { id: generateId(), name: 'Investing',        balance: 0.00,    items: [] },
+          { id: generateId(), name: 'Clothing',         balance: 0.00,    items: [] },
+          { id: generateId(), name: 'Taxes',            balance: 17.30,   items: [] },
+          { id: generateId(), name: 'Emergency',        balance: 0.00,    items: [] },
+          { id: generateId(), name: 'Misc',             balance: 0.00,    items: [] }
         ],
 
         // All 10 credit cards — balances from House_Budgetper.xlsx May 2026.
@@ -286,7 +297,8 @@
       // ── App settings ───────────────────────────────────
       settings: {
         theme:    'dark-neon', // 'dark-neon' | 'light' | 'system'
-        currency: 'USD'
+        currency: 'USD',
+        excludeTransferFromDeficit: false  // when true, Transfer Account ignored in CC coverage calc
       }
     };
   }
@@ -317,7 +329,16 @@
     if (state.settings && !state.settings.theme) {
       state.settings.theme = 'dark-neon';
     }
-    state.version = '1.1';
+    // v1.1 -> v1.2: vault sub-items + transfer exclude toggle
+    if (state.accounts && state.accounts.vaults) {
+      state.accounts.vaults.forEach(function(v) {
+        if (!v.items) v.items = [];
+      });
+    }
+    if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
+      state.settings.excludeTransferFromDeficit = false;
+    }
+    state.version = '1.2';
     return state;
   }
 
@@ -439,3 +460,5 @@
   };
 
 })(window.App = window.App || {});
+
+ 
