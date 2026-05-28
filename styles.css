@@ -1123,3 +1123,96 @@ input[type="checkbox"] {
 }
 
 .sts-val { font-family: var(--font-mono); }
+
+/* ── Net Worth card with liquidity tiers (Step 8) ──────────── */
+.nw-card { padding: 20px 16px; }
+
+.nw-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.nw-total {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.nw-tiers {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nw-tier {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+}
+
+.nw-tier-icon { font-size: 0.95rem; }
+.nw-tier-val  { font-family: var(--font-mono); text-align: right; }
+
+.nw-tier--debt {
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.nw-tier--net {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+/* ── Card health alert (Step 9) ────────────────────────────── */
+.card-alert {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: rgba(255,176,0,0.08);
+  border: 1px solid rgba(255,176,0,0.3);
+  border-radius: 8px;
+}
+
+.ca-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--neon-amber);
+  margin-bottom: 6px;
+}
+
+.ca-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+
+/* ── Upcoming changes card (Step 10) ───────────────────────── */
+.uc-list { display: flex; flex-direction: column; gap: 8px; }
+
+.uc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(42,51,70,0.5);
+}
+.uc-row:last-child { border-bottom: none; }

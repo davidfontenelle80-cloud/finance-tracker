@@ -144,7 +144,9 @@
 
     const cardHtml = cards.map(c => {
       const pct   = c.limit > 0 ? Math.min(100, (c.balance / c.limit) * 100) : 0;
-      const color = pct > 75 ? 'red' : pct > 40 ? 'amber' : 'green';
+      // Health thresholds from spec: <30% good, 30-50% caution, >50% danger
+      const color     = pct >= 50 ? 'red' : pct >= 30 ? 'amber' : 'green';
+      const healthIcon = pct >= 50 ? '🚨' : pct >= 30 ? '⚠️' : '✓';
       const avail = (c.limit || 0) - (c.balance || 0);
 
       return `
@@ -157,7 +159,7 @@
                   <span class="text-${color} font-bold">${fmt(c.balance)}</span>
                   <span class="text-secondary"> / ${fmt(c.limit)}</span>
                 </span>
-                <span class="badge badge--${color}">${pct.toFixed(0)}% used</span>
+                <span class="badge badge--${color}">${healthIcon} ${pct.toFixed(0)}% used</span>
               </div>
               <div class="progress-bar mt-6">
                 <div class="progress-bar__fill progress-bar__fill--${color}" style="width:${pct.toFixed(1)}%"></div>

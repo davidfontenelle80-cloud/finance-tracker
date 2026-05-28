@@ -53,20 +53,29 @@
   // ── Net worth calculation ─────────────────────────────────
   function calcNetWorthComponents(state) {
     const accts = state.accounts || {};
+    const bank  = accts.bank || [];
 
-    // Cash = all bank accounts
-    const cash = (accts.bank || []).reduce((s, a) => s + (Number(a.balance) || 0), 0);
+    // Liquidity tiers for bank accounts
+    const liquid    = bank.filter(a => a.liquidityTier === 'immediate' || !a.liquidityTier);
+    const shortTerm = bank.filter(a => a.liquidityTier === 'short');
+    const locked    = bank.filter(a => a.liquidityTier === 'locked');
+
+    const liquidCash    = liquid.reduce(   (s, a) => s + (Number(a.balance) || 0), 0);
+    const shortCash     = shortTerm.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+    const cash          = bank.reduce(     (s, a) => s + (Number(a.balance) || 0), 0);
 
     // Debt = all credit card balances
     const debt = (accts.cards || []).reduce((s, c) => s + (Number(c.balance) || 0), 0);
 
-    // Investments = all holdings × price
-    const investments = ((state.investments || {}).accounts || []).reduce((acctSum, a) => {
+    // Investments = all holdings × price + locked bank (Roth etc)
+    const holdingsValue = ((state.investments || {}).accounts || []).reduce((acctSum, a) => {
       return acctSum + (a.holdings || []).reduce((s, h) =>
         s + ((h.shares || 0) * (h.price || 0)), 0);
     }, 0);
+    const lockedCash   = locked.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+    const investments  = holdingsValue + lockedCash;
 
-    return { investments, cash, debt };
+    return { investments, cash, debt, liquidCash, shortCash, holdingsValue, lockedCash };
   }
   // ── Safe to Spend calculation ─────────────────────────────
   // "How much can I actually spend today without breaking anything?"
@@ -140,9 +149,94 @@
     `;
   }
 
+  // ── Net Worth card with liquidity tiers (Step 8) ────────
+  function buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass) {
+    const { liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
+    const cardAlert = buildCardHealthAlert(state);
+    return `
+      <div class="card card--glow-cyan nw-card">
+        <div class="nw-title">TOTAL NET WORTH</div>
+        <div class="nw-total ${nwClass}">${fmt(netWorth)}</div>
+        <div class="nw-tiers">
+          <div class="nw-tier">
+            <span class="nw-tier-icon">💵</span>
+            <span class="nw-tier-label">Liquid (checking)</span>
+            <span class="nw-tier-val">${fmt(liquidCash)}</span>
+          </div>
+          <div class="nw-tier">
+            <span class="nw-tier-icon">🏦</span>
+            <span class="nw-tier-label">Available (savings)</span>
+            <span class="nw-tier-val">${fmt(shortCash)}</span>
+          </div>
+          <div class="nw-tier">
+            <span class="nw-tier-icon">📈</span>
+            <span class="nw-tier-label">Invested</span>
+            <span class="nw-tier-val">${fmt(holdingsValue)}</span>
+          </div>
+          <div class="nw-tier nw-tier--debt">
+            <span class="nw-tier-icon">💳</span>
+            <span class="nw-tier-label">Less: card debt</span>
+            <span class="nw-tier-val text-red">− ${fmt(debt)}</span>
+          </div>
+          <div class="nw-tier nw-tier--net">
+            <span></span>
+            <span class="nw-tier-label font-bold">Net Worth</span>
+            <span class="nw-tier-val font-bold ${nwClass}">${fmt(netWorth)}</span>
+          </div>
+        </div>
+        ${cardAlert}
+      </div>
+    `;
+  }
+
+  // ── Per-card health alert (Step 9) ────────────────────────
+  // Surface on Dashboard if any card is at warning or danger utilization.
+  function buildCardHealthAlert(state) {
+    const cards = (state.accounts && state.accounts.cards) || [];
+    const problem = cards.filter(c => {
+      if (!c.limit || c.balance <= 0) return false;
+      return (c.balance / c.limit) >= 0.30;
+    });
+    if (!problem.length) return '';
+    const rows = problem.map(c => {
+      const pct = (c.balance / c.limit) * 100;
+      const icon = pct >= 50 ? '🚨' : '⚠️';
+      return `<div class="ca-row"><span>${icon} ${c.name}</span><span class="font-mono">${pct.toFixed(0)}% used</span></div>`;
+    }).join('');
+    return `<div class="card-alert"><div class="ca-title">Credit Card Alerts</div>${rows}</div>`;
+  }
+
+  // ── Upcoming expense changes (Step 10) ──────────────────
+  function buildUpcomingChanges(state) {
+    const fixed = state.fixedMonthlyExpenses || [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const in30  = new Date(today); in30.setDate(in30.getDate() + 30);
+
+    const upcoming = fixed.filter(f => {
+      if (!f.effectiveDate) return false;
+      const eff = new Date(f.effectiveDate + 'T12:00:00');
+      return eff > today && eff <= in30;
+    }).sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
+
+    if (!upcoming.length) return '';
+
+    const rows = upcoming.map(f => {
+      const d = new Date(f.effectiveDate + 'T12:00:00');
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `<div class="uc-row"><span>${label}: ${f.name}</span><span class="font-mono text-amber">${fmt(f.amount)}</span></div>`;
+    }).join('');
+
+    return `
+      <div class="card">
+        <div class="card-title">📅 Upcoming Changes</div>
+        <div class="uc-list">${rows}</div>
+      </div>
+    `;
+  }
+
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
-    const { investments, cash, debt } = calcNetWorthComponents(state);
+    const { investments, cash, debt, liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
     const netWorth = investments + cash - debt;
     const nwClass  = netWorth >= 0 ? 'text-cyan' : 'text-red';
 
@@ -171,25 +265,8 @@
     const yearOptions = buildYearOptions(state);
 
     return `
-      <!-- Net worth hero card -->
-      <div class="card card--glow-cyan" style="text-align:center;padding:24px 16px">
-        <div class="text-secondary text-xs font-bold" style="text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Net Worth</div>
-        <div class="${nwClass}" style="font-size:2.2rem;font-weight:800;font-family:var(--font-mono)">${fmt(netWorth)}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-          <div>
-            <div class="text-xs text-secondary">Investments</div>
-            <div class="font-mono font-bold text-magenta">${fmt0(investments)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-secondary">Cash</div>
-            <div class="font-mono font-bold text-cyan">${fmt0(cash)}</div>
-          </div>
-          <div>
-            <div class="text-xs text-secondary">Debt</div>
-            <div class="font-mono font-bold text-red">${fmt0(debt)}</div>
-          </div>
-        </div>
-      </div>
+      <!-- Net worth hero card with liquidity tiers -->
+      ${buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass)}
 
 
       <!-- Safe to Spend card -->
@@ -221,6 +298,10 @@
           </div>
         </div>
       </div>
+
+
+      <!-- Upcoming expense changes (Step 10) -->
+      ${buildUpcomingChanges(state)}
 
       <!-- Year selector -->
       <div class="flex-between mb-8" style="margin-top:8px">
