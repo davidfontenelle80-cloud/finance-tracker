@@ -259,15 +259,136 @@
       App.showToast('Paycheck allocated — ' + fmt(available) + ' distributed.', 'success');
       _mode = 'paycheck';
       renderPaycheckArrived(App.getState(), container);
+      showAdvanceFundingBanner(App.getState(), container);
     });
   }
 
   // Suggested allocations: per-paycheck amounts from yearly categories
   function getSuggestedAllocations(state, available) {
-    const cats    = state.yearlyCategories || [];
-    const perYear = 26;
+    const cats      = state.yearlyCategories || [];
+    const overrides = state.allocationOverrides || {};
+    const perYear   = 26;
     return cats.map(function(c) {
-      return { name: c.name, amount: Math.round((c.annualGoal / perYear) * 100) / 100 };
+      // Check if user previously chose to reduce contributions for this category
+      const ov = overrides[c.id];
+      let amount;
+      if (ov && ov.reducedAmount !== undefined) {
+        // Use reduced amount until vault comes back to pace, then revert
+        const pace = calcVaultPace(state, c);
+        if (pace && pace.aheadBy > 0) {
+          amount = ov.reducedAmount;
+        } else {
+          // Back on pace — clear the override and use normal amount
+          amount = Math.round((c.annualGoal / perYear) * 100) / 100;
+          // Note: can't mutate state here; override will clear on next Execute
+        }
+      } else {
+        amount = Math.round((c.annualGoal / perYear) * 100) / 100;
+      }
+      return { id: c.id, name: c.name, amount: amount, annualGoal: c.annualGoal };
+    });
+  }
+
+  // Calculate how far ahead of pace a vault/category is.
+  // Returns { onPace, aheadBy, paychecksAhead, expectedBalance, actualBalance } or null.
+  function calcVaultPace(state, cat) {
+    if (!cat || !cat.annualGoal) return null;
+    const paydayDates   = (state.income && state.income.paydayDates) || [];
+    const perYear       = state.income && state.income.paychecksPerYear ? state.income.paychecksPerYear : 26;
+    const today         = new Date(); today.setHours(0, 0, 0, 0);
+
+    // Count how many paychecks have passed so far this year
+    const paychecksSoFar = paydayDates.filter(function(d) {
+      return new Date(d + 'T12:00:00') <= today;
+    }).length;
+
+    if (paychecksSoFar === 0) return null;
+
+    const perPaycheck    = cat.annualGoal / perYear;
+    const expectedBalance = Math.round(perPaycheck * paychecksSoFar * 100) / 100;
+
+    // Find matching vault balance
+    const vaults = (state.accounts && state.accounts.vaults) || [];
+    const vault  = vaults.find(function(v) {
+      return v.name.toLowerCase() === cat.name.toLowerCase();
+    });
+    if (!vault) return null;
+
+    const actualBalance  = vault.balance || 0;
+    const aheadBy        = Math.round((actualBalance - expectedBalance) * 100) / 100;
+    const paychecksAhead = aheadBy > 0 ? Math.round((aheadBy / perPaycheck) * 10) / 10 : 0;
+
+    return { onPace: aheadBy <= 0, aheadBy, paychecksAhead, expectedBalance, actualBalance, perPaycheck };
+  }
+
+  // After a paycheck execute or vault fund, scan all categories for ahead-of-pace.
+  // Returns array of { cat, pace } for any vault >= 0.5 paychecks ahead.
+  function findAheadOfPaceVaults(state) {
+    const cats = state.yearlyCategories || [];
+    const ahead = [];
+    cats.forEach(function(c) {
+      const pace = calcVaultPace(state, c);
+      if (pace && pace.paychecksAhead >= 0.5) {
+        ahead.push({ cat: c, pace: pace });
+      }
+    });
+    return ahead;
+  }
+
+  // Show advance funding banner inside a workflow container.
+  // Called after Paycheck Execute and Fund Vault Execute.
+  function showAdvanceFundingBanner(state, container) {
+    const ahead = findAheadOfPaceVaults(state);
+    if (!ahead.length) return;
+
+    // Remove any existing banner
+    const old = container.querySelector('.advance-funding-banner');
+    if (old) old.remove();
+
+    const fmt2 = function(n) { return '$' + (parseFloat(n)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+
+    const rows = ahead.map(function(item) {
+      const label = item.pace.paychecksAhead.toFixed(1) + ' paychecks ahead';
+      return '<div class="afb-row" data-cat-id="' + item.cat.id + '" data-reduction="' + item.pace.perPaycheck.toFixed(2) + '">' +
+        '<div class="afb-info">' +
+          '<span class="afb-name">' + item.cat.name + '</span>' +
+          '<span class="afb-detail">' + label + ' · reduce next by ' + fmt2(item.pace.perPaycheck) + '?</span>' +
+        '</div>' +
+        '<div class="afb-btns">' +
+          '<button class="afb-yes btn-secondary" data-cat-id="' + item.cat.id + '" data-reduction="' + item.pace.perPaycheck.toFixed(2) + '">Reduce</button>' +
+          '<button class="afb-no btn-secondary" data-cat-id="' + item.cat.id + '">Keep</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    const banner = document.createElement('div');
+    banner.className = 'advance-funding-banner';
+    banner.innerHTML =
+      '<div class="afb-title">🎯 Ahead of Pace</div>' +
+      rows;
+
+    container.insertBefore(banner, container.firstChild);
+
+    // Wire buttons
+    banner.querySelectorAll('.afb-yes').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const catId    = btn.dataset.catId;
+        const reduction = parseFloat(btn.dataset.reduction) || 0;
+        const s = App.Storage.cloneState(App.getState());
+        if (!s.allocationOverrides) s.allocationOverrides = {};
+        s.allocationOverrides[catId] = { reducedAmount: 0, setAt: new Date().toISOString() };
+        App.setState(s);
+        btn.closest('.afb-row').remove();
+        App.showToast('Next allocation for this category set to $0 until back on pace.', 'success');
+        if (!banner.querySelectorAll('.afb-row').length) banner.remove();
+      });
+    });
+
+    banner.querySelectorAll('.afb-no').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.closest('.afb-row').remove();
+        if (!banner.querySelectorAll('.afb-row').length) banner.remove();
+      });
     });
   }
 
@@ -621,6 +742,7 @@
       App.showToast('Funded ' + vault.name + ' with ' + fmt(amt), 'success');
       _mode = 'fundvault';
       renderFundVault(App.getState(), container);
+      showAdvanceFundingBanner(App.getState(), container);
     });
   }
 

@@ -1281,3 +1281,70 @@ input[type="checkbox"] {
 .card {
   transition: background-color 0.3s, border-color 0.2s;
 }
+
+/* ── Advance Funding Banner (Step 12) ──────────────────────── */
+.advance-funding-banner {
+  background: rgba(255,176,0,0.08);
+  border: 1px solid rgba(255,176,0,0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.afb-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--neon-amber);
+  margin-bottom: 10px;
+}
+
+.afb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,176,0,0.15);
+}
+
+.afb-row:last-child { border-bottom: none; }
+
+.afb-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.afb-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.afb-detail {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.afb-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.afb-yes {
+  background: rgba(0,255,136,0.12);
+  border-color: var(--neon-green) !important;
+  color: var(--neon-green) !important;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
+
+.afb-no {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
