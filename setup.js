@@ -512,6 +512,17 @@
       </div>
 
       <div class="card">
+        <div class="card-title mb-8">🎯 Goal Completion</div>
+        <div class="text-secondary text-sm mb-12">When a yearly goal vault is fully funded, redirect future paycheck allocations to:</div>
+        <select id="goal-redirect-sel" class="form-control">
+          <option value="skip"     ${(state.settings.goalCompletionRedirect||'skip')==='skip'     ? 'selected':''}>⏭ Skip — keep money in Transfer Account</option>
+          <option value="next"     ${(state.settings.goalCompletionRedirect||'skip')==='next'     ? 'selected':''}>➡ Next underfunded goal</option>
+          <option value="slush"    ${(state.settings.goalCompletionRedirect||'skip')==='slush'    ? 'selected':''}>🪣 Slush fund vault</option>
+        </select>
+        <button class="btn btn--primary mt-12" data-action="save-goal-redirect">Save Preference</button>
+      </div>
+
+      <div class="card">
         <div class="card-title mb-8">🗑 Danger Zone</div>
         <button class="btn btn--danger btn--full" data-action="clear-all-data">Clear All Data</button>
         <div class="text-secondary text-xs mt-8">Permanently deletes all data. You will be asked to confirm twice.</div>

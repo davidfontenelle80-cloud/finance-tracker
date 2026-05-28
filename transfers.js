@@ -125,9 +125,10 @@
       const available = parseFloat(amtInput.value) || 0;
       const allocs = getSuggestedAllocations(state, available);
       allocList.innerHTML = allocs.map(function(a, i) {
-        return '<div class="alloc-row" data-idx="' + i + '">' +
-          '<input type="checkbox" class="alloc-check" checked />' +
-          '<span class="alloc-name">' + a.name + '</span>' +
+        const completeBadge = a.complete ? ' <span class="badge badge--green" style="font-size:0.65rem">✓ Done</span>' : '';
+        return '<div class="alloc-row' + (a.complete ? ' alloc-complete' : '') + '" data-idx="' + i + '">' +
+          '<input type="checkbox" class="alloc-check"' + (a.complete ? '' : ' checked') + ' />' +
+          '<span class="alloc-name">' + a.name + completeBadge + '</span>' +
           '<input type="number" class="alloc-amount" value="' + a.amount.toFixed(2) + '" min="0" step="0.01" />' +
           '</div>';
       }).join('');
@@ -260,6 +261,7 @@
       _mode = 'paycheck';
       renderPaycheckArrived(App.getState(), container);
       showAdvanceFundingBanner(App.getState(), container);
+      showGoalCompletionNotice(App.getState(), container);
     });
   }
 
@@ -267,26 +269,57 @@
   function getSuggestedAllocations(state, available) {
     const cats      = state.yearlyCategories || [];
     const overrides = state.allocationOverrides || {};
+    const vaults    = (state.accounts && state.accounts.vaults) || [];
+    const redirect  = (state.settings && state.settings.goalCompletionRedirect) || 'skip';
     const perYear   = 26;
-    return cats.map(function(c) {
-      // Check if user previously chose to reduce contributions for this category
+
+    const results = cats.map(function(c) {
+      const normalAmount = Math.round((c.annualGoal / perYear) * 100) / 100;
+
+      // Check if this vault is fully funded for the year
+      const vault = vaults.find(function(v) {
+        return v.name.toLowerCase() === c.name.toLowerCase();
+      });
+      const isComplete = vault && vault.balance >= c.annualGoal;
+
+      if (isComplete) {
+        // Goal complete — amount depends on redirect setting
+        return { id: c.id, name: c.name, amount: 0, annualGoal: c.annualGoal, complete: true };
+      }
+
+      // Check advance-funding override
       const ov = overrides[c.id];
       let amount;
       if (ov && ov.reducedAmount !== undefined) {
-        // Use reduced amount until vault comes back to pace, then revert
         const pace = calcVaultPace(state, c);
-        if (pace && pace.aheadBy > 0) {
-          amount = ov.reducedAmount;
-        } else {
-          // Back on pace — clear the override and use normal amount
-          amount = Math.round((c.annualGoal / perYear) * 100) / 100;
-          // Note: can't mutate state here; override will clear on next Execute
-        }
+        amount = (pace && pace.aheadBy > 0) ? ov.reducedAmount : normalAmount;
       } else {
-        amount = Math.round((c.annualGoal / perYear) * 100) / 100;
+        amount = normalAmount;
       }
-      return { id: c.id, name: c.name, amount: amount, annualGoal: c.annualGoal };
+
+      return { id: c.id, name: c.name, amount: amount, annualGoal: c.annualGoal, complete: false };
     });
+
+    // Handle redirect: if any category is complete, find redirect target
+    const completeIds  = results.filter(function(r) { return r.complete; }).map(function(r) { return r.id; });
+    const totalRedirect = completeIds.reduce(function(sum, id) {
+      const cat = cats.find(function(c) { return c.id === id; });
+      return sum + (cat ? Math.round((cat.annualGoal / perYear) * 100) / 100 : 0);
+    }, 0);
+
+    if (totalRedirect > 0 && redirect !== 'skip') {
+      if (redirect === 'next') {
+        // Find the first underfunded non-complete category and add the redirected amount
+        const target = results.find(function(r) { return !r.complete; });
+        if (target) target.amount = Math.round((target.amount + totalRedirect) * 100) / 100;
+      } else if (redirect === 'slush') {
+        // Add to a Slush entry (create a synthetic row if needed)
+        const slush = results.find(function(r) { return /slush/i.test(r.name); });
+        if (slush) slush.amount = Math.round((slush.amount + totalRedirect) * 100) / 100;
+      }
+    }
+
+    return results;
   }
 
   // Calculate how far ahead of pace a vault/category is.
@@ -333,6 +366,34 @@
       }
     });
     return ahead;
+  }
+
+  // Show goal completion notice after paycheck execute
+  function showGoalCompletionNotice(state, container) {
+    const cats   = state.yearlyCategories || [];
+    const vaults = (state.accounts && state.accounts.vaults) || [];
+    const done   = cats.filter(function(c) {
+      const vault = vaults.find(function(v) {
+        return v.name.toLowerCase() === c.name.toLowerCase();
+      });
+      return vault && vault.balance >= c.annualGoal;
+    });
+    if (!done.length) return;
+
+    const old = container.querySelector('.goal-complete-notice');
+    if (old) old.remove();
+
+    const notice = document.createElement('div');
+    notice.className = 'goal-complete-notice';
+    notice.innerHTML =
+      '<div class="gcn-title">🏆 Goal Complete!</div>' +
+      done.map(function(c) {
+        return '<div class="gcn-row">✓ ' + c.name + ' — fully funded for the year</div>';
+      }).join('');
+    container.insertBefore(notice, container.firstChild);
+
+    // Auto-dismiss after 6 seconds
+    setTimeout(function() { if (notice.parentNode) notice.remove(); }, 6000);
   }
 
   // Show advance funding banner inside a workflow container.
