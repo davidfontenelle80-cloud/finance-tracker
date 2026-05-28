@@ -35,7 +35,7 @@
   --glow-red:     0 0 10px rgba(255, 56, 96, 0.35);
 
   /* Layout */
-  --tab-nav-height: 52px;
+  --tab-nav-height: 62px;
   --page-pad:       16px;
   --card-radius:    10px;
   --btn-radius:     8px;
@@ -64,54 +64,55 @@ body {
   color: var(--text-primary);
   min-height: 100dvh;           /* dvh = dynamic viewport height (mobile safe) */
   overflow-x: hidden;
-  padding-top: var(--tab-nav-height);
-  padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone notch */
+  padding-top: 0;
+  padding-bottom: calc(var(--tab-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── Tab Navigation ────────────────────────────────────────── */
 .tab-nav {
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 100;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   height: var(--tab-nav-height);
-  overflow: hidden;
-}
-
-.tab-nav__inner {
   display: flex;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;        /* Firefox */
-  scroll-snap-type: x mandatory;
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-.tab-nav__inner::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .tab-btn {
-  flex: 0 0 auto;
-  min-width: 72px;
-  height: 100%;
-  padding: 0 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px 4px;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-top: 2px solid transparent;
   color: var(--text-secondary);
   font-family: var(--font);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
-  scroll-snap-align: start;
-  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
+  min-width: 0;
+}
+
+.tab-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .tab-btn:hover {
@@ -120,13 +121,13 @@ body {
 
 .tab-btn.active {
   color: var(--neon-cyan);
-  border-bottom-color: var(--neon-cyan);
-  text-shadow: var(--glow-cyan);
+  border-top-color: var(--neon-cyan);
 }
 
 /* ── Tab Panes ─────────────────────────────────────────────── */
 .tab-content {
   min-height: calc(100dvh - var(--tab-nav-height));
+  padding-top: 8px;
 }
 
 .tab-pane {
@@ -720,8 +721,10 @@ input[type="checkbox"] {
 
 @media (min-width: 680px) {
   .tab-btn {
-    min-width: 88px;
-    font-size: 0.82rem;
+    gap: 4px;
+  }
+  .tab-label {
+    font-size: 0.68rem;
   }
 }
 

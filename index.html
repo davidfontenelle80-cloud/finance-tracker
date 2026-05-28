@@ -12,66 +12,71 @@
 </head>
 <body>
 
-  <!-- ══════════════════════════════════════════════
-       TAB NAVIGATION
-       8 tabs, horizontally scrollable on mobile.
-       data-tab must match id="tab-{name}" panes below.
-  ══════════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════════
+       BOTTOM NAVIGATION — 6 tabs, fixed to bottom.
+       Icons + labels. Setup folded into Settings.
+       Tracker folded into Dashboard. Entry removed.
+  ════════════════════════════════════════════ -->
   <nav class="tab-nav" role="navigation" aria-label="Main navigation">
-    <div class="tab-nav__inner">
-      <button class="tab-btn active" data-tab="setup"       aria-selected="true"  role="tab">Setup</button>
-      <button class="tab-btn"        data-tab="planner"     aria-selected="false" role="tab">Planner</button>
-      <button class="tab-btn"        data-tab="tracker"     aria-selected="false" role="tab">Tracker</button>
-      <button class="tab-btn"        data-tab="entry"       aria-selected="false" role="tab">Entry</button>
-      <button class="tab-btn"        data-tab="transfers"   aria-selected="false" role="tab">Transfers</button>
-      <button class="tab-btn"        data-tab="accounts"    aria-selected="false" role="tab">Accounts</button>
-      <button class="tab-btn"        data-tab="investments" aria-selected="false" role="tab">Invest</button>
-      <button class="tab-btn"        data-tab="dashboard"   aria-selected="false" role="tab">Dashboard</button>
-      <button class="tab-btn"        data-tab="settings"    aria-selected="false" role="tab">Settings</button>
-    </div>
+    <button class="tab-btn active" data-tab="dashboard"   aria-selected="true"  role="tab">
+      <span class="tab-icon">📊</span><span class="tab-label">Dashboard</span>
+    </button>
+    <button class="tab-btn"        data-tab="accounts"    aria-selected="false" role="tab">
+      <span class="tab-icon">🏦</span><span class="tab-label">Accounts</span>
+    </button>
+    <button class="tab-btn"        data-tab="transfers"   aria-selected="false" role="tab">
+      <span class="tab-icon">💸</span><span class="tab-label">Transfers</span>
+    </button>
+    <button class="tab-btn"        data-tab="planner"     aria-selected="false" role="tab">
+      <span class="tab-icon">📅</span><span class="tab-label">Planner</span>
+    </button>
+    <button class="tab-btn"        data-tab="investments" aria-selected="false" role="tab">
+      <span class="tab-icon">📈</span><span class="tab-label">Invest</span>
+    </button>
+    <button class="tab-btn"        data-tab="settings"    aria-selected="false" role="tab">
+      <span class="tab-icon">⚙️</span><span class="tab-label">Settings</span>
+    </button>
   </nav>
 
-  <!-- ══════════════════════════════════════════════
+  <!-- ════════════════════════════════════════════
        TAB CONTENT PANES
-       JS renders content into each pane.
-       Only the active pane is visible.
-  ══════════════════════════════════════════════ -->
+       Hidden panes remain in DOM for backward compat
+       (setup, tracker, entry) but are not in nav.
+  ════════════════════════════════════════════ -->
   <main class="tab-content" id="main-content">
-    <section id="tab-setup"       class="tab-pane active" role="tabpanel" aria-label="Setup"></section>
-    <section id="tab-planner"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Planner"></section>
-    <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Tracker"></section>
-    <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Data Entry"></section>
-    <section id="tab-transfers"   class="tab-pane"        role="tabpanel" aria-label="Transfers"></section>
+    <section id="tab-dashboard"   class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
     <section id="tab-accounts"    class="tab-pane"        role="tabpanel" aria-label="Accounts"></section>
+    <section id="tab-transfers"   class="tab-pane"        role="tabpanel" aria-label="Transfers"></section>
+    <section id="tab-planner"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Planner"></section>
     <section id="tab-investments" class="tab-pane"        role="tabpanel" aria-label="Investments"></section>
-    <section id="tab-dashboard"   class="tab-pane"        role="tabpanel" aria-label="Dashboard"></section>
     <section id="tab-settings"    class="tab-pane"        role="tabpanel" aria-label="Settings"></section>
+    <!-- Legacy panes kept for JS module compat — not in nav -->
+    <section id="tab-setup"       class="tab-pane"        role="tabpanel" aria-label="Setup"></section>
+    <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Tracker"></section>
+    <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Entry"></section>
   </main>
 
-  <!-- ══════════════════════════════════════════════
-       GLOBAL UI COMPONENTS
-  ══════════════════════════════════════════════ -->
-
-  <!-- Toast / snackbar for save confirmations and errors -->
+  <!-- Toast / snackbar -->
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Modal backdrop + container (used by CRUD forms) -->
+  <!-- Modal backdrop -->
   <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
     <div id="modal-box" class="modal-box" role="dialog" aria-modal="true">
       <div id="modal-content"></div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       JAVASCRIPT — load order matters
-       storage.js must come first (all others depend on it)
-       setup.js next, then app.js last (boots everything)
-  ══════════════════════════════════════════════ -->
-  <!-- JS load order matters: storage first, then modules, then app last -->
+  <!-- JS — load order matters: storage first, modules, app last -->
   <script src="storage.js"></script>
   <script src="setup.js"></script>
-  <!-- Phase 2: Core money loop -->
   <script src="paychecks.js"></script>
   <script src="entry.js"></script>
   <script src="transfers.js"></script>
-  <script src="trac
+  <script src="tracker.js"></script>
+  <script src="accounts.js"></script>
+  <script src="investments.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

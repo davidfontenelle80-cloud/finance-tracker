@@ -18,7 +18,7 @@
 
   // ── In-memory state ───────────────────────────────────────
   let _state     = null;
-  let _activeTab = 'setup';
+  let _activeTab = 'dashboard';
 
   // ══════════════════════════════════════════════════════════
   // EVENT BUS
@@ -95,7 +95,16 @@
         'Net worth tracker and 12-month charts.');
     },
     settings: () => {
-      App.Setup.renderSettings(_state, el('tab-settings'));
+      // Settings = App Settings section + Setup (the brain) as a sub-section
+      const container = el('tab-settings');
+      container.innerHTML = '';
+      // Render the global app settings (import/export/theme/clear)
+      App.Setup.renderSettings(_state, container);
+      // Append Setup (categories, accounts, income) as a collapsible sub-section
+      const setupWrap = document.createElement('div');
+      setupWrap.id = 'settings-setup-section';
+      container.appendChild(setupWrap);
+      App.Setup.render(_state, setupWrap);
     }
   };
 
@@ -210,7 +219,7 @@
 
     // 4. Restore last tab
     const lastTab = (() => {
-      try { return localStorage.getItem('financeApp_activeTab') || 'setup'; }
+      try { return localStorage.getItem('financeApp_activeTab') || 'dashboard'; }
       catch (_) { return 'setup'; }
     })();
     showTab(lastTab);
