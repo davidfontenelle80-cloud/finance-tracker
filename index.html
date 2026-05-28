@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Finance Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       TAB NAVIGATION
+       8 tabs, horizontally scrollable on mobile.
+       data-tab must match id="tab-{name}" panes below.
+  ══════════════════════════════════════════════ -->
+  <nav class="tab-nav" role="navigation" aria-label="Main navigation">
+    <div class="tab-nav__inner">
+      <button class="tab-btn active" data-tab="setup"       aria-selected="true"  role="tab">Setup</button>
+      <button class="tab-btn"        data-tab="planner"     aria-selected="false" role="tab">Planner</button>
+      <button class="tab-btn"        data-tab="tracker"     aria-selected="false" role="tab">Tracker</button>
+      <button class="tab-btn"        data-tab="entry"       aria-selected="false" role="tab">Entry</button>
+      <button class="tab-btn"        data-tab="accounts"    aria-selected="false" role="tab">Accounts</button>
+      <button class="tab-btn"        data-tab="investments" aria-selected="false" role="tab">Invest</button>
+      <button class="tab-btn"        data-tab="dashboard"   aria-selected="false" role="tab">Dashboard</button>
+      <button class="tab-btn"        data-tab="settings"    aria-selected="false" role="tab">Settings</button>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       TAB CONTENT PANES
+       JS renders content into each pane.
+       Only the active pane is visible.
+  ══════════════════════════════════════════════ -->
+  <main class="tab-content" id="main-content">
+    <section id="tab-setup"       class="tab-pane active" role="tabpanel" aria-label="Setup"></section>
+    <section id="tab-planner"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Planner"></section>
+    <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Tracker"></section>
+    <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Data Entry"></section>
+    <section id="tab-accounts"    class="tab-pane"        role="tabpanel" aria-label="Accounts"></section>
+    <section id="tab-investments" class="tab-pane"        role="tabpanel" aria-label="Investments"></section>
+    <section id="tab-dashboard"   class="tab-pane"        role="tabpanel" aria-label="Dashboard"></section>
+    <section id="tab-settings"    class="tab-pane"        role="tabpanel" aria-label="Settings"></section>
+  </main>
+
+  <!-- ══════════════════════════════════════════════
+       GLOBAL UI COMPONENTS
+  ══════════════════════════════════════════════ -->
+
+  <!-- Toast / snackbar for save confirmations and errors -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Modal backdrop + container (used by CRUD forms) -->
+  <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+    <div id="modal-box" class="modal-box" role="dialog" aria-modal="true">
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       JAVASCRIPT — load order matters
+       storage.js must come first (all others depend on it)
+       setup.js next, then app.js last (boots everything)
+  ══════════════════════════════════════════════ -->
+  <!-- JS load order matters: storage first, then modules, then app last -->
+  <script src="storage.js"></script>
+  <script src="setup.js"></script>
+  <!-- Phase 2: Core money loop -->
+  <script src="paychecks.js"></script>
+  <script src="entry.js"></script>
+  <script src="tracker.js"></script>
+  <script src="accounts.js"></script>
+  <!-- Phase 3: Wealth view -->
+  <script src="investments.js"></script>
+  <script src="dashboard.js"></script>
+  <!-- App router — must come last -->
+  <script src="app.js"></script>
+
+</body>
+</html>

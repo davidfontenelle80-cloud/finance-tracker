@@ -1,0 +1,13 @@
+# Reference files — not part of the deployed app
+House Budgetper.xlsx
+FINANCE_APP_SPEC.md
+
+# Deploy script
+_deploy.bat
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
