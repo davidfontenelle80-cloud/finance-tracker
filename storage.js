@@ -124,7 +124,7 @@
 
     return {
       // ── Schema version — bump when adding migrations ──
-      version: '1.0',
+      version: '1.1',
 
       // ── User identity ──────────────────────────────────
       user: {
@@ -154,16 +154,20 @@
       // ── Yearly savings / spending goals ───────────────
       // annualGoal ÷ paychecksPerYear = per-paycheck allocation.
       // User adds/removes/edits in Setup → cascades everywhere.
+      // Aligned to House_Budgetper.xlsx Savings Plan sheet (May 2026 actuals).
       yearlyCategories: [
-        { id: generateId(), name: 'Gasoline',         annualGoal: 2400  },
-        { id: generateId(), name: 'Food / Groceries', annualGoal: 7200  },
-        { id: generateId(), name: 'Car Maintenance',  annualGoal: 2673  },
-        { id: generateId(), name: 'Asamblea',         annualGoal: 1000  },
-        { id: generateId(), name: 'Emergencia',       annualGoal: 10979 },
-        { id: generateId(), name: 'Car Savings',      annualGoal: 31000 },
-        { id: generateId(), name: 'Vacation Fund',    annualGoal: 3000  },
-        { id: generateId(), name: 'Roth IRA — David', annualGoal: 7000  },
-        { id: generateId(), name: 'Roth IRA — Yamel', annualGoal: 7000  }
+        { id: generateId(), name: 'Gasoline',          annualGoal: 2400  },
+        { id: generateId(), name: 'Food / Groceries',  annualGoal: 7200  },
+        { id: generateId(), name: 'Car Maintenance',   annualGoal: 4000  },
+        { id: generateId(), name: 'Asamblea',          annualGoal: 1200  },
+        { id: generateId(), name: 'Emergencia',        annualGoal: 10000 },
+        { id: generateId(), name: 'Car Savings',       annualGoal: 5000  },
+        { id: generateId(), name: 'Vacation Fund',     annualGoal: 5000  },
+        { id: generateId(), name: 'Roth IRA — David',  annualGoal: 7500  },
+        { id: generateId(), name: 'Roth IRA — Yamel',  annualGoal: 7500  },
+        { id: generateId(), name: 'Amica Insurance',   annualGoal: 1500  },
+        { id: generateId(), name: 'Clothing',          annualGoal: 1200  },
+        { id: generateId(), name: 'Fun Money',         annualGoal: 2000  }
       ],
 
       // ── Fixed monthly expenses ─────────────────────────
@@ -178,38 +182,55 @@
 
       // ── Accounts ───────────────────────────────────────
       accounts: {
-        // Bank / savings accounts
-        // isTransferAccount: true = the account used to pay off credit cards
+        // Bank / savings accounts — balances from House_Budgetper.xlsx May 2026
+        // isTransferAccount: true = account used to pay off credit cards
+        // liquidityTier: 'immediate' | 'short' | 'locked' (used for net worth breakdown)
         bank: [
-          { id: generateId(), name: 'SoFi Checking',   balance: 0,        isTransferAccount: false },
-          { id: generateId(), name: 'Transfer Account', balance: 2355.53,  isTransferAccount: true  },
-          { id: generateId(), name: 'Emergency (SGOV)', balance: 0,        isTransferAccount: false },
-          { id: generateId(), name: 'Car Savings Acct', balance: 0,        isTransferAccount: false }
+          { id: generateId(), name: 'SoFi Checking',             balance: 0,          isTransferAccount: false, liquidityTier: 'immediate' },
+          { id: generateId(), name: 'SoFi Transfer Account',     balance: 3312.99,    isTransferAccount: true,  liquidityTier: 'immediate' },
+          { id: generateId(), name: 'American Eagle Checking',   balance: 76.46,      isTransferAccount: false, liquidityTier: 'immediate' },
+          { id: generateId(), name: 'Emergency Fidelity Cash',   balance: 11062.73,   isTransferAccount: false, liquidityTier: 'short'     },
+          { id: generateId(), name: 'Car Savings (Fidelity SGOV)', balance: 24917.56, isTransferAccount: false, liquidityTier: 'short'     }
         ],
 
-        // Envelope vaults (live inside SoFi — virtual sub-accounts)
-        // There should be 14; David will add the remainder in Setup.
+        // Envelope vaults — all 20 from House_Budgetper.xlsx Bank Accounts sheet (May 2026).
+        // Total should reconcile to SoFi online balance.
         vaults: [
-          { id: generateId(), name: 'Gasoline',         balance: 0       },
-          { id: generateId(), name: 'Rent',             balance: 1705.62 },
-          { id: generateId(), name: 'Asamblea',         balance: 0       },
-          { id: generateId(), name: 'Slush',            balance: 0       },
-          { id: generateId(), name: 'Vacation',         balance: 0       },
-          { id: generateId(), name: 'Car Maintenance',  balance: 0       },
-          { id: generateId(), name: 'Emergencia',       balance: 0       },
-          { id: generateId(), name: 'Car Savings',      balance: 0       },
-          { id: generateId(), name: 'Roth — David',     balance: 0       },
-          { id: generateId(), name: 'Roth — Yamel',     balance: 0       },
-          { id: generateId(), name: 'Groceries',        balance: 0       },
-          { id: generateId(), name: 'Cell / Phone',     balance: 0       },
-          { id: generateId(), name: 'Netflix',          balance: 0       },
-          { id: generateId(), name: 'Misc',             balance: 0       }
+          { id: generateId(), name: 'Gasoline',         balance: 250.00   },
+          { id: generateId(), name: 'Asamblea',         balance: 872.21   },
+          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52  },
+          { id: generateId(), name: 'Entertainment',    balance: 300.00   },
+          { id: generateId(), name: 'Food',             balance: 750.00   },
+          { id: generateId(), name: 'Car Maintenance',  balance: 247.99   },
+          { id: generateId(), name: 'Eversource',       balance: 274.71   },
+          { id: generateId(), name: 'CNG',              balance: 102.63   },
+          { id: generateId(), name: 'Car Taxes',        balance: 268.69   },
+          { id: generateId(), name: 'Hold Account',     balance: 183.99   },
+          { id: generateId(), name: 'Slush Fund',       balance: 32.00    },
+          { id: generateId(), name: 'Amica Insurance',  balance: 0.72     },
+          { id: generateId(), name: 'Vacation Fund',    balance: 0.00     },
+          { id: generateId(), name: 'Yamel Personal',   balance: 0.00     },
+          { id: generateId(), name: 'David Personal',   balance: 0.00     },
+          { id: generateId(), name: 'Investing',        balance: 0.00     },
+          { id: generateId(), name: 'Clothing',         balance: 0.00     },
+          { id: generateId(), name: 'Taxes',            balance: 17.30    },
+          { id: generateId(), name: 'Emergency',        balance: 0.00     },
+          { id: generateId(), name: 'Misc',             balance: 0.00     }
         ],
 
-        // Credit cards — David has 10; Chase Flex is confirmed.
-        // Add the other 9 in Setup → Accounts section.
+        // All 10 credit cards — balances from House_Budgetper.xlsx May 2026.
+        // balance = current amount owed, limit = credit limit.
         cards: [
-          { id: generateId(), name: 'Chase Flex', limit: 14800, balance: 524.91 }
+          { id: generateId(), name: 'Apple Card',       limit: 16000, balance: 0       },
+          { id: generateId(), name: 'Bank of America',  limit: 12000, balance: 0       },
+          { id: generateId(), name: 'Wells Fargo',      limit: 10000, balance: 0       },
+          { id: generateId(), name: 'Capital One',      limit: 5000,  balance: 0       },
+          { id: generateId(), name: 'Chase Flex David', limit: 14800, balance: 607.10  },
+          { id: generateId(), name: 'Chase Freedom',    limit: 13500, balance: 0       },
+          { id: generateId(), name: 'Chase Yamel',      limit: 12600, balance: 0       },
+          { id: generateId(), name: 'Citi Double Cash', limit: 15000, balance: 1975.42 },
+          { id: generateId(), name: 'Costco (Citi)',    limit: 12200, balance: 730.47  },
+          { id: generateId(), name: 'Discover',         limit: 17000, balance: 0       }
         ]
       },
 
@@ -247,6 +268,11 @@
       // { amount, expenses: [{categoryId, amount, locked}], customItems: [{name, amount}] }
       paychecks: {},
 
+      // ── Audit journal (append-only) ──────────────────────
+      // Every money movement creates a journal entry. Never edit or delete —
+      // create a reversal entry instead. See ENGINE_UPGRADE_SPEC for schema.
+      journal: [],
+
       // ── Transaction log ────────────────────────────────
       // Each entry: { id, date, categoryId, categoryName, amount, accountId, accountName, note, paycheckPeriod }
       // paycheckPeriod = "YYYY-MM-NN" (month + paycheck index)
@@ -259,10 +285,40 @@
 
       // ── App settings ───────────────────────────────────
       settings: {
-        theme:    'dark-neon', // locked — do not expose toggle
+        theme:    'dark-neon', // 'dark-neon' | 'light' | 'system'
         currency: 'USD'
       }
     };
+  }
+
+  // ── Migration ────────────────────────────────────────────
+  // Runs on every load. Adds missing fields to existing saved state
+  // without wiping data. Bump version after adding new migrations.
+  function migrate(state) {
+    // v1.0 → v1.1: add journal array + liquidityTier on bank accounts
+    if (!state.journal) {
+      state.journal = [];
+    }
+    if (state.accounts && state.accounts.bank) {
+      state.accounts.bank.forEach(function(acct) {
+        if (!acct.liquidityTier) {
+          // Heuristic: transfer/checking = immediate, savings/SGOV = short
+          if (acct.isTransferAccount || /checking/i.test(acct.name)) {
+            acct.liquidityTier = 'immediate';
+          } else if (/roth|ira|retirement/i.test(acct.name)) {
+            acct.liquidityTier = 'locked';
+          } else {
+            acct.liquidityTier = 'short';
+          }
+        }
+      });
+    }
+    // Ensure settings.theme exists
+    if (state.settings && !state.settings.theme) {
+      state.settings.theme = 'dark-neon';
+    }
+    state.version = '1.1';
+    return state;
   }
 
   // ── Load / Save ───────────────────────────────────────────
@@ -275,9 +331,9 @@
         return createDefaultState();
       }
       const saved = JSON.parse(raw);
-      // Future: run version migrations here before returning
-      console.log('[Storage] Loaded saved state, version', saved.version);
-      return saved;
+      const migrated = migrate(saved);
+      console.log('[Storage] Loaded saved state, version', migrated.version);
+      return migrated;
     } catch (err) {
       console.warn('[Storage] Load failed, falling back to defaults:', err);
       return createDefaultState();
@@ -360,6 +416,7 @@
     getPaydaysInMonth,
     getMonthPaycheckCounts,
     createDefaultState,
+    migrate,
     loadState,
     saveState,
     exportJSON,

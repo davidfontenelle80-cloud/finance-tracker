@@ -724,3 +724,306 @@ input[type="checkbox"] {
     font-size: 0.82rem;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TRANSFERS TAB — Mode selector + workflow cards
+   Added: Engine Upgrade Step 2
+══════════════════════════════════════════════════════════════ */
+
+/* Mode selector grid */
+.mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.mode-card .mode-icon {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.mode-card:hover,
+.mode-card:focus {
+  border-color: var(--neon-cyan);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.mode-card.active {
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+  color: var(--neon-cyan);
+  background: var(--bg-tertiary);
+}
+
+/* Workflow card container */
+.workflow-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.workflow-card h3 {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  color: var(--neon-cyan);
+  letter-spacing: 0.04em;
+}
+
+/* Allocation list — Paycheck Arrived */
+.allocation-list {
+  margin: 14px 0;
+}
+
+.alloc-header {
+  display: grid;
+  grid-template-columns: 24px 1fr 90px;
+  gap: 8px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.alloc-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 90px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(42,51,70,0.5);
+}
+
+.alloc-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+}
+
+.alloc-row .alloc-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.alloc-row .alloc-amount {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 5px 8px;
+  text-align: right;
+}
+
+.alloc-row.disabled .alloc-name {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.alloc-row.disabled .alloc-amount {
+  opacity: 0.4;
+}
+
+/* Totals summary row */
+.totals-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.totals-row .total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.totals-row .total-line.emphasis {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.totals-row .total-line.over {
+  color: var(--neon-red);
+}
+
+.totals-row .total-line.ok {
+  color: var(--neon-green);
+}
+
+/* Workflow action buttons */
+.workflow-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.workflow-actions .btn-secondary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.workflow-actions .btn-secondary:hover {
+  border-color: var(--neon-cyan);
+}
+
+.workflow-actions .btn-execute {
+  background: var(--neon-cyan);
+  color: #0a0e1a;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  transition: box-shadow 0.15s;
+}
+
+.workflow-actions .btn-execute:hover {
+  box-shadow: var(--glow-cyan);
+}
+
+/* Credit card pay rows */
+.card-pay-row {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(42,51,70,0.5);
+}
+
+.card-pay-row:last-of-type {
+  border-bottom: none;
+}
+
+.card-pay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-pay-header input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+}
+
+.card-pay-name {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.card-pay-util {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.util-good  { background: rgba(0,255,136,0.15); color: var(--neon-green); }
+.util-warn  { background: rgba(255,176,0,0.15);  color: var(--neon-amber); }
+.util-bad   { background: rgba(255,56,96,0.15);  color: var(--neon-red);   }
+
+.pay-mode-btns {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.pay-mode-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.pay-mode-btn.active,
+.pay-mode-btn:hover {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.card-pay-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-pay-amount-row label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.card-pay-amount-row input[type="number"] {
+  width: 110px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 5px 8px;
+  text-align: right;
+}
+
+/* Transfer post-payment balance */
+.transfer-after {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.transfer-after.danger { color: var(--neon-red); }
+.transfer-after.safe   { color: var(--neon-green); }
+
+/* Coming-soon stub inside workflows */
+.workflow-stub {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.workflow-stub .stub-icon {
+  font-size: 2.4rem;
+  margin-bottom: 10px;
+}

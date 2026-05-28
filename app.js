@@ -52,6 +52,14 @@
           'Log transactions here. They cascade to every other tab.');
       }
     },
+    transfers: () => {
+      if (App.Transfers) {
+        App.Transfers.render(_state, el('tab-transfers'));
+      } else {
+        renderStub('tab-transfers', 'Transfers', 'Engine Upgrade',
+          'Paycheck allocation, card payments, and money movement.');
+      }
+    },
     accounts: () => {
       if (App.Accounts) {
         App.Accounts.render(_state, el('tab-accounts'));
@@ -208,3 +216,4 @@
   document.addEventListener('DOMContentLoaded', initApp);
 
 })(window.App = window.App || {});
+t's fin
