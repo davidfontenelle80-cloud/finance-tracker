@@ -795,8 +795,49 @@
           App.showToast('Data cleared. Reloading…', 'info');
           setTimeout(() => location.reload(), 1200);
           break;
+
+        case 'save-goal-redirect': {
+          const sel = container.querySelector('#goal-redirect-sel');
+          if (!sel) return;
+          const ns = App.getState();
+          if (!ns.settings) ns.settings = {};
+          ns.settings.goalCompletionRedirect = sel.value;
+          App.setState(ns);
+          App.showToast('Goal redirect preference saved ✓', 'success');
+          break;
+        }
+
+        case 'set-theme': {
+          // handled by segment button listener below
+          break;
+        }
       }
     });
+
+    // Theme segment buttons
+    const themeSeg = container.querySelector('#theme-segment');
+    if (themeSeg) {
+      themeSeg.addEventListener('click', (e) => {
+        const btn = e.target.closest('.theme-seg-btn');
+        if (!btn) return;
+        const theme = btn.dataset.theme;
+        if (!theme) return;
+        App.Setup.applyTheme(theme);
+        try { localStorage.setItem('financeApp_theme', theme); } catch (_) {}
+        // Update active state on buttons
+        themeSeg.querySelectorAll('.theme-seg-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.theme === theme);
+        });
+        App.showToast('Theme updated ✓', 'success');
+      });
+      // Mark current theme active
+      try {
+        const cur = localStorage.getItem('financeApp_theme') || 'dark-neon';
+        themeSeg.querySelectorAll('.theme-seg-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.theme === cur);
+        });
+      } catch (_) {}
+    }
 
     // File import
     const fileInput = container.querySelector('#import-file-input');

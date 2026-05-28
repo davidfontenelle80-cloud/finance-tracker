@@ -144,7 +144,7 @@
             <span class="sts-val">− ${fmt(vaultTotal)}</span>
           </div>
           <div class="sts-row sts-result">
-            <span>\${arrow} Discretionary</span>
+            <span>${arrow} Discretionary</span>
             <span class="sts-val">${fmt(discretionary)}</span>
           </div>
         </div>
