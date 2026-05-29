@@ -296,6 +296,88 @@
     `;
   }
 
+  // ── Weekly Spend Tracker (Phase 4A) ──────────────────────
+  // Shows categories with weeklyBudget: weeks remaining, MTD spent, budget left.
+  function countDowInMonth(year, month, dow) {
+    var count = 0;
+    var d = new Date(year, month - 1, 1);
+    while (d.getMonth() === month - 1) {
+      if (d.getDay() === dow) count++;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }
+
+  function countDowFromToday(dow) {
+    var count = 0;
+    var d = new Date(); d.setHours(0,0,0,0);
+    var end = new Date(d.getFullYear(), d.getMonth() + 1, 0); // last day of month
+    while (d <= end) {
+      if (d.getDay() === dow) count++;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }
+
+  function buildWeeklySpendPanel(state) {
+    var cats = (state.yearlyCategories || []).filter(function(c) {
+      return c.weeklyBudget != null;
+    });
+    if (!cats.length) return '';
+
+    var now      = new Date(); now.setHours(0,0,0,0);
+    var year     = now.getFullYear();
+    var month    = now.getMonth() + 1;
+    var monthKey = App.Storage.toISODate(now).slice(0, 7);
+    var txs      = state.transactions || [];
+
+    var rows = cats.map(function(cat) {
+      var dow       = cat.weeklyDay === 'sunday' ? 0 : 6;
+      var dayLabel  = cat.weeklyDay === 'sunday' ? 'Sundays' : 'Saturdays';
+      var totalWeeks   = countDowInMonth(year, month, dow);
+      var weeksLeft    = countDowFromToday(dow);
+      var weeksElapsed = totalWeeks - weeksLeft;
+      var totalBudget  = round2(cat.weeklyBudget * totalWeeks);
+      var remainBudget = round2(cat.weeklyBudget * weeksLeft);
+
+      var spent = txs
+        .filter(function(tx) { return tx.categoryId === cat.id && tx.date.startsWith(monthKey); })
+        .reduce(function(s, tx) { return s + (Number(tx.amount) || 0); }, 0);
+
+      var budgetUsedSoFar = round2(cat.weeklyBudget * weeksElapsed);
+      var variance        = round2(budgetUsedSoFar - spent); // positive = under budget
+      var netLeft         = round2(totalBudget - spent);
+      var netClass        = netLeft >= 0 ? 'text-green' : 'text-red';
+      var varClass        = variance >= 0 ? 'text-green' : 'text-red';
+      var pct             = totalBudget > 0 ? Math.min(100, (spent / totalBudget) * 100) : 0;
+      var barColor        = pct > 90 ? 'red' : pct > 70 ? 'amber' : 'green';
+
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">' +
+          '<div>' +
+            '<span class="text-sm font-bold">' + esc(cat.name) + '</span>' +
+            '<span class="text-xs text-secondary" style="margin-left:8px">$' + cat.weeklyBudget + '/wk x ' + totalWeeks + ' ' + dayLabel + ' = ' + fmt0(totalBudget) + '</span>' +
+          '</div>' +
+          '<span class="font-mono text-xs ' + varClass + '">' + (variance >= 0 ? 'under ' : 'over ') + fmt0(Math.abs(variance)) + '</span>' +
+        '</div>' +
+        '<div class="progress-bar" style="margin:3px 0 5px">' +
+          '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" style="width:' + pct.toFixed(1) + '%"></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center">' +
+          '<div><div class="text-xs text-secondary">MTD Spent</div><div class="font-mono text-sm">' + fmt0(spent) + '</div></div>' +
+          '<div><div class="text-xs text-secondary">Left this month</div><div class="font-mono text-sm ' + netClass + '">' + fmt0(netLeft) + '</div></div>' +
+          '<div><div class="text-xs text-secondary">' + weeksLeft + ' ' + dayLabel + ' left</div><div class="font-mono text-sm text-cyan">' + fmt0(remainBudget) + '</div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-title mb-4">&#128200; Weekly Spend Tracker</div>' +
+      '<div class="text-xs text-secondary mb-8">Budget pace vs. actual MTD spend</div>' +
+      rows +
+    '</div>';
+  }
+
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
     const { investments, cash, debt, liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
@@ -333,6 +415,9 @@
 
       <!-- Safe to Spend card -->
       ${buildSafeToSpendCard(state)}
+
+      <!-- Weekly spend tracker -->
+      ${buildWeeklySpendPanel(state)}
 
       <!-- Monthly summary -->
       <div class="card">
@@ -490,18 +575,20 @@
         },
         options: {
           ...defaults,
-          indexAxis: 'y',
-          scales: { x: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + v } }, y: axisDefaults },
-          plugins: { ...defaults.plugins, legend: { display: false } }
+          plugins: { ...defaults.plugins, legend: { display: false } },
+          scales: {
+            x: axisDefaults,
+            y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) } }
+          }
         }
       }));
     }
 
-    // ── Chart 3: Investment Growth ─────────────────────────
+    // -- Chart 3: Investment Growth ------------------------------------
     if (invCanvas) {
-      const history  = (state.netWorthHistory || []).slice(-13);
-      const labels   = history.map(h => h.date.slice(0, 7));
-      const invData  = history.map(h => h.investments || 0);
+      const history = (state.netWorthHistory || []).filter(h => h.date.startsWith(_viewYear));
+      const labels  = history.map(h => h.date.slice(0, 7));
+      const invData = history.map(h => h.investments || 0);
       _charts.push(new window.Chart(invCanvas, {
         type: 'line',
         data: {
@@ -509,78 +596,95 @@
           datasets: [{
             label: 'Investments',
             data:  invData,
-            borderColor:     '#ff00ea',
-            backgroundColor: 'rgba(255,0,234,0.08)',
-            pointBackgroundColor: '#ff00ea',
-            fill: true,
-            tension: 0.3
+            borderColor:     '#00c853',
+            backgroundColor: 'rgba(0,200,83,0.08)',
+            pointBackgroundColor: '#00c853',
+            tension: 0.35,
+            fill: true
           }]
         },
         options: {
           ...defaults,
-          scales: { x: axisDefaults, y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } } }
+          scales: {
+            x: axisDefaults,
+            y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) } }
+          }
         }
       }));
     }
 
-    // Chart 4: Paycheck Performance (planned vs actual)
+    // -- Chart 4: Paycheck Performance ---------------------------------
     if (perfCanvas) {
-      const paydates = (state.income && state.income.paydayDates) || [];
-      const periods  = paydates.slice(0, 26).map(function(startDate, idx) {
-        const endDate  = paydates[idx + 1] ? offsetDate(paydates[idx + 1], -1) : '9999-12-31';
-        const actual   = (state.transactions || [])
-          .filter(function(tx) { return tx.date >= startDate && tx.date <= endDate; })
-          .reduce(function(s, tx) { return s + (Number(tx.amount) || 0); }, 0);
-        const ppy2    = (state.income && state.income.paychecksPerYear) || 26;
-        const planned = (state.yearlyCategories || []).reduce(function(s, c) { return s + (c.annualGoal / ppy2); }, 0);
-        return { label: 'P' + (idx + 1), planned: Math.round(planned), actual: Math.round(actual) };
-      }).filter(function(p) { return p.actual > 0; });
-
+      const entries   = state.trackerEntries || {};
+      const paydates  = (state.income && state.income.paydayDates) || [];
+      const yearDates = paydates.filter(d => d.startsWith(_viewYear));
+      const labels    = yearDates.map((d, i) => 'P' + (i + 1));
+      const saved     = yearDates.map((_, i) => {
+        const globalIdx = paydates.indexOf(yearDates[i]);
+        const e = entries[String(globalIdx)] || {};
+        return e.amount !== undefined ? (Number(e.amount) || 0) : null;
+      });
+      const ppy         = (state.income && state.income.paychecksPerYear) || 26;
+      const annualTotal = (state.yearlyCategories || []).reduce((s, c) => s + (c.annualGoal || 0), 0);
+      const expected    = annualTotal / ppy;
       _charts.push(new window.Chart(perfCanvas, {
         type: 'bar',
         data: {
-          labels: periods.map(function(p) { return p.label; }),
+          labels,
           datasets: [
-            { label: 'Planned', data: periods.map(function(p) { return p.planned; }), backgroundColor: 'rgba(0,240,255,0.3)', borderColor: '#00f0ff', borderWidth: 1 },
-            { label: 'Actual',  data: periods.map(function(p) { return p.actual;  }), backgroundColor: 'rgba(255,0,234,0.3)', borderColor: '#ff00ea', borderWidth: 1 }
+            {
+              label: 'Saved',
+              data:  saved,
+              backgroundColor: saved.map(v => v === null ? 'transparent' : v >= expected ? 'rgba(0,240,255,0.5)' : 'rgba(255,61,0,0.5)'),
+              borderColor:     saved.map(v => v === null ? 'transparent' : v >= expected ? '#00f0ff' : '#ff3d00'),
+              borderWidth: 1
+            },
+            {
+              label:       'Target',
+              data:        yearDates.map(() => expected),
+              type:        'line',
+              borderColor: 'rgba(255,215,0,0.6)',
+              borderDash:  [4, 4],
+              pointRadius: 0,
+              fill:        false
+            }
           ]
         },
         options: {
           ...defaults,
-          scales: { x: axisDefaults, y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: function(v) { return '$' + v; } } } }
+          plugins: { ...defaults.plugins, legend: { labels: { color: '#8b95a8', font: { size: 10 } } } },
+          scales: {
+            x: { ...axisDefaults, ticks: { ...axisDefaults.ticks, font: { size: 9 } } },
+            y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + v } }
+          }
         }
       }));
     }
 
-    // Year select wiring
-    const yearSel = document.getElementById('dash-year');
-    if (yearSel) {
-      yearSel.value = String(_viewYear);
-      yearSel.addEventListener('change', function() {
-        _viewYear = parseInt(yearSel.value, 10);
-        App.refreshCurrentTab();
+    // Wire year selector
+    const sel = document.getElementById('dash-year');
+    if (sel) {
+      sel.addEventListener('change', function() {
+        _viewYear = parseInt(this.value);
+        drawCharts(App.getState());
       });
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // -- Helpers ----------------------------------------------------------
   function getPrevMonth(isoDate) {
-    const d = new Date(isoDate + 'T12:00:00');
-    d.setMonth(d.getMonth() - 1);
+    const [y, m] = isoDate.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
     return App.Storage.toISODate(d);
   }
 
   function buildYearOptions(state) {
-    const txYears = [...new Set((state.transactions || []).map(function(tx) { return tx.date.slice(0, 4); }).filter(Boolean))];
-    const years   = [...new Set([...txYears, String(new Date().getFullYear())])].sort().reverse();
-    return years.map(function(y) { return '<option value="' + y + '" ' + (y === String(_viewYear) ? 'selected' : '') + '>' + y + '</option>'; }).join('');
-  }
-
-  function offsetDate(isoStr, days) {
-    const parts = isoStr.split('-').map(Number);
-    const d     = new Date(parts[0], parts[1] - 1, parts[2]);
-    d.setDate(d.getDate() + days);
-    return App.Storage.toISODate(d);
+    const history = state.netWorthHistory || [];
+    const years   = new Set(history.map(h => h.date.slice(0, 4)));
+    years.add(String(new Date().getFullYear()));
+    return Array.from(years).sort().reverse().map(y =>
+      `<option value="${y}"${y == _viewYear ? ' selected' : ''}>${y}</option>`
+    ).join('');
   }
 
   App.Dashboard = { render };

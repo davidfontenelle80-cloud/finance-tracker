@@ -318,6 +318,8 @@
             ' ' + (c.weeklyDay === 'sunday' ? 'Sundays' : 'Saturdays') + '</div>'
         : '';
 
+      var ppy = (state.income && state.income.paychecksPerYear) || 26;
+      var annualCost = round2(c.amount * ppy);
       return '<tr>' +
         '<td class="text-sm">' +
           '<div>' + esc(c.name) + '</div>' +
@@ -329,6 +331,7 @@
             'data-check="' + num + '" data-idx="' + idx + '" data-field="cat-amount" ' +
             'value="' + c.amount.toFixed(2) + '" min="0" step="0.01" ' +
             'style="width:90px;padding:4px 8px;min-height:32px" />' +
+          '<div class="text-xs text-dim" style="margin-top:2px;padding-left:2px">&times;' + ppy + '&nbsp;=&nbsp;' + fmt(annualCost) + '/yr</div>' +
         '</td>' +
         '<td style="text-align:center">' +
           '<input type="checkbox" class="lock-chk" ' +
@@ -648,12 +651,12 @@
 
   function mkKey(y, m)  { return y + '-' + String(m).padStart(2, '0'); }
   function round2(n)    { return Math.round(n * 100) / 100; }
-  function esc(s)       {
+  function esc(s) {
     return String(s || '').replace(/[&<>"']/g, function(c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
-  App.Paychecks = { render: render };
+  App.Paychecks = { render };
 
 })(window.App = window.App || {});
