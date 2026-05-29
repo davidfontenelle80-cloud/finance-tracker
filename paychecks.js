@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════════
    PAYCHECKS.JS — Paycheck Planner + Forecast
-   Tab 2: Shows paycheck cards for the selected month.
-   Each card pulls allocations from yearly goals + fixed expenses.
-   Handles 4 vs 5 paycheck months automatically.
-   User can lock per-category amounts for a specific month.
+   Phase 2 features:
+   - Variable weekly budget: Food × Sundays, Gas × Saturdays
+   - Goal countdown: target date → paychecks left → per-check amount
+   - Upcoming Expenses panel: month/payee/amount/applied
+   - Lock amounts per category per month
 ══════════════════════════════════════════════════════════════ */
 
 (function (App) {
@@ -11,14 +12,58 @@
 
   const fmt = (n) => App.Storage.formatCurrency(n);
 
-  // Which month the user is currently viewing (module-level, survives re-renders)
   let _year  = new Date().getFullYear();
-  let _month = new Date().getMonth() + 1; // 1-indexed
+  let _month = new Date().getMonth() + 1;
 
   const MONTH_NAMES = [
     'January','February','March','April','May','June',
     'July','August','September','October','November','December'
   ];
+
+  // ── Day-of-week counter ───────────────────────────────────
+  // Counts how many times a given day (0=Sun..6=Sat) falls in a month
+  function countDayOfWeek(year, month, dayOfWeek) {
+    let count = 0;
+    const d = new Date(year, month - 1, 1);
+    while (d.getMonth() === month - 1) {
+      if (d.getDay() === dayOfWeek) count++;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }
+
+  // Weekly allocation for a category:
+  // If weeklyBudget + weeklyDay are set → weeklyBudget × day count in month
+  // Otherwise → annualGoal / paychecksPerYear
+  function weeklyAlloc(cat, year, month, ppy) {
+    if (cat.weeklyBudget && cat.weeklyDay) {
+      const dow = cat.weeklyDay === 'sunday' ? 0 : 6; // sunday=0, saturday=6
+      return round2(cat.weeklyBudget * countDayOfWeek(year, month, dow));
+    }
+    return round2((cat.annualGoal || 0) / (ppy || 26));
+  }
+
+  // Goal countdown: count payday dates from today through targetDate
+  function paychecksToGoal(targetDateStr, paydayDates) {
+    if (!targetDateStr) return null;
+    const today  = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(targetDateStr);
+    target.setHours(23, 59, 59, 0);
+    const future = (paydayDates || []).filter(function(d) {
+      const pd = new Date(d);
+      return pd >= today && pd <= target;
+    });
+    return future.length;
+  }
+
+  // Per-paycheck contribution needed to hit goal
+  function perPaycheckForGoal(cat, vaultBalance, paychecksLeft) {
+    if (!paychecksLeft || paychecksLeft <= 0) return null;
+    const goal   = cat.targetAmount || cat.annualGoal || 0;
+    const needed = Math.max(0, goal - (vaultBalance || 0));
+    return round2(needed / paychecksLeft);
+  }
 
   // ── Entry point ───────────────────────────────────────────
   function render(state, container) {
@@ -40,9 +85,8 @@
     }
 
     return `
-      <!-- Month navigator -->
       <div class="flex-between mb-16">
-        <button class="btn btn--secondary btn--sm" data-action="prev-month">‹</button>
+        <button class="btn btn--secondary btn--sm" data-action="prev-month">&#8249;</button>
         <div style="text-align:center">
           <div class="card-title" style="font-size:1.1rem">${MONTH_NAMES[_month - 1]} ${_year}</div>
           <div class="text-secondary text-xs mt-4">
@@ -50,17 +94,122 @@
             ${override ? '<span class="badge badge--amber" style="margin-left:6px">overridden</span>' : ''}
           </div>
         </div>
-        <button class="btn btn--secondary btn--sm" data-action="next-month">›</button>
+        <button class="btn btn--secondary btn--sm" data-action="next-month">&#8250;</button>
       </div>
 
+      ${renderWeeklyBudgetPanel(state)}
       ${cards}
       ${renderMonthTotals(plan, count)}
+      ${renderUpcomingExpenses(state, key)}
     `;
   }
 
+  // ── Weekly Budget Settings Panel ─────────────────────────
+  // Shows categories with weeklyBudget set. User can adjust the weekly amount.
+  function renderWeeklyBudgetPanel(state) {
+    const cats = (state.yearlyCategories || []).filter(function(c) {
+      return c.weeklyBudget !== null && c.weeklyBudget !== undefined;
+    });
+    if (!cats.length) return '';
+
+    const rows = cats.map(function(cat) {
+      const dow   = cat.weeklyDay === 'sunday' ? 0 : 6;
+      const count = countDayOfWeek(_year, _month, dow);
+      const total = round2(cat.weeklyBudget * count);
+      const day   = cat.weeklyDay === 'sunday' ? 'Sundays' : 'Saturdays';
+      return '<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+        '<div>' +
+          '<div class="text-sm font-bold">' + esc(cat.name) + '</div>' +
+          '<div class="text-xs text-secondary">' + count + ' ' + day + ' this month &rarr; ' + fmt(total) + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span class="text-xs text-secondary">$/wk</span>' +
+          '<input type="number" class="weekly-budget-input" ' +
+            'data-cat-id="' + cat.id + '" ' +
+            'value="' + cat.weeklyBudget + '" ' +
+            'min="0" step="1" ' +
+            'style="width:70px;padding:4px 8px" />' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<details class="card" style="margin-bottom:12px">' +
+      '<summary>' +
+        '<div>' +
+          '<div class="card-title">&#128200; Weekly Budget Settings</div>' +
+          '<div class="card-subtitle">Food &amp; Gas calculated from day counts</div>' +
+        '</div>' +
+      '</summary>' +
+      '<div>' +
+        rows +
+        '<button class="btn btn--primary btn--sm btn--full mt-12" data-action="save-weekly-budgets">' +
+          'Save Weekly Budgets' +
+        '</button>' +
+      '</div>' +
+    '</details>';
+  }
+
+  // ── Upcoming Expenses Panel ───────────────────────────────
+  function renderUpcomingExpenses(state, currentKey) {
+    const expenses = (state.upcomingExpenses || []);
+    const monthKey = mkKey(_year, _month);
+
+    const rows = expenses.map(function(exp, idx) {
+      const isCurrentMonth = exp.month === monthKey;
+      return '<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="text-sm font-bold">' + esc(exp.payee) + '</div>' +
+          '<div class="text-xs text-secondary">' + exp.month + (exp.note ? ' &middot; ' + esc(exp.note) : '') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span class="font-mono text-sm text-cyan">' + fmt(exp.amount) + '</span>' +
+          (isCurrentMonth
+            ? '<label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;cursor:pointer">' +
+                '<input type="checkbox" data-action="toggle-upcoming-applied" data-idx="' + idx + '" ' +
+                  (exp.applied ? 'checked' : '') + ' />' +
+                'Apply</label>'
+            : '') +
+          '<button class="btn btn--icon btn--secondary" style="padding:1px 6px;font-size:0.7rem;color:var(--color-danger)"' +
+            ' data-action="del-upcoming" data-idx="' + idx + '" title="Delete">&#10005;</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    const noRows = '<p class="text-xs text-secondary" style="margin:8px 0">No upcoming expenses. Add one below.</p>';
+
+    return '<details class="card" style="margin-top:12px">' +
+      '<summary>' +
+        '<div>' +
+          '<div class="card-title">&#128203; Upcoming Expenses</div>' +
+          '<div class="card-subtitle">' + expenses.length + ' planned &middot; check &ldquo;Apply&rdquo; to pull into this month</div>' +
+        '</div>' +
+      '</summary>' +
+      '<div>' +
+        (rows || noRows) +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">' +
+          '<div class="form-group">' +
+            '<label>Month (YYYY-MM)</label>' +
+            '<input type="month" id="ue-month" value="' + mkKey(_year, _month) + '" />' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label>Amount ($)</label>' +
+            '<input type="number" id="ue-amount" placeholder="0.00" min="0" step="0.01" />' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group mt-8">' +
+          '<label>Payee / Description</label>' +
+          '<input type="text" id="ue-payee" placeholder="e.g. Amica Insurance, Rent increase..." />' +
+        '</div>' +
+        '<div class="form-group mt-8">' +
+          '<label>Note (optional)</label>' +
+          '<input type="text" id="ue-note" placeholder="e.g. Annual renewal, effective Jun 1..." />' +
+        '</div>' +
+        '<button class="btn btn--secondary btn--sm btn--full mt-8" data-action="add-upcoming">+ Add Expense</button>' +
+      '</div>' +
+    '</details>';
+  }
+
   // ── Get or build plan ─────────────────────────────────────
-  // Loads saved plan for the month, or builds defaults from Setup config.
-  // When loaded, merges any new categories added since the plan was saved.
   function getOrBuildPlan(state, key, paydates, count) {
     const saved = (state.paychecks || {})[key];
     if (saved) return mergeMissingCategories(state, saved, count);
@@ -75,51 +224,64 @@
     return plan;
   }
 
-  // Build a single default paycheck: yearly categories + fixed expenses for this check slot
+  // Build a single default paycheck with weekly-budget-aware allocations
   function buildDefaultCheck(state, checkNum, paydates) {
     const ppy = state.income.paychecksPerYear || 26;
 
-    const categories = (state.yearlyCategories || []).map(cat => ({
-      categoryId: cat.id,
-      name:       cat.name,
-      amount:     round2(cat.annualGoal / ppy),
-      locked:     false
-    }));
+    const categories = (state.yearlyCategories || []).map(function(cat) {
+      // Use goal-countdown amount if target date is set, else weekly/annual allocation
+      var amount = weeklyAlloc(cat, _year, _month, ppy);
+      var paychecksLeft = paychecksToGoal(cat.targetDate, state.income.paydayDates);
+      var vaultBal = 0;
+      if (cat.targetDate && paychecksLeft !== null) {
+        var vault = (state.accounts && state.accounts.vaults || []).find(function(v) {
+          return v.name.toLowerCase() === cat.name.toLowerCase();
+        });
+        vaultBal = vault ? (Number(vault.balance) || 0) : 0;
+        var cdAmount = perPaycheckForGoal(cat, vaultBal, paychecksLeft);
+        if (cdAmount !== null) amount = cdAmount;
+      }
+      return {
+        categoryId:    cat.id,
+        name:          cat.name,
+        amount:        amount,
+        locked:        false,
+        weeklyBudget:  cat.weeklyBudget || null,
+        weeklyDay:     cat.weeklyDay    || null,
+        targetDate:    cat.targetDate   || null
+      };
+    });
 
-    // Fixed expenses belong to whichever paycheck they're assigned to
     const fixed = (state.fixedMonthlyExpenses || [])
-      .filter(fx => (fx.paycheckAssign || 1) === checkNum)
-      .map(fx => ({
-        fixedId: fx.id,
-        name:    fx.name,
-        amount:  fx.amount
-      }));
+      .filter(function(fx) { return (fx.paycheckAssign || 1) === checkNum; })
+      .map(function(fx) { return { fixedId: fx.id, name: fx.name, amount: fx.amount }; });
+
+    // Pull applied upcoming expenses for this month into this check
+    const monthKey   = mkKey(_year, _month);
+    const appliedExp = (state.upcomingExpenses || [])
+      .filter(function(e) { return e.applied && e.month === monthKey && (e.paycheckNum || 1) === checkNum; })
+      .map(function(e) { return { id: e.id, name: e.payee, amount: e.amount }; });
 
     return {
       amount:      state.income.defaultPaycheckAmount || 0,
       categories,
       fixed,
-      customItems: []
+      customItems: appliedExp
     };
   }
 
-  // When loading a saved plan, append any categories added to Setup after the plan was saved
   function mergeMissingCategories(state, savedPlan, count) {
     const ppy = state.income.paychecksPerYear || 26;
     for (let i = 1; i <= count; i++) {
-      if (!savedPlan[i]) {
-        savedPlan[i] = buildDefaultCheck(state, i, []);
-        continue;
-      }
+      if (!savedPlan[i]) { savedPlan[i] = buildDefaultCheck(state, i, []); continue; }
       if (!savedPlan[i].categories) savedPlan[i].categories = [];
-      (state.yearlyCategories || []).forEach(cat => {
-        const exists = savedPlan[i].categories.some(c => c.categoryId === cat.id);
+      (state.yearlyCategories || []).forEach(function(cat) {
+        const exists = savedPlan[i].categories.some(function(c) { return c.categoryId === cat.id; });
         if (!exists) {
           savedPlan[i].categories.push({
-            categoryId: cat.id,
-            name:       cat.name,
-            amount:     round2(cat.annualGoal / ppy),
-            locked:     false
+            categoryId: cat.id, name: cat.name,
+            amount: weeklyAlloc(cat, _year, _month, ppy),
+            locked: false
           });
         }
       });
@@ -129,117 +291,129 @@
 
   // ── Paycheck card ─────────────────────────────────────────
   function renderCard(state, plan, num, paydate, key, totalCount) {
-    const check    = plan[num] || buildDefaultCheck(state, num, []);
-    const cats     = check.categories  || [];
-    const fixed    = check.fixed       || [];
-    const custom   = check.customItems || [];
+    const check     = plan[num] || buildDefaultCheck(state, num, []);
+    const cats      = check.categories  || [];
+    const fixed     = check.fixed       || [];
+    const custom    = check.customItems || [];
     const allocated = sumExpenses(check);
     const surplus   = (check.amount || 0) - allocated;
     const sc        = surplus >= 0 ? 'green' : 'red';
     const sl        = surplus >= 0 ? 'Surplus' : 'Deficit';
 
-    const catRows = cats.map((c, idx) => `
-      <tr>
-        <td class="text-sm">${esc(c.name)}</td>
-        <td>
-          <input type="number" class="inline-amt"
-                 data-check="${num}" data-idx="${idx}" data-field="cat-amount"
-                 value="${c.amount.toFixed(2)}" min="0" step="0.01"
-                 style="width:90px;padding:4px 8px;min-height:32px" />
-        </td>
-        <td style="text-align:center">
-          <input type="checkbox" class="lock-chk"
-                 data-check="${num}" data-idx="${idx}"
-                 ${c.locked ? 'checked' : ''}
-                 title="${c.locked ? 'Locked for this month' : 'Click to lock'}" />
-        </td>
-      </tr>`).join('');
+    const paydayDates = state.income.paydayDates || [];
 
-    const fixedRows = fixed.map(f => `
-      <tr>
-        <td class="text-sm">${esc(f.name)} <span class="badge badge--cyan" style="font-size:0.58rem">fixed</span></td>
-        <td class="font-mono text-sm">${fmt(f.amount)}</td>
-        <td style="text-align:center;color:var(--text-dim)">🔒</td>
-      </tr>`).join('');
+    const catRows = cats.map(function(c, idx) {
+      const paychecksLeft = paychecksToGoal(c.targetDate, paydayDates);
+      let goalLine = '';
+      if (c.targetDate && paychecksLeft !== null) {
+        const dateLabel = c.targetDate.substring(0, 10);
+        goalLine = '<div class="text-xs" style="color:var(--neon-amber);margin-top:2px">' +
+          '&#127919; ' + dateLabel + ' &middot; ' + paychecksLeft + ' paycheck' +
+          (paychecksLeft !== 1 ? 's' : '') + ' left' +
+          '</div>';
+      }
+      const weeklyNote = (c.weeklyBudget && c.weeklyDay)
+        ? '<div class="text-xs text-secondary" style="margin-top:1px">$' + c.weeklyBudget + '/wk &times; ' +
+            countDayOfWeek(_year, _month, c.weeklyDay === 'sunday' ? 0 : 6) +
+            ' ' + (c.weeklyDay === 'sunday' ? 'Sundays' : 'Saturdays') + '</div>'
+        : '';
 
-    const customRows = custom.map((item, idx) => `
-      <tr>
-        <td class="text-sm">${esc(item.name)} <span class="badge badge--magenta" style="font-size:0.58rem">custom</span></td>
-        <td class="font-mono text-sm">${fmt(item.amount)}</td>
-        <td style="text-align:center">
-          <button class="btn btn--danger btn--sm" style="min-height:28px;padding:0 8px"
-                  data-action="del-custom" data-check="${num}" data-idx="${idx}">✕</button>
-        </td>
-      </tr>`).join('');
+      return '<tr>' +
+        '<td class="text-sm">' +
+          '<div>' + esc(c.name) + '</div>' +
+          weeklyNote +
+          goalLine +
+        '</td>' +
+        '<td>' +
+          '<input type="number" class="inline-amt" ' +
+            'data-check="' + num + '" data-idx="' + idx + '" data-field="cat-amount" ' +
+            'value="' + c.amount.toFixed(2) + '" min="0" step="0.01" ' +
+            'style="width:90px;padding:4px 8px;min-height:32px" />' +
+        '</td>' +
+        '<td style="text-align:center">' +
+          '<input type="checkbox" class="lock-chk" ' +
+            'data-check="' + num + '" data-idx="' + idx + '" ' +
+            (c.locked ? 'checked' : '') + ' ' +
+            'title="' + (c.locked ? 'Locked for this month' : 'Click to lock') + '" />' +
+        '</td>' +
+      '</tr>';
+    }).join('');
 
-    const datelabel = paydate ? `<span class="text-secondary text-xs"> · ${paydate}</span>` : '';
+    const fixedRows = fixed.map(function(f) {
+      return '<tr>' +
+        '<td class="text-sm">' + esc(f.name) + ' <span class="badge badge--cyan" style="font-size:0.58rem">fixed</span></td>' +
+        '<td class="font-mono text-sm">' + fmt(f.amount) + '</td>' +
+        '<td style="text-align:center;color:var(--text-dim)">&#128274;</td>' +
+      '</tr>';
+    }).join('');
 
-    return `
-      <details class="card card--glow-cyan" open data-check-card="${num}">
-        <summary>
-          <div>
-            <div class="card-title">Paycheck ${num} of ${totalCount}${datelabel}</div>
-            <div class="flex-gap-8 mt-4">
-              <span class="font-mono text-cyan text-sm">${fmt(check.amount)}</span>
-              <span class="text-dim">·</span>
-              <span class="text-${sc} text-sm font-bold">${sl}: ${fmt(Math.abs(surplus))}</span>
-            </div>
-          </div>
-        </summary>
+    const customRows = custom.map(function(item, idx) {
+      return '<tr>' +
+        '<td class="text-sm">' + esc(item.name) + ' <span class="badge badge--magenta" style="font-size:0.58rem">custom</span></td>' +
+        '<td class="font-mono text-sm">' + fmt(item.amount) + '</td>' +
+        '<td style="text-align:center">' +
+          '<button class="btn btn--danger btn--sm" style="min-height:28px;padding:0 8px" ' +
+            'data-action="del-custom" data-check="' + num + '" data-idx="' + idx + '">&#10005;</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
 
-        <div>
-          <div class="form-group">
-            <label>Paycheck Amount ($)</label>
-            <input type="number" class="check-amount" data-check="${num}"
-                   value="${check.amount}" min="0" step="0.01" />
-          </div>
+    const datelabel = paydate ? '<span class="text-secondary text-xs"> &middot; ' + paydate + '</span>' : '';
 
-          <table class="data-table" style="margin:10px 0 4px">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Amount</th>
-                <th style="width:44px;text-align:center" title="Lock amount for this month">Lock</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${catRows}
-              ${fixedRows}
-              ${customRows}
-            </tbody>
-            <tfoot>
-              <tr style="border-top:1px solid var(--border)">
-                <td class="text-xs text-secondary font-bold">ALLOCATED</td>
-                <td class="font-mono font-bold">${fmt(allocated)}</td>
-                <td></td>
-              </tr>
-              <tr>
-                <td class="text-xs text-${sc} font-bold">${sl.toUpperCase()}</td>
-                <td class="font-mono font-bold text-${sc}">${fmt(Math.abs(surplus))}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
-
-          <!-- Custom item add row -->
-          <div style="display:flex;gap:8px;align-items:flex-end;margin-top:12px">
-            <div style="flex:1">
-              <label class="text-xs text-secondary">Custom Item</label>
-              <input type="text" class="custom-name" data-check="${num}" placeholder="Name" />
-            </div>
-            <div style="width:90px">
-              <label class="text-xs text-secondary">Amount</label>
-              <input type="number" class="custom-amt" data-check="${num}" placeholder="0" min="0" step="0.01" />
-            </div>
-            <button class="btn btn--secondary btn--sm" data-action="add-custom" data-check="${num}" data-key="${key}">+</button>
-          </div>
-
-          <button class="btn btn--primary btn--sm btn--full mt-12"
-                  data-action="save-check" data-check="${num}" data-key="${key}">
-            Save Paycheck ${num}
-          </button>
-        </div>
-      </details>`;
+    return '<details class="card card--glow-cyan" open data-check-card="' + num + '">' +
+      '<summary>' +
+        '<div>' +
+          '<div class="card-title">Paycheck ' + num + ' of ' + totalCount + datelabel + '</div>' +
+          '<div class="flex-gap-8 mt-4">' +
+            '<span class="font-mono text-cyan text-sm">' + fmt(check.amount) + '</span>' +
+            '<span class="text-dim">&middot;</span>' +
+            '<span class="text-' + sc + ' text-sm font-bold">' + sl + ': ' + fmt(Math.abs(surplus)) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</summary>' +
+      '<div>' +
+        '<div class="form-group">' +
+          '<label>Paycheck Amount ($)</label>' +
+          '<input type="number" class="check-amount" data-check="' + num + '" ' +
+            'value="' + check.amount + '" min="0" step="0.01" />' +
+        '</div>' +
+        '<table class="data-table" style="margin:10px 0 4px">' +
+          '<thead><tr>' +
+            '<th>Category</th>' +
+            '<th>Amount</th>' +
+            '<th style="width:44px;text-align:center" title="Lock amount for this month">Lock</th>' +
+          '</tr></thead>' +
+          '<tbody>' + catRows + fixedRows + customRows + '</tbody>' +
+          '<tfoot>' +
+            '<tr style="border-top:1px solid var(--border)">' +
+              '<td class="text-xs text-secondary font-bold">ALLOCATED</td>' +
+              '<td class="font-mono font-bold">' + fmt(allocated) + '</td>' +
+              '<td></td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td class="text-xs text-' + sc + ' font-bold">' + sl.toUpperCase() + '</td>' +
+              '<td class="font-mono font-bold text-' + sc + '">' + fmt(Math.abs(surplus)) + '</td>' +
+              '<td></td>' +
+            '</tr>' +
+          '</tfoot>' +
+        '</table>' +
+        '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:12px">' +
+          '<div style="flex:1">' +
+            '<label class="text-xs text-secondary">Custom Item</label>' +
+            '<input type="text" class="custom-name" data-check="' + num + '" placeholder="Name" />' +
+          '</div>' +
+          '<div style="width:90px">' +
+            '<label class="text-xs text-secondary">Amount</label>' +
+            '<input type="number" class="custom-amt" data-check="' + num + '" placeholder="0" min="0" step="0.01" />' +
+          '</div>' +
+          '<button class="btn btn--secondary btn--sm" data-action="add-custom" data-check="' + num + '" data-key="' + key + '">+</button>' +
+        '</div>' +
+        '<button class="btn btn--primary btn--sm btn--full mt-12" ' +
+          'data-action="save-check" data-check="' + num + '" data-key="' + key + '">' +
+          'Save Paycheck ' + num +
+        '</button>' +
+      '</div>' +
+    '</details>';
   }
 
   // ── Monthly totals card ───────────────────────────────────
@@ -253,130 +427,197 @@
     const net = income - allocated;
     const nc  = net >= 0 ? 'green' : 'red';
 
-    return `
-      <div class="card" style="background:var(--bg-tertiary)">
-        <div class="section-title">Monthly Totals</div>
-        <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <span class="text-secondary">Total Income</span>
-          <span class="font-mono font-bold text-cyan">${fmt(income)}</span>
-        </div>
-        <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <span class="text-secondary">Total Allocated</span>
-          <span class="font-mono font-bold">${fmt(allocated)}</span>
-        </div>
-        <div class="flex-between" style="padding:8px 0">
-          <span class="text-${nc} font-bold">${net >= 0 ? 'Net Surplus' : 'Net Deficit'}</span>
-          <span class="font-mono font-bold text-${nc}">${fmt(Math.abs(net))}</span>
-        </div>
-      </div>`;
+    return '<div class="card" style="background:var(--bg-tertiary)">' +
+      '<div class="section-title">Monthly Totals</div>' +
+      '<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+        '<span class="text-secondary">Total Income</span>' +
+        '<span class="font-mono font-bold text-cyan">' + fmt(income) + '</span>' +
+      '</div>' +
+      '<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+        '<span class="text-secondary">Total Allocated</span>' +
+        '<span class="font-mono font-bold">' + fmt(allocated) + '</span>' +
+      '</div>' +
+      '<div class="flex-between" style="padding:8px 0">' +
+        '<span class="text-' + nc + ' font-bold">' + (net >= 0 ? 'Net Surplus' : 'Net Deficit') + '</span>' +
+        '<span class="font-mono font-bold text-' + nc + '">' + fmt(Math.abs(net)) + '</span>' +
+      '</div>' +
+    '</div>';
   }
 
   // ── Events ────────────────────────────────────────────────
   function wireEvents(container, state) {
-    container.addEventListener('click', e => {
+    container.addEventListener('click', function(e) {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const { action } = btn.dataset;
+      const action = btn.dataset.action;
 
       if (action === 'prev-month') {
-        _month--;
-        if (_month < 1) { _month = 12; _year--; }
-        App.refreshCurrentTab();
-        return;
+        _month--; if (_month < 1) { _month = 12; _year--; }
+        App.refreshCurrentTab(); return;
       }
       if (action === 'next-month') {
-        _month++;
-        if (_month > 12) { _month = 1; _year++; }
-        App.refreshCurrentTab();
-        return;
+        _month++; if (_month > 12) { _month = 1; _year++; }
+        App.refreshCurrentTab(); return;
       }
       if (action === 'save-check') {
-        saveCheck(container, parseInt(btn.dataset.check, 10), btn.dataset.key);
-        return;
+        saveCheck(container, parseInt(btn.dataset.check, 10), btn.dataset.key); return;
       }
       if (action === 'add-custom') {
-        addCustomItem(container, parseInt(btn.dataset.check, 10), btn.dataset.key);
-        return;
+        addCustomItem(container, parseInt(btn.dataset.check, 10), btn.dataset.key); return;
       }
       if (action === 'del-custom') {
-        deleteCustomItem(parseInt(btn.dataset.check, 10), parseInt(btn.dataset.idx, 10));
-        return;
+        deleteCustomItem(parseInt(btn.dataset.check, 10), parseInt(btn.dataset.idx, 10)); return;
+      }
+      if (action === 'save-weekly-budgets') {
+        saveWeeklyBudgets(container); return;
+      }
+      if (action === 'add-upcoming') {
+        addUpcomingExpense(container); return;
+      }
+      if (action === 'toggle-upcoming-applied') {
+        toggleUpcomingApplied(parseInt(btn.dataset.idx, 10), btn.checked); return;
+      }
+      if (action === 'del-upcoming') {
+        deleteUpcoming(parseInt(btn.dataset.idx, 10)); return;
+      }
+    });
+
+    // Weekly budget inputs also need change handler for live preview
+    container.addEventListener('change', function(e) {
+      if (e.target.classList.contains('weekly-budget-input')) {
+        // Live update just recalculates the display — full save on button click
       }
     });
   }
 
-  // Read all DOM inputs for a paycheck card and save to state
+  // ── Action handlers ───────────────────────────────────────
   function saveCheck(container, num, key) {
-    const ns = App.getState();
-    if (!ns.paychecks)     ns.paychecks = {};
+    const ns = App.Storage.cloneState(App.getState());
+    if (!ns.paychecks)      ns.paychecks = {};
     if (!ns.paychecks[key]) ns.paychecks[key] = {};
 
-    // Get existing or default check
     const paydates = App.Storage.getPaydaysInMonth(ns.income.paydayDates || [], _year, _month);
-    const count    = Object.keys(ns.paychecks[key]).length || paydates.length || 2;
     const existing = ns.paychecks[key][num] || buildDefaultCheck(ns, num, paydates);
 
-    // Paycheck amount
-    const amtEl   = container.querySelector(`.check-amount[data-check="${num}"]`);
-    const amount  = amtEl ? (parseFloat(amtEl.value) || 0) : existing.amount;
+    const amtEl  = container.querySelector('.check-amount[data-check="' + num + '"]');
+    const amount = amtEl ? (parseFloat(amtEl.value) || 0) : existing.amount;
 
-    // Category allocations — read each inline input
-    const categories = (existing.categories || []).map((cat, idx) => {
-      const aEl = container.querySelector(`.inline-amt[data-check="${num}"][data-idx="${idx}"][data-field="cat-amount"]`);
-      const lEl = container.querySelector(`.lock-chk[data-check="${num}"][data-idx="${idx}"]`);
-      return {
-        ...cat,
+    const categories = (existing.categories || []).map(function(cat, idx) {
+      const aEl = container.querySelector('.inline-amt[data-check="' + num + '"][data-idx="' + idx + '"][data-field="cat-amount"]');
+      const lEl = container.querySelector('.lock-chk[data-check="' + num + '"][data-idx="' + idx + '"]');
+      return Object.assign({}, cat, {
         amount: aEl ? (parseFloat(aEl.value) || 0) : cat.amount,
         locked: lEl ? lEl.checked : cat.locked
-      };
+      });
     });
 
-    ns.paychecks[key][num] = { ...existing, amount, categories };
+    ns.paychecks[key][num] = Object.assign({}, existing, { amount: amount, categories: categories });
     App.setState(ns);
-    App.showToast(`Paycheck ${num} saved ✓`, 'success');
+    App.showToast('Paycheck ' + num + ' saved ✓', 'success');
     App.refreshCurrentTab();
   }
 
   function addCustomItem(container, num, key) {
-    const nameEl = container.querySelector(`.custom-name[data-check="${num}"]`);
-    const amtEl  = container.querySelector(`.custom-amt[data-check="${num}"]`);
+    const nameEl = container.querySelector('.custom-name[data-check="' + num + '"]');
+    const amtEl  = container.querySelector('.custom-amt[data-check="' + num + '"]');
     const name   = nameEl ? nameEl.value.trim() : '';
     const amount = amtEl  ? (parseFloat(amtEl.value) || 0) : 0;
     if (!name) { App.showToast('Item name required.', 'error'); return; }
 
-    const ns = App.getState();
+    const ns = App.Storage.cloneState(App.getState());
     if (!ns.paychecks)      ns.paychecks = {};
     if (!ns.paychecks[key]) ns.paychecks[key] = {};
     const paydates = App.Storage.getPaydaysInMonth(ns.income.paydayDates || [], _year, _month);
     if (!ns.paychecks[key][num]) ns.paychecks[key][num] = buildDefaultCheck(ns, num, paydates);
     if (!ns.paychecks[key][num].customItems) ns.paychecks[key][num].customItems = [];
-    ns.paychecks[key][num].customItems.push({ id: App.Storage.generateId(), name, amount });
+    ns.paychecks[key][num].customItems.push({ id: App.Storage.generateId(), name: name, amount: amount });
     App.setState(ns);
     App.refreshCurrentTab();
-    App.showToast(`"${name}" added ✓`, 'success');
+    App.showToast('"' + name + '" added ✓', 'success');
   }
 
   function deleteCustomItem(checkNum, idx) {
-    const ns  = App.getState();
+    const ns  = App.Storage.cloneState(App.getState());
     const key = mkKey(_year, _month);
-    if (ns.paychecks?.[key]?.[checkNum]?.customItems) {
+    if (ns.paychecks && ns.paychecks[key] && ns.paychecks[key][checkNum] &&
+        ns.paychecks[key][checkNum].customItems) {
       ns.paychecks[key][checkNum].customItems.splice(idx, 1);
       App.setState(ns);
       App.refreshCurrentTab();
     }
   }
 
+  function saveWeeklyBudgets(container) {
+    const inputs = container.querySelectorAll('.weekly-budget-input');
+    if (!inputs.length) return;
+    const ns = App.Storage.cloneState(App.getState());
+    inputs.forEach(function(inp) {
+      const catId = inp.dataset.catId;
+      const val   = parseFloat(inp.value);
+      if (!catId || isNaN(val)) return;
+      const idx = ns.yearlyCategories.findIndex(function(c) { return c.id === catId; });
+      if (idx !== -1) ns.yearlyCategories[idx].weeklyBudget = val;
+    });
+    App.setState(ns);
+    App.showToast('Weekly budgets saved ✓', 'success');
+    App.refreshCurrentTab();
+  }
+
+  function addUpcomingExpense(container) {
+    const monthEl = container.querySelector('#ue-month');
+    const amtEl   = container.querySelector('#ue-amount');
+    const payeeEl = container.querySelector('#ue-payee');
+    const noteEl  = container.querySelector('#ue-note');
+    const month   = monthEl  ? monthEl.value.trim()         : '';
+    const amount  = amtEl    ? (parseFloat(amtEl.value) || 0) : 0;
+    const payee   = payeeEl  ? payeeEl.value.trim()          : '';
+    const note    = noteEl   ? noteEl.value.trim()           : '';
+    if (!payee)  { App.showToast('Enter a payee/description', 'error'); return; }
+    if (!month)  { App.showToast('Enter a month', 'error'); return; }
+    if (!amount) { App.showToast('Enter an amount', 'error'); return; }
+
+    const ns = App.Storage.cloneState(App.getState());
+    if (!ns.upcomingExpenses) ns.upcomingExpenses = [];
+    ns.upcomingExpenses.push({
+      id: App.Storage.generateId(),
+      month: month, payee: payee, amount: amount,
+      note: note, applied: false, paycheckNum: 1
+    });
+    App.setState(ns);
+    App.showToast('"' + payee + '" added ✓', 'success');
+    App.refreshCurrentTab();
+  }
+
+  function toggleUpcomingApplied(idx, checked) {
+    const ns = App.Storage.cloneState(App.getState());
+    if (ns.upcomingExpenses && ns.upcomingExpenses[idx] !== undefined) {
+      ns.upcomingExpenses[idx].applied = !!checked;
+      App.setState(ns);
+      App.refreshCurrentTab();
+    }
+  }
+
+  function deleteUpcoming(idx) {
+    const ns = App.Storage.cloneState(App.getState());
+    if (ns.upcomingExpenses) {
+      ns.upcomingExpenses.splice(idx, 1);
+      App.setState(ns);
+      App.showToast('Expense removed ✓', 'success');
+      App.refreshCurrentTab();
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────
   function sumExpenses(check) {
-    const cats   = (check.categories  || []).reduce((s, c) => s + (Number(c.amount) || 0), 0);
-    const fixed  = (check.fixed       || []).reduce((s, f) => s + (Number(f.amount) || 0), 0);
-    const custom = (check.customItems || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const cats   = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
+    const fixed  = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
+    const custom = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
     return cats + fixed + custom;
   }
 
-  function mkKey(y, m) { return `${y}-${String(m).padStart(2, '0')}`; }
-  function round2(n)   { return Math.round(n * 100) / 100; }
-  function esc(s)      { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function mkKey(y, m)  { return y + '-' + String(m).padStart(2, '0'); }
+  function round2(n)    { return Math.round(n * 100) / 100; }
+  function esc(s)       { return String(s || '').replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
   App.Paychecks = { render };
 

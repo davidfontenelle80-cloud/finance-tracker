@@ -156,18 +156,18 @@
       // User adds/removes/edits in Setup → cascades everywhere.
       // Aligned to House_Budgetper.xlsx Savings Plan sheet (May 2026 actuals).
       yearlyCategories: [
-        { id: generateId(), name: 'Gasoline',          annualGoal: 2400  },
-        { id: generateId(), name: 'Food / Groceries',  annualGoal: 7200  },
-        { id: generateId(), name: 'Car Maintenance',   annualGoal: 4000  },
-        { id: generateId(), name: 'Asamblea',          annualGoal: 1200  },
-        { id: generateId(), name: 'Emergencia',        annualGoal: 10000 },
-        { id: generateId(), name: 'Car Savings',       annualGoal: 5000  },
-        { id: generateId(), name: 'Vacation Fund',     annualGoal: 5000  },
-        { id: generateId(), name: 'Roth IRA — David',  annualGoal: 7500  },
-        { id: generateId(), name: 'Roth IRA — Yamel',  annualGoal: 7500  },
-        { id: generateId(), name: 'Amica Insurance',   annualGoal: 1500  },
-        { id: generateId(), name: 'Clothing',          annualGoal: 1200  },
-        { id: generateId(), name: 'Fun Money',         annualGoal: 2000  }
+        { id: generateId(), name: 'Gasoline',          annualGoal: 2400,  weeklyBudget: 50,  weeklyDay: 'saturday', targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Food / Groceries',  annualGoal: 7200,  weeklyBudget: 150, weeklyDay: 'sunday',   targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Car Maintenance',   annualGoal: 4000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Asamblea',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Emergencia',        annualGoal: 10000 , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Car Savings',       annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Vacation Fund',     annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Roth IRA — David',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Roth IRA — Yamel',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Amica Insurance',   annualGoal: 1500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Clothing',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
+        { id: generateId(), name: 'Fun Money',         annualGoal: 2000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null }
       ],
 
       // ── Fixed monthly expenses ─────────────────────────
@@ -289,6 +289,12 @@
       // paycheckPeriod = "YYYY-MM-NN" (month + paycheck index)
       transactions: [],
 
+      // ── Upcoming expenses ──────────────────────────────
+      // Future one-time expenses planned into a specific month/paycheck.
+      // { id, month:'YYYY-MM', payee, amount, note, applied, paycheckNum }
+      // applied=true pulls it into that month's paycheck as a custom item.
+      upcomingExpenses: [],
+
       // ── Net worth history ──────────────────────────────
       // Logged once per month (on first open of that month).
       // { date: "YYYY-MM-DD", netWorth, investments, cash, debt }
@@ -338,7 +344,24 @@
     if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
       state.settings.excludeTransferFromDeficit = false;
     }
-    state.version = '1.2';
+    // v1.2 -> v1.3: weekly budget + goal countdown + upcoming expenses on categories
+    if (state.yearlyCategories) {
+      state.yearlyCategories.forEach(function(cat) {
+        if (cat.weeklyBudget === undefined) cat.weeklyBudget = null;
+        if (cat.weeklyDay   === undefined) cat.weeklyDay   = null;
+        if (cat.targetDate  === undefined) cat.targetDate  = null;
+        if (cat.targetAmount === undefined) cat.targetAmount = null;
+        // Auto-assign weekly day for Gasoline and Food by name
+        if (!cat.weeklyDay && /gasoline/i.test(cat.name) && !cat.weeklyBudget) {
+          cat.weeklyBudget = 50; cat.weeklyDay = 'saturday';
+        }
+        if (!cat.weeklyDay && /food/i.test(cat.name) && !cat.weeklyBudget) {
+          cat.weeklyBudget = 150; cat.weeklyDay = 'sunday';
+        }
+      });
+    }
+    if (!state.upcomingExpenses) state.upcomingExpenses = [];
+    state.version = '1.3';
     return state;
   }
 
