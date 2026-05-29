@@ -412,8 +412,23 @@
           'data-action="save-check" data-check="' + num + '" data-key="' + key + '">' +
           'Save Paycheck ' + num +
         '</button>' +
+        buildNotesSection(state, key, num) +
       '</div>' +
     '</details>';
+  }
+
+  // ── Paycheck notes section ───────────────────────────────
+  function buildNotesSection(state, key, num) {
+    var noteKey = key + '-' + num;
+    var notes   = (state.paycheckNotes && state.paycheckNotes[noteKey]) || '';
+    return '<div class="paycheck-notes-section">' +
+      '<div class="paycheck-notes-label">Notes / Reminders</div>' +
+      '<textarea class="paycheck-notes-input" ' +
+        'data-action="save-paycheck-note" data-note-key="' + noteKey + '" ' +
+        'placeholder="e.g. Rent due, car payment, upcoming expense...">' +
+        esc(notes) +
+      '</textarea>' +
+    '</div>';
   }
 
   // ── Monthly totals card ───────────────────────────────────
@@ -481,6 +496,22 @@
         deleteUpcoming(parseInt(btn.dataset.idx, 10)); return;
       }
     });
+
+    // Paycheck notes — auto-save on blur
+    container.addEventListener('blur', function(e) {
+      const ta = e.target.closest('[data-action="save-paycheck-note"]');
+      if (!ta) return;
+      const noteKey = ta.dataset.noteKey;
+      const text    = ta.value.trim();
+      const ns      = App.Storage.cloneState(App.getState());
+      if (!ns.paycheckNotes) ns.paycheckNotes = {};
+      if (text) {
+        ns.paycheckNotes[noteKey] = text;
+      } else {
+        delete ns.paycheckNotes[noteKey];
+      }
+      App.setState(ns);
+    }, true); // capture phase so blur bubbles up
 
     // Weekly budget inputs also need change handler for live preview
     container.addEventListener('change', function(e) {
@@ -589,7 +620,7 @@
   }
 
   function toggleUpcomingApplied(idx, checked) {
-    const ns = App.Storage.cloneState(App.getState());
+    var ns = App.Storage.cloneState(App.getState());
     if (ns.upcomingExpenses && ns.upcomingExpenses[idx] !== undefined) {
       ns.upcomingExpenses[idx].applied = !!checked;
       App.setState(ns);
@@ -598,27 +629,31 @@
   }
 
   function deleteUpcoming(idx) {
-    const ns = App.Storage.cloneState(App.getState());
+    var ns = App.Storage.cloneState(App.getState());
     if (ns.upcomingExpenses) {
       ns.upcomingExpenses.splice(idx, 1);
       App.setState(ns);
-      App.showToast('Expense removed ✓', 'success');
+      App.showToast('Expense removed', 'success');
       App.refreshCurrentTab();
     }
   }
 
   // ── Helpers ───────────────────────────────────────────────
   function sumExpenses(check) {
-    const cats   = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
-    const fixed  = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
-    const custom = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
+    var cats   = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
+    var fixed  = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
+    var custom = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
     return cats + fixed + custom;
   }
 
   function mkKey(y, m)  { return y + '-' + String(m).padStart(2, '0'); }
   function round2(n)    { return Math.round(n * 100) / 100; }
-  function esc(s)       { return String(s || '').replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function esc(s)       {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
 
-  App.Paychecks = { render };
+  App.Paychecks = { render: render };
 
 })(window.App = window.App || {});

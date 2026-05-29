@@ -1237,6 +1237,55 @@ input[type="checkbox"] {
 }
 .uc-row:last-child { border-bottom: none; }
 
+/* ── Savings Goals (Phase 3) ────────────────────────────────── */
+.sg-list { display: flex; flex-direction: column; gap: 12px; }
+.sg-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.sg-row:last-child { border-bottom: none; }
+.sg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.sg-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.sg-status { font-size: 1rem; }
+.sg-detail { display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 2px; }
+.sg-summary { margin-bottom: 8px; }
+
+/* ── Tracker ledger inputs (Phase 3) ────────────────────────── */
+.tracker-saved-cell { padding: 4px 8px !important; }
+.tracker-amount-input {
+  width: 90px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  text-align: right;
+}
+.tracker-amount-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(0,240,255,0.15);
+}
+
+/* ── Paycheck notes (Phase 3) ───────────────────────────────── */
+.paycheck-notes-section { margin-top: 12px; }
+.paycheck-notes-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.paycheck-notes-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.paycheck-notes-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+}
+
 /* ── Theme toggle (Step 11) ────────────────────────────────── */
 .theme-toggle-row {
   display: flex;
@@ -1272,99 +1321,3 @@ input[type="checkbox"] {
 
 .theme-seg-btn:hover { color: var(--text-primary); }
 
-.theme-seg-btn.active {
-  background: var(--neon-cyan);
-  color: #0a0e1a;
-}
-
-/* Ensure cards transition smoothly on theme switch */
-.card {
-  transition: background-color 0.3s, border-color 0.2s;
-}
-
-/* ── Advance Funding Banner (Step 12) ──────────────────────── */
-.advance-funding-banner {
-  background: rgba(255,176,0,0.08);
-  border: 1px solid rgba(255,176,0,0.35);
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-}
-
-.afb-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--neon-amber);
-  margin-bottom: 10px;
-}
-
-.afb-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,176,0,0.15);
-}
-
-.afb-row:last-child { border-bottom: none; }
-
-.afb-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.afb-name {
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.afb-detail {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-}
-
-.afb-btns {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.afb-yes {
-  background: rgba(0,255,136,0.12);
-  border-color: var(--neon-green) !important;
-  color: var(--neon-green) !important;
-  font-size: 0.75rem;
-  padding: 5px 10px;
-}
-
-.afb-no {
-  font-size: 0.75rem;
-  padding: 5px 10px;
-}
-
-/* ── Goal Completion Notice ─────────────────────────────── */
-.goal-complete-notice {
-  background: linear-gradient(135deg, var(--color-success, #22c55e) 0%, #16a34a 100%);
-  color: #fff;
-  border-radius: var(--radius-lg, 12px);
-  padding: 14px 18px;
-  margin-bottom: 14px;
-  animation: fadeIn 0.3s ease;
-}
-.gcn-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-.gcn-row {
-  font-size: 0.9rem;
-  opacity: 0.92;
-  padding: 2px 0;
-}

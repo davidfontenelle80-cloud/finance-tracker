@@ -300,6 +300,15 @@
       // { date: "YYYY-MM-DD", netWorth, investments, cash, debt }
       netWorthHistory: [],
 
+      // ── Paycheck notes ─────────────────────────────────
+      // Free-text notes per paycheck. Key: "YYYY-MM-N" (month + check#).
+      paycheckNotes: {},
+
+      // ── Tracker ledger ─────────────────────────────────
+      // Editable savings record per pay period.
+      // Key: period index (0-based string). Value: { amount, note }
+      trackerEntries: {},
+
       // ── App settings ───────────────────────────────────
       settings: {
         theme:    'dark-neon', // 'dark-neon' | 'light' | 'system'
@@ -361,7 +370,10 @@
       });
     }
     if (!state.upcomingExpenses) state.upcomingExpenses = [];
-    state.version = '1.3';
+    // v1.3 -> v1.4: paycheck notes + tracker ledger
+    if (!state.paycheckNotes)  state.paycheckNotes  = {};
+    if (!state.trackerEntries) state.trackerEntries = {};
+    state.version = '1.4';
     return state;
   }
 
@@ -452,16 +464,13 @@
     });
   }
 
-  // ── Expose public API ─────────────────────────────────────
 
-  // ── Deep clone state ──────────────────────────────────────
-  // Returns a deep copy of state so modules can mutate it safely
-  // before calling App.setState(). Avoids accidental reference mutations.
+  // Deep clone state: returns a JSON-round-tripped copy so mutations
+  // in modules never touch the live state object accidentally.
   function cloneState(state) {
     try {
       return JSON.parse(JSON.stringify(state));
     } catch (_) {
-      // Fallback: shallow clone if JSON fails (shouldn't happen)
       return Object.assign({}, state);
     }
   }
@@ -483,5 +492,3 @@
   };
 
 })(window.App = window.App || {});
-
- 

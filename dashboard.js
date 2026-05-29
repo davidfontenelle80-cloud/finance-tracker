@@ -209,6 +209,65 @@
     return `<div class="card-alert"><div class="ca-title">Credit Card Alerts</div>${rows}</div>`;
   }
 
+  // ── Savings Goals progress dashboard (Phase 3) ──────────
+  function buildSavingsGoals(state) {
+    const cats   = state.yearlyCategories || [];
+    const vaults = (state.accounts && state.accounts.vaults) || [];
+    if (!cats.length) return '';
+
+    const rows = cats.map(function(cat) {
+      const vault   = vaults.find(function(v) { return v.name.toLowerCase() === cat.name.toLowerCase(); });
+      const current = vault ? (Number(vault.balance) || 0) : 0;
+      const goal    = cat.annualGoal || 0;
+      const pct     = goal > 0 ? Math.min(100, (current / goal) * 100) : 0;
+      const needed  = Math.max(0, goal - current);
+
+      let status, barColor;
+      if (pct >= 100)      { status = '🎉'; barColor = 'progress-bar__fill--green'; }
+      else if (pct >= 75)  { status = '💪'; barColor = 'progress-bar__fill--green'; }
+      else if (pct >= 50)  { status = '📈'; barColor = 'progress-bar__fill--amber'; }
+      else                 { status = '🚀'; barColor = 'progress-bar__fill--amber'; }
+
+      return `
+        <div class="sg-row">
+          <div class="sg-header">
+            <span class="sg-name">${esc(cat.name)}</span>
+            <span class="sg-status">${status}</span>
+          </div>
+          <div class="progress-bar" style="margin:4px 0">
+            <div class="${barColor} progress-bar__fill" style="width:${pct.toFixed(1)}%"></div>
+          </div>
+          <div class="sg-detail">
+            <span class="text-secondary">${fmt(current)} of ${fmt(goal)}</span>
+            <span class="font-mono ${needed === 0 ? 'text-green' : 'text-secondary'}">${needed === 0 ? '✓ Done' : fmt(needed) + ' left'}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    const totalGoal    = cats.reduce(function(s, c) { return s + (c.annualGoal || 0); }, 0);
+    const totalFunded  = cats.reduce(function(s, c) {
+      const v = vaults.find(function(v2) { return v2.name.toLowerCase() === c.name.toLowerCase(); });
+      return s + (v ? (Number(v.balance) || 0) : 0);
+    }, 0);
+    const overallPct   = totalGoal > 0 ? Math.min(100, (totalFunded / totalGoal) * 100) : 0;
+
+    return `
+      <div class="card">
+        <div class="card-title mb-4">🎯 Savings Goals</div>
+        <div class="sg-summary text-secondary text-xs mb-12">
+          ${fmt(totalFunded)} of ${fmt(totalGoal)} funded overall —
+          <strong class="text-cyan">${overallPct.toFixed(1)}%</strong>
+        </div>
+        <div class="sg-list">${rows}</div>
+      </div>`;
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   // ── Upcoming expense changes (Step 10) ──────────────────
   function buildUpcomingChanges(state) {
     const fixed = state.fixedMonthlyExpenses || [];
@@ -302,6 +361,9 @@
         </div>
       </div>
 
+
+      <!-- Savings Goals progress -->
+      ${buildSavingsGoals(state)}
 
       <!-- Upcoming expense changes (Step 10) -->
       ${buildUpcomingChanges(state)}
@@ -461,33 +523,31 @@
       }));
     }
 
-    // ── Chart 4: Paycheck Performance (planned vs actual) ──
+    // Chart 4: Paycheck Performance (planned vs actual)
     if (perfCanvas) {
-      const paydates = state.income?.paydayDates || [];
-      const ppy      = paydates.length;
-      // Build period data (reuse tracker logic)
-      const periods  = paydates.slice(0, 26).map((startDate, idx) => {
+      const paydates = (state.income && state.income.paydayDates) || [];
+      const periods  = paydates.slice(0, 26).map(function(startDate, idx) {
         const endDate  = paydates[idx + 1] ? offsetDate(paydates[idx + 1], -1) : '9999-12-31';
         const actual   = (state.transactions || [])
-          .filter(tx => tx.date >= startDate && tx.date <= endDate)
-          .reduce((s, tx) => s + (Number(tx.amount) || 0), 0);
-        const ppy2 = state.income?.paychecksPerYear || 26;
-        const planned = (state.yearlyCategories || []).reduce((s, c) => s + (c.annualGoal / ppy2), 0);
-        return { label: `P${idx + 1}`, planned: Math.round(planned), actual: Math.round(actual) };
-      }).filter(p => p.actual > 0); // only periods with data
+          .filter(function(tx) { return tx.date >= startDate && tx.date <= endDate; })
+          .reduce(function(s, tx) { return s + (Number(tx.amount) || 0); }, 0);
+        const ppy2    = (state.income && state.income.paychecksPerYear) || 26;
+        const planned = (state.yearlyCategories || []).reduce(function(s, c) { return s + (c.annualGoal / ppy2); }, 0);
+        return { label: 'P' + (idx + 1), planned: Math.round(planned), actual: Math.round(actual) };
+      }).filter(function(p) { return p.actual > 0; });
 
       _charts.push(new window.Chart(perfCanvas, {
         type: 'bar',
         data: {
-          labels: periods.map(p => p.label),
+          labels: periods.map(function(p) { return p.label; }),
           datasets: [
-            { label: 'Planned', data: periods.map(p => p.planned), backgroundColor: 'rgba(0,240,255,0.3)', borderColor: '#00f0ff', borderWidth: 1 },
-            { label: 'Actual',  data: periods.map(p => p.actual),  backgroundColor: 'rgba(255,0,234,0.3)', borderColor: '#ff00ea', borderWidth: 1 }
+            { label: 'Planned', data: periods.map(function(p) { return p.planned; }), backgroundColor: 'rgba(0,240,255,0.3)', borderColor: '#00f0ff', borderWidth: 1 },
+            { label: 'Actual',  data: periods.map(function(p) { return p.actual;  }), backgroundColor: 'rgba(255,0,234,0.3)', borderColor: '#ff00ea', borderWidth: 1 }
           ]
         },
         options: {
           ...defaults,
-          scales: { x: axisDefaults, y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: v => '$' + v } } }
+          scales: { x: axisDefaults, y: { ...axisDefaults, ticks: { ...axisDefaults.ticks, callback: function(v) { return '$' + v; } } } }
         }
       }));
     }
@@ -496,7 +556,7 @@
     const yearSel = document.getElementById('dash-year');
     if (yearSel) {
       yearSel.value = String(_viewYear);
-      yearSel.addEventListener('change', () => {
+      yearSel.addEventListener('change', function() {
         _viewYear = parseInt(yearSel.value, 10);
         App.refreshCurrentTab();
       });
@@ -511,9 +571,9 @@
   }
 
   function buildYearOptions(state) {
-    const txYears = [...new Set((state.transactions || []).map(tx => tx.date.slice(0, 4)).filter(Boolean))];
+    const txYears = [...new Set((state.transactions || []).map(function(tx) { return tx.date.slice(0, 4); }).filter(Boolean))];
     const years   = [...new Set([...txYears, String(new Date().getFullYear())])].sort().reverse();
-    return years.map(y => `<option value="${y}" ${y === String(_viewYear) ? 'selected' : ''}>${y}</option>`).join('');
+    return years.map(function(y) { return '<option value="' + y + '" ' + (y === String(_viewYear) ? 'selected' : '') + '>' + y + '</option>'; }).join('');
   }
 
   function offsetDate(isoStr, days) {
