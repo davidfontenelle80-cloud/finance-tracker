@@ -1451,3 +1451,26 @@ input[type="checkbox"] {
   opacity: 0.92;
   padding: 2px 0;
 }
+
+/* ── Quick Edit Panel ──────────────────────────────────────── */
+.qe-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.qe-row:last-child { border-bottom: none; }
+.qe-name { color: var(--text-primary); max-width: 55%; }
+.qe-val  { display: flex; align-items: center; gap: 6px; }
+.qe-btn  {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+}
+.qe-btn:hover { opacity: 1; background: var(--surface-2); }

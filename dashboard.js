@@ -25,8 +25,119 @@
 
     container.innerHTML = buildHtml(state);
 
+    // Wire Quick Edit panel
+    wireQuickEdit(container);
+
     // Charts need Chart.js — load from CDN then draw
     loadChartJs(() => drawCharts(state));
+  }
+
+  function wireQuickEdit(container) {
+    container.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+
+      if (action === 'qe-toggle') {
+        const body    = document.getElementById('qe-body');
+        const chevron = document.getElementById('qe-chevron');
+        if (!body) return;
+        const open = body.style.display === 'block';
+        body.style.display    = open ? 'none' : 'block';
+        if (chevron) chevron.textContent = open ? '▼' : '▲';
+        return;
+      }
+
+      if (action === 'qe-edit') {
+        const id  = btn.dataset.id;
+        const type = btn.dataset.type; // 'bank' or 'vault'
+        const cur  = parseFloat(btn.dataset.val) || 0;
+        const name = btn.closest('.qe-row').querySelector('.qe-name').textContent.trim();
+        openQuickEditModal(id, type, name, cur);
+        return;
+      }
+
+      if (action === 'qe-edit-card') {
+        const id    = btn.dataset.id;
+        const cur   = parseFloat(btn.dataset.val) || 0;
+        const limit = parseFloat(btn.dataset.limit) || 0;
+        const name  = btn.closest('.qe-row').querySelector('.qe-name').textContent.trim();
+        openQuickEditCardModal(id, name, cur, limit);
+        return;
+      }
+    });
+  }
+
+  function openQuickEditModal(id, type, name, currentVal) {
+    App.showModal(`
+      <div style="padding:8px">
+        <div class="card-title mb-12">✏️ Edit Balance</div>
+        <div class="text-secondary text-sm mb-8">${esc(name)}</div>
+        <input id="qe-input" type="number" step="0.01" min="0" inputmode="decimal"
+          class="form-control mb-12" value="${currentVal.toFixed(2)}" />
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">Cancel</button>
+          <button class="btn btn--primary" style="flex:1" id="qe-save-btn">Save</button>
+        </div>
+      </div>
+    `);
+    setTimeout(() => {
+      const input   = document.getElementById('qe-input');
+      const saveBtn = document.getElementById('qe-save-btn');
+      if (input) input.focus();
+      if (saveBtn) saveBtn.addEventListener('click', function() {
+        const val = parseFloat(input.value);
+        if (isNaN(val)) { App.showToast('Enter a valid number', 'error'); return; }
+        const ns    = App.Storage.cloneState(App.getState());
+        const accts = ns.accounts || {};
+        const arr   = type === 'bank' ? accts.bank : accts.vaults;
+        const item  = (arr || []).find(a => a.id === id);
+        if (item) { item.balance = val; App.setState(ns); }
+        App.closeModal();
+        App.showToast(`${name} → ${App.Storage.formatCurrency(val)} ✓`, 'success');
+        App.refreshCurrentTab();
+      });
+    }, 50);
+  }
+
+  function openQuickEditCardModal(id, name, availCredit, limit) {
+    App.showModal(`
+      <div style="padding:8px">
+        <div class="card-title mb-12">✏️ Edit Available Credit</div>
+        <div class="text-secondary text-sm mb-8">${esc(name)}</div>
+        <label class="text-xs text-secondary">Available Credit</label>
+        <input id="qe-card-input" type="number" step="0.01" min="0" inputmode="decimal"
+          class="form-control mb-12" value="${availCredit.toFixed(2)}" />
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">Cancel</button>
+          <button class="btn btn--primary" style="flex:1" id="qe-card-save">Save</button>
+        </div>
+      </div>
+    `);
+    setTimeout(() => {
+      const input   = document.getElementById('qe-card-input');
+      const saveBtn = document.getElementById('qe-card-save');
+      if (input) input.focus();
+      if (saveBtn) saveBtn.addEventListener('click', function() {
+        const avail = parseFloat(input.value);
+        if (isNaN(avail)) { App.showToast('Enter a valid number', 'error'); return; }
+        const ns   = App.Storage.cloneState(App.getState());
+        const card = ((ns.accounts||{}).cards||[]).find(c => c.id === id);
+        if (card) {
+          card.balance = Math.max(0, limit - avail);
+          card.availableCredit = avail;
+          App.setState(ns);
+        }
+        App.closeModal();
+        App.showToast(`${name} → ${App.Storage.formatCurrency(avail)} available ✓`, 'success');
+        App.refreshCurrentTab();
+      });
+    }, 50);
+  }
+
+  function esc2(s) {
+    return String(s||'').replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   // ── Log monthly snapshot ──────────────────────────────────
@@ -417,6 +528,64 @@
     '</div>';
   }
 
+
+  // ── Quick Edit panel ─────────────────────────────────────
+  // Collapsible panel on Dashboard — tap any balance to edit
+  // without leaving the tab.
+  function buildQuickEdit(state) {
+    const accts  = state.accounts || {};
+    const bank   = accts.bank   || [];
+    const vaults = accts.vaults || [];
+    const cards  = accts.cards  || [];
+
+    const bankRows = bank.map(a => `
+      <div class="qe-row">
+        <span class="qe-name text-sm">${esc(a.name)}</span>
+        <span class="qe-val font-mono text-sm" data-qe-id="${a.id}" data-qe-type="bank" data-qe-val="${a.balance||0}">
+          ${fmt(a.balance||0)}
+          <button class="qe-btn" data-action="qe-edit" data-id="${a.id}" data-type="bank" data-val="${a.balance||0}" title="Edit">✏️</button>
+        </span>
+      </div>`).join('');
+
+    const vaultRows = vaults.map(v => `
+      <div class="qe-row">
+        <span class="qe-name text-sm">${esc(v.name)}</span>
+        <span class="qe-val font-mono text-sm" data-qe-id="${v.id}" data-qe-type="vault" data-qe-val="${v.balance||0}">
+          ${fmt(v.balance||0)}
+          <button class="qe-btn" data-action="qe-edit" data-id="${v.id}" data-type="vault" data-val="${v.balance||0}" title="Edit">✏️</button>
+        </span>
+      </div>`).join('');
+
+    const cardRows = cards.map(c => {
+      const avail = Math.max(0, (c.limit||0) - (c.balance||0));
+      return `
+      <div class="qe-row">
+        <span class="qe-name text-sm">${esc(c.name)}</span>
+        <span class="qe-val font-mono text-sm">
+          <span class="text-secondary text-xs">avail </span>${fmt(avail)}
+          <button class="qe-btn" data-action="qe-edit-card" data-id="${c.id}" data-val="${avail}" data-limit="${c.limit||0}" title="Edit available credit">✏️</button>
+        </span>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="card" id="qe-panel" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-action="qe-toggle">
+          <div class="card-title" style="margin:0">✏️ Quick Edit Balances</div>
+          <span id="qe-chevron" style="color:var(--text-secondary);font-size:0.8rem">▼</span>
+        </div>
+        <div id="qe-body" style="display:none;margin-top:12px">
+          ${bank.length ? `<div class="text-xs text-secondary mb-4" style="text-transform:uppercase;letter-spacing:.05em">Bank</div>${bankRows}` : ''}
+          ${vaults.length ? `<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Vaults</div>${vaultRows}` : ''}
+          ${cards.length ? `<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Cards (Available Credit)</div>${cardRows}` : ''}
+          <div class="text-xs text-secondary mt-10" style="text-align:right">
+            Changes save instantly and update all tabs.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
     const { investments, cash, debt, liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
@@ -457,6 +626,9 @@
 
       <!-- Safe to Spend card -->
       ${buildSafeToSpendCard(state)}
+
+      <!-- Quick edit panel -->
+      ${buildQuickEdit(state)}
 
       <!-- Weekly spend tracker -->
       ${buildWeeklySpendPanel(state)}
