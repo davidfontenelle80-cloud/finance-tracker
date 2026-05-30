@@ -324,8 +324,16 @@
       <details class="card" open>
         <summary>
           <div>
-            <div class="card-title">&#127970; Bank Accounts</div>
-            <div class="card-subtitle">${bank.length} accounts &middot; ${fmt(total)} total cash &middot; <span style="color:var(--text-dim);font-size:0.72rem">tap ✎ to edit</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <div>
+                <div class="card-title">&#127970; Bank Accounts</div>
+                <div class="card-subtitle">${bank.length} accounts &middot; ${fmt(total)} total cash &middot; <span style="color:var(--text-dim);font-size:0.72rem">tap ✎ to edit</span></div>
+              </div>
+              <button class="btn btn--secondary btn--sm" data-action="scan-screenshot"
+                      style="flex-shrink:0;margin-left:8px;font-size:0.72rem">
+                &#128247; Scan
+              </button>
+            </div>
           </div>
         </summary>
         <div>
@@ -529,6 +537,11 @@
           });
           break;
         }
+
+        // ── Screenshot OCR scan ──────────────────────────────
+        case 'scan-screenshot':
+          openScreenshotScanner(state);
+          break;
 
         // ── Subscription: mark paid ──────────────────────────
         case 'sub-toggle-paid': {
@@ -869,6 +882,186 @@
           break;
       }
     });
+  }
+
+
+  // ── Screenshot Balance Scanner ────────────────────────────
+  // Uses Tesseract.js (browser OCR) to read balances from a
+  // banking screenshot. Parses dollar amounts and matches them
+  // to your known account names for confirmation.
+  function openScreenshotScanner(state) {
+    const bd = document.getElementById('modal-backdrop');
+    const mc = document.getElementById('modal-content');
+    if (!bd || !mc) return;
+
+    mc.innerHTML =
+      '<div class="modal-header">' +
+        '<div class="modal-title">&#128247; Scan Screenshot</div>' +
+        '<button class="btn btn--icon btn--secondary" data-action="modal-close">&#10005;</button>' +
+      '</div>' +
+      '<p class="text-secondary text-sm" style="margin-bottom:12px">' +
+        'Take or upload a screenshot of your banking app. The scanner reads the ' +
+        'dollar amounts and lets you match them to your accounts.' +
+      '</p>' +
+      '<input type="file" id="ocr-file" accept="image/*" capture="environment" ' +
+        'style="display:none" />' +
+      '<button class="btn btn--primary btn--full" id="ocr-pick-btn">&#128247; Choose / Take Photo</button>' +
+      '<div id="ocr-preview" style="margin-top:12px;display:none">' +
+        '<img id="ocr-img" style="max-width:100%;border-radius:8px;margin-bottom:10px" />' +
+        '<div id="ocr-status" class="text-xs text-secondary" style="text-align:center;margin-bottom:8px">Reading image...</div>' +
+        '<div id="ocr-results"></div>' +
+      '</div>';
+
+    bd.classList.remove('hidden');
+    bd.setAttribute('aria-hidden', 'false');
+
+    mc.querySelector('[data-action="modal-close"]').addEventListener('click', function() {
+      bd.classList.add('hidden'); mc.innerHTML = '';
+    });
+    bd.addEventListener('click', function h(e) {
+      if (e.target === bd) { bd.classList.add('hidden'); mc.innerHTML = ''; bd.removeEventListener('click', h); }
+    });
+
+    const fileInput = mc.querySelector('#ocr-file');
+    mc.querySelector('#ocr-pick-btn').addEventListener('click', function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const preview = mc.querySelector('#ocr-preview');
+      const img     = mc.querySelector('#ocr-img');
+      const status  = mc.querySelector('#ocr-status');
+      const results = mc.querySelector('#ocr-results');
+      preview.style.display = 'block';
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      status.textContent = 'Loading OCR engine...';
+      results.innerHTML  = '';
+
+      // Load Tesseract.js from CDN
+      if (!window.Tesseract) {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+        script.onload = function() { runOCR(img, url, status, results, state, mc, bd); };
+        script.onerror = function() { status.textContent = 'Could not load OCR engine. Check your connection.'; };
+        document.head.appendChild(script);
+      } else {
+        runOCR(img, url, status, results, state, mc, bd);
+      }
+    });
+  }
+
+  function runOCR(img, url, status, results, state, mc, bd) {
+    status.textContent = 'Scanning image...';
+    Tesseract.recognize(url, 'eng', {
+      logger: function(m) {
+        if (m.status === 'recognizing text') {
+          status.textContent = 'Reading... ' + Math.round((m.progress || 0) * 100) + '%';
+        }
+      }
+    }).then(function(result) {
+      var text = result.data.text;
+      status.textContent = 'Done. Tap a balance to update an account.';
+      // Parse dollar amounts from OCR text
+      var amounts = parseAmountsFromOCR(text);
+      if (!amounts.length) {
+        results.innerHTML = '<p class="text-secondary text-sm">No dollar amounts found. Try a clearer screenshot.</p>';
+        return;
+      }
+      // Build match UI
+      var allAccounts = [];
+      ((state.accounts && state.accounts.bank) || []).forEach(function(a) {
+        allAccounts.push({ type: 'bank', id: a.id, name: a.name });
+      });
+      ((state.accounts && state.accounts.vaults) || []).forEach(function(v) {
+        allAccounts.push({ type: 'vault', id: v.id, name: v.name });
+      });
+      var opts = allAccounts.map(function(a) {
+        return '<option value="' + a.type + ':' + a.id + '">' + a.name + '</option>';
+      }).join('');
+
+      var rows = amounts.map(function(a, i) {
+        return '<div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<span class="font-mono font-bold text-cyan">' + a.display + '</span>' +
+          '<select class="ocr-acct-sel" data-idx="' + i + '" style="font-size:0.78rem;padding:4px 6px">' +
+            '<option value="">— Skip —</option>' + opts +
+          '</select>' +
+          '<button class="btn btn--primary btn--sm" data-action="ocr-apply" data-amount="' + a.value + '" data-idx="' + i + '">Apply</button>' +
+        '</div>';
+      }).join('');
+
+      results.innerHTML =
+        '<div class="text-xs text-secondary" style="margin-bottom:8px">Match each amount to an account:</div>' +
+        rows +
+        '<button class="btn btn--primary btn--full mt-12" data-action="ocr-apply-all">Apply All Matched</button>';
+
+      // Wire individual apply buttons
+      results.querySelectorAll('[data-action="ocr-apply"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx    = btn.dataset.idx;
+          var amount = parseFloat(btn.dataset.amount) || 0;
+          var sel    = results.querySelector('.ocr-acct-sel[data-idx="' + idx + '"]');
+          if (!sel || !sel.value) { App.showToast('Pick an account first', 'error'); return; }
+          applyOCRBalance(sel.value, amount, state);
+          btn.textContent = '✓';
+          btn.disabled = true;
+          sel.disabled = true;
+        });
+      });
+
+      // Apply all
+      results.querySelector('[data-action="ocr-apply-all"]').addEventListener('click', function() {
+        results.querySelectorAll('.ocr-acct-sel').forEach(function(sel) {
+          if (!sel.value || sel.disabled) return;
+          var idx    = sel.dataset.idx;
+          var btn    = results.querySelector('[data-action="ocr-apply"][data-idx="' + idx + '"]');
+          var amount = btn ? (parseFloat(btn.dataset.amount) || 0) : 0;
+          applyOCRBalance(sel.value, amount, state);
+          sel.disabled = true;
+          if (btn) { btn.textContent = '✓'; btn.disabled = true; }
+        });
+        App.showToast('Balances updated ✓', 'success');
+        setTimeout(function() { bd.classList.add('hidden'); mc.innerHTML = ''; }, 800);
+      });
+    }).catch(function(err) {
+      status.textContent = 'Error reading image. Try again with a clearer screenshot.';
+      console.error('OCR error:', err);
+    });
+  }
+
+  function parseAmountsFromOCR(text) {
+    // Match patterns like $1,234.56 or $1,234 or 1,234.56
+    var amounts = [];
+    var seen    = new Set();
+    var re      = /\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)(?!\d)/g;
+    var match;
+    while ((match = re.exec(text)) !== null) {
+      var raw   = match[1].replace(/,/g, '');
+      var value = parseFloat(raw);
+      if (value > 0 && !seen.has(raw)) {
+        seen.add(raw);
+        amounts.push({ value: value, display: '$' + match[1] });
+      }
+    }
+    // Sort largest first (most likely to be account balances)
+    return amounts.sort(function(a, b) { return b.value - a.value; }).slice(0, 12);
+  }
+
+  function applyOCRBalance(typeIdStr, amount, state) {
+    var parts  = typeIdStr.split(':');
+    var type   = parts[0];
+    var id     = parts[1];
+    var ns     = App.Storage.cloneState(App.getState());
+    if (type === 'bank') {
+      var acct = (ns.accounts.bank || []).find(function(a) { return a.id === id; });
+      if (acct) { acct.balance = amount; App.setState(ns); }
+    } else if (type === 'vault') {
+      var vault = (ns.accounts.vaults || []).find(function(v) { return v.id === id; });
+      if (vault) { vault.balance = amount; App.setState(ns); }
+    }
+    App.showToast('Updated ✓', 'success');
   }
 
   // HTML escape helper

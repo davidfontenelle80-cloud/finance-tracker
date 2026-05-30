@@ -15,7 +15,10 @@
   <!-- Language toggle + app header strip -->
   <div id="app-header" class="app-header">
     <span class="app-header__title">Finance Tracker</span>
-    <button id="lang-toggle" class="btn btn--secondary btn--sm lang-toggle" onclick="App.Lang.setLang(App.Lang.getLang()==='en'?'es':'en')" title="Switch language"><span id="lang-label">Español</span></button>
+    <div class="lang-selector" id="lang-selector">
+    <button class="lang-opt active" id="lang-en" onclick="App.Lang.setLang('en')">English</button>
+    <button class="lang-opt" id="lang-es" onclick="App.Lang.setLang('es')">Español</button>
+  </div>
   </div>
 
   <!-- Bottom Navigation -->

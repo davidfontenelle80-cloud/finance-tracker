@@ -679,10 +679,12 @@
       }
     });
     // Also update the lang toggle button text if it exists
-    var toggle = document.getElementById('lang-toggle');
-    if (toggle) {
-      var lbl = toggle.querySelector('#lang-label') || toggle;
-      lbl.textContent = _lang === 'en' ? 'Español' : 'English';
+    // Two-button lang selector
+    var enBtn = document.getElementById('lang-en');
+    var esBtn = document.getElementById('lang-es');
+    if (enBtn && esBtn) {
+      enBtn.classList.toggle('active', _lang === 'en');
+      esBtn.classList.toggle('active', _lang === 'es');
     }
   }
 
