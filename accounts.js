@@ -32,6 +32,12 @@
   function buildHtml(state) {
     const accts = state.accounts || { bank: [], vaults: [], cards: [] };
     return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button class="btn btn--secondary" data-action="open-screenshot" style="display:flex;align-items:center;gap:6px;padding:8px 14px">
+          <span style="font-size:1.1rem">📸</span>
+          <span class="text-sm">Update from Screenshot</span>
+        </button>
+      </div>
       ${renderSafetyBanner(state, accts)}
       ${renderSubscriptions(state)}
       ${renderVaults(accts)}
@@ -540,7 +546,9 @@
 
         // ── Screenshot OCR scan ──────────────────────────────
         case 'scan-screenshot':
-          openScreenshotScanner(state);
+        case 'open-screenshot':
+          if (App.Screenshot) App.Screenshot.open();
+          else App.showToast('Screenshot module not loaded', 'error');
           break;
 
         // ── Subscription: mark paid ──────────────────────────

@@ -334,7 +334,8 @@
         theme:    'dark-neon', // 'dark-neon' | 'light' | 'system'
         currency: 'USD',
         lang:     'en',        // 'en' | 'es'
-        excludeTransferFromDeficit: false
+        excludeTransferFromDeficit: false,
+        claudeApiKey: ''           // for Screenshot Balance Updater
       },
 
       // Dated reminders: { id, text, amount, date }
@@ -391,6 +392,7 @@
     }
     if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
       state.settings.excludeTransferFromDeficit = false;
+    if (state.settings.claudeApiKey === undefined) state.settings.claudeApiKey = '';
     }
     // v1.2 -> v1.3: weekly budget + goal countdown + upcoming expenses on categories
     if (state.yearlyCategories) {

@@ -557,6 +557,27 @@
         <button class="btn btn--primary mt-12" data-action="save-goal-redirect">Save Preference</button>
       </div>
 
+
+      <div class="card">
+        <div class="card-title mb-8">📸 Claude API Key</div>
+        <p class="text-secondary text-xs mb-12">
+          Required for the Screenshot Balance Updater. Paste or upload a bank screenshot
+          and the app will auto-detect balances and update your accounts.<br><br>
+          Get a free key at <strong>console.anthropic.com</strong>
+        </p>
+        <input
+          type="password"
+          id="claude-api-key-input"
+          class="form-control mb-8"
+          placeholder="sk-ant-api03-..."
+          value="${(state.settings && state.settings.claudeApiKey) || ''}"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn btn--primary btn--full" data-action="save-claude-key">Save API Key</button>
+        <div class="text-xs text-secondary mt-8">Key is stored locally on your device only.</div>
+      </div>
+
       <div class="card">
         <div class="card-title mb-8">🗑 Danger Zone</div>
         <button class="btn btn--danger btn--full" data-action="clear-all-data">Clear All Data</button>
@@ -844,6 +865,17 @@
           App.showToast('Data cleared. Reloading…', 'info');
           setTimeout(() => location.reload(), 1200);
           break;
+
+        case 'save-claude-key': {
+          const keyInput = container.querySelector('#claude-api-key-input');
+          if (!keyInput) return;
+          const ns = App.getState();
+          if (!ns.settings) ns.settings = {};
+          ns.settings.claudeApiKey = keyInput.value.trim();
+          App.setState(ns);
+          App.showToast(ns.settings.claudeApiKey ? 'API key saved ✓' : 'API key cleared', 'success');
+          break;
+        }
 
         case 'save-goal-redirect': {
           const sel = container.querySelector('#goal-redirect-sel');
