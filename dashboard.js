@@ -107,15 +107,15 @@
     }, 0);
 
     // Total vault balances = money already allocated to goals
-    const vaultTotal = (accts.vaults || [])
-      .reduce((s, v) => s + (Number(v.balance) || 0), 0);
-
-    const discretionary = cashOnHand - upcomingFixed - vaultTotal;
+    // Vault balances live in SoFi Savings — a SEPARATE account from checking.
+    // Do not deduct them from liquid checking balance (that would double-count).
+    // Safe to Spend = what's actually in your liquid checking accounts minus bills due.
+    const discretionary = cashOnHand - upcomingFixed;
 
     return {
       cashOnHand,
       upcomingFixed,
-      vaultTotal,
+      vaultTotal: 0,
       discretionary
     };
   }
@@ -449,7 +449,7 @@
 
     return `
       <!-- Reminders alert banner -->
-      \${buildRemindersAlert(state)}
+      ${buildRemindersAlert(state)}
 
       <!-- Net worth hero card with liquidity tiers -->
       ${buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass)}

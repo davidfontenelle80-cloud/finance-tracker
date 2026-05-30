@@ -190,7 +190,7 @@
           { id: generateId(), name: 'SoFi Transfer Account',     balance: 3312.99,    isTransferAccount: true,  liquidityTier: 'immediate' },
           { id: generateId(), name: 'American Eagle Checking',   balance: 76.46,      isTransferAccount: false, liquidityTier: 'immediate' },
           { id: generateId(), name: 'Emergency Fidelity Cash',   balance: 11062.73,   isTransferAccount: false, liquidityTier: 'short'     },
-          { id: generateId(), name: 'Car Savings (Fidelity SGOV)', balance: 24917.56, isTransferAccount: false, liquidityTier: 'short'     }
+          { id: generateId(), name: 'Car Savings (Fidelity SGOV)', balance: 0,        isTransferAccount: false, liquidityTier: 'locked'    } /* value tracked in Investments tab */
         ],
 
         // Envelope vaults — all 20 from House_Budgetper.xlsx Bank Accounts sheet (May 2026).
