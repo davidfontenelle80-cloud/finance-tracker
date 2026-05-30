@@ -98,7 +98,7 @@
                       data-action="sub-toggle-paid"
                       data-id="${sub.id}"
                       style="min-width:52px;font-size:0.75rem">
-                ${sub.paid ? '✓ Paid' : 'Mark Paid'}
+                ${sub.paid ? '✓ Paid' : t('ui.markPaid')}
               </button>
               <button class="btn btn--sm ${sub.addToPaycheck ? 'btn--primary' : 'btn--secondary'}"
                       data-action="sub-toggle-add"
@@ -163,7 +163,7 @@
         <div class="safety-banner" style="background:rgba(255,176,0,0.08);border:1px solid rgba(255,176,0,0.4);color:var(--neon-amber)">
           <div class="safety-banner__headline">&#9888; No Transfer Account Set</div>
           <div class="text-sm" style="font-weight:400;margin-top:4px">
-            Go to Setup &rarr; Accounts and mark one bank account as your Transfer Account.
+            Go to Setup &rarr; Accounts and mark one bank account as your Transfer Account. In SoFi, this is your Checking account.
           </div>
         </div>`;
     }
@@ -211,14 +211,16 @@
               <div class="font-bold text-sm">${esc(v.name)}</div>
               ${hasItems ? `<div class="text-xs text-secondary">${v.items.length} item${v.items.length !== 1 ? 's' : ''}</div>` : ''}
             </div>
-            <span class="font-mono text-cyan editable-balance"
-                  data-action="inline-edit"
-                  data-id="${v.id}"
-                  data-type="vault"
-                  data-bal="${bal}"
-                  title="Tap to edit"
-                  style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s"
-                  >${fmt(bal)}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="font-mono text-cyan font-bold">${fmt(bal)}</span>
+              <button class="btn btn--icon btn--secondary"
+                      data-action="inline-edit"
+                      data-id="${v.id}"
+                      data-type="vault"
+                      data-bal="${bal}"
+                      style="padding:3px 7px;font-size:0.75rem;opacity:0.7"
+                      title="Edit balance">✎</button>
+            </div>
             <span style="margin-left:8px;font-size:0.65rem;color:var(--text-secondary);user-select:none">&#9660;</span>
           </summary>
           <div style="padding:6px 4px 10px 12px">
@@ -299,29 +301,31 @@
     const total = bank.reduce((s, a) => s + (Number(a.balance) || 0), 0);
 
     const rows = bank.map(a => `
-      <div class="list-item">
+      <div class="list-item" style="padding:10px 4px">
         <div style="flex:1">
           <div class="font-bold text-sm">
             ${esc(a.name)}
             ${a.isTransferAccount ? '<span class="badge badge--cyan" style="margin-left:6px">Transfer</span>' : ''}
           </div>
-          <span class="font-mono text-cyan editable-balance"
-                data-action="inline-edit"
-                data-id="${a.id}"
-                data-type="bank"
-                data-bal="${a.balance}"
-                title="Tap to edit"
-                style="cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid transparent;transition:all 0.15s"
-                >${fmt(a.balance)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="font-mono text-cyan font-bold">${fmt(a.balance)}</span>
+          <button class="btn btn--icon btn--secondary"
+                  data-action="inline-edit"
+                  data-id="${a.id}"
+                  data-type="bank"
+                  data-bal="${a.balance}"
+                  style="padding:3px 7px;font-size:0.75rem;opacity:0.7"
+                  title="Edit balance">✎</button>
         </div>
       </div>`).join('');
 
     return `
-      <details class="card">
+      <details class="card" open>
         <summary>
           <div>
             <div class="card-title">&#127970; Bank Accounts</div>
-            <div class="card-subtitle">${bank.length} accounts &middot; ${fmt(total)} total cash</div>
+            <div class="card-subtitle">${bank.length} accounts &middot; ${fmt(total)} total cash &middot; <span style="color:var(--text-dim);font-size:0.72rem">tap ✎ to edit</span></div>
           </div>
         </summary>
         <div>
@@ -562,7 +566,7 @@
               <input type="number" id="m-sub-day" value="${btn.dataset.dueday}" min="0" max="31" step="1" inputmode="numeric" />
             </div>
             <div style="display:flex;gap:8px;margin-top:12px">
-              <button class="btn btn--primary" style="flex:1" data-action="modal-submit">Save</button>
+              <button class="btn btn--primary" style="flex:1" data-action="modal-submit">'+t('common.save')+'</button>
               <button class="btn btn--secondary" style="color:var(--coral)" data-action="sub-delete" data-id="${btn.dataset.id}">Delete</button>
             </div>
           `, mc => {
@@ -646,7 +650,7 @@
               <label>Current Balance ($)</label>
               <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" />
             </div>
-            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">'+t('common.save')+'</button>
           `, mc => {
             const val = parseFloat(mc.querySelector('#m-val').value) || 0;
             const ns  = App.Storage.cloneState(App.getState());
@@ -710,7 +714,7 @@
               <label>Amount ($)</label>
               <input type="number" id="m-item-amt" value="${ds.itemAmount}" min="0" step="0.01" inputmode="decimal" />
             </div>
-            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">'+t('common.save')+'</button>
           `, mc => {
             const name = mc.querySelector('#m-item-name').value.trim();
             const amt  = parseFloat(mc.querySelector('#m-item-amt').value) || 0;
@@ -759,7 +763,7 @@
               <label>Current Balance ($)</label>
               <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" />
             </div>
-            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">'+t('common.save')+'</button>
           `, mc => {
             const val = parseFloat(mc.querySelector('#m-val').value) || 0;
             const ns  = App.Storage.cloneState(App.getState());
@@ -795,7 +799,7 @@
               </div>
             </div>
             <p class="text-xs text-secondary mt-4">Enter either field &mdash; the other updates automatically.</p>
-            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">'+t('common.save')+'</button>
           `, mc => {
             const newLim = parseFloat(mc.querySelector('#m-lim').value)   || 0;
             const newBal = parseFloat(mc.querySelector('#m-bal').value)   || 0;

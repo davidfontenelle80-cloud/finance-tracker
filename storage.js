@@ -187,8 +187,9 @@
         // liquidityTier: 'immediate' | 'short' | 'locked' (used for net worth breakdown)
         bank: [
           { id: generateId(), name: 'SoFi Checking',             balance: 0,          isTransferAccount: false, liquidityTier: 'immediate' },
-          { id: generateId(), name: 'SoFi Transfer Account',     balance: 3312.99,    isTransferAccount: true,  liquidityTier: 'immediate' },
-          { id: generateId(), name: 'American Eagle Checking',   balance: 76.46,      isTransferAccount: false, liquidityTier: 'immediate' },
+          { id: generateId(), name: 'SoFi Checking (Joint)',     balance: 0,          isTransferAccount: true,  liquidityTier: 'immediate' }, // Transfer Account is a SoFi Vault, not a bank account
+          { id: generateId(), name: 'American Eagle Checking',   balance: 67.01,      isTransferAccount: false, liquidityTier: 'immediate' },
+          { id: generateId(), name: 'American Eagle Savings',    balance: 1.00,       isTransferAccount: false, liquidityTier: 'short'     },
           { id: generateId(), name: 'Emergency Fidelity Cash',   balance: 11062.73,   isTransferAccount: false, liquidityTier: 'short'     },
           { id: generateId(), name: 'Car Savings (Fidelity SGOV)', balance: 0,        isTransferAccount: false, liquidityTier: 'locked'    } /* value tracked in Investments tab */
         ],
@@ -198,7 +199,7 @@
         vaults: [
           { id: generateId(), name: 'Gasoline',         balance: 250.00, targetAmount: null,  items: [] },
           { id: generateId(), name: 'Asamblea',         balance: 872.21, targetAmount: null,  items: [] },
-          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52, targetAmount: null, items: [] },
+          { id: generateId(), name: 'Rent',             balance: 586.77,  targetAmount: null, items: [] },
           { id: generateId(), name: 'Entertainment',    balance: 300.00, targetAmount: null,  items: [] },
           { id: generateId(), name: 'Food',             balance: 750.00, targetAmount: null,  items: [] },
           { id: generateId(), name: 'Car Maintenance',  balance: 247.99, targetAmount: null,  items: [] },
