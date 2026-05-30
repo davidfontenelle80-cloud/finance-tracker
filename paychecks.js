@@ -44,6 +44,13 @@
     return round2((cat.annualGoal || 0) / (ppy || 26));
   }
 
+
+  // Detect 5-week month: month has 5 Saturdays OR 5 Sundays (means a 3rd paycheck)
+  function isFiveWeekMonth(year, month) {
+    return countDayOfWeek(year, month, 0) >= 5 || // 5 Sundays
+           countDayOfWeek(year, month, 6) >= 5;    // 5 Saturdays
+  }
+
   // Goal countdown: count payday dates from today through targetDate
   function paychecksToGoal(targetDateStr, paydayDates) {
     if (!targetDateStr) return null;
@@ -277,7 +284,14 @@
         var remaining = paychecksRemainingInYear(state.income.paydayDates, _year);
         var goal = cat.annualGoal || 0;
         var needed = Math.max(0, goal - vaultBal);
-        amount = round2(needed / remaining);
+        var base = round2(needed / remaining);
+        // If category has fiveWeekBonus and this is a 5-week month bonus paycheck, add extra
+        if (cat.fiveWeekBonus && isBonus) {
+          var perCheck = round2(needed / Math.max(1, remaining));
+          amount = perCheck; // bonus paycheck gets a full extra allocation
+        } else {
+          amount = base;
+        }
       }
       return {
         categoryId:    cat.id,
@@ -404,11 +418,21 @@
     const bonusBadge = isBonus
       ? ' <span class="badge badge--amber" style="margin-left:6px;font-size:0.65rem;vertical-align:middle">&#127381; BONUS</span>'
       : '';
+    // Find categories with 5-week bonus that will auto-populate
+    var fiveWeekCats = isBonus
+      ? (state.yearlyCategories || []).filter(function(c) { return c.fiveWeekBonus; })
+      : [];
+    var fiveWeekList = fiveWeekCats.length
+      ? '<div class="text-xs" style="margin-top:6px;color:var(--neon-amber)">Auto-allocated: ' +
+          fiveWeekCats.map(function(c) { return c.name; }).join(', ') + '</div>'
+      : '';
+
     const bonusNote = isBonus
       ? '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:0.82rem">' +
           '<strong style="color:var(--amber)">&#127381; 5-Week Bonus Paycheck</strong><br>' +
-          '<span class="text-secondary">This is your extra check this month. No fixed expenses — ' +
-          'allocate freely to savings, goals, or debt payoff. All categories start at $0.</span>' +
+          '<span class="text-secondary">Extra check this month. Fixed expenses skipped. ' +
+          'Categories with the 5-week toggle are pre-filled.</span>' +
+          fiveWeekList +
         '</div>'
       : '';
 

@@ -73,6 +73,14 @@
           <input type="text" id="ent-note" enterkeyhint="done" autocorrect="off" placeholder="e.g. Gas stop, Walmart run…" />
         </div>
 
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 10px;background:var(--surface-2);border-radius:8px">
+          <input type="checkbox" id="ent-recurring" style="width:16px;height:16px" />
+          <div>
+            <div class="text-sm">🔁 Recurring expense</div>
+            <div class="text-xs text-secondary">Mark for tracking — shows in monthly recurring summary</div>
+          </div>
+        </div>
+
         <button class="btn btn--primary btn--full" data-action="submit-entry">${t('entry.record')}</button>
       </div>
 
@@ -124,6 +132,7 @@
               <span>${tx.date}</span>
               ${acctName ? `<span>· ${esc(acctName)}</span>` : ''}
               ${tx.note   ? `<span>· ${esc(tx.note)}</span>` : ''}
+              ${tx.recurring ? '<span style="color:var(--neon-cyan);font-size:0.68rem">🔁 recurring</span>' : ''}
             </div>
           </div>
           <button class="btn btn--danger btn--sm btn--icon" data-action="delete-tx" data-id="${tx.id}"
@@ -280,6 +289,7 @@
     const ns = App.getState();
 
     // ── Cascade 1: Add transaction ──────────────────────────
+    const recurring = !!(container.querySelector('#ent-recurring') && container.querySelector('#ent-recurring').checked);
     const tx = {
       id:           App.Storage.generateId(),
       date,
@@ -289,6 +299,7 @@
       accountId:    acctVal  || null,
       accountName:  acctName || null,
       note:         note     || null,
+      recurring:    recurring,
       // Which paycheck period this falls in (for Tracker)
       paycheckPeriod: resolvePaycheckPeriod(date, ns)
     };

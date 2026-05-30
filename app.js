@@ -16,6 +16,79 @@
 (function (App) {
   'use strict';
 
+  // ── PWA Install Banner ────────────────────────────────────
+  let _deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _deferredInstallPrompt = e;
+    showInstallBanner();
+  });
+
+  function showInstallBanner() {
+    // Don't show if already installed or dismissed
+    if (localStorage.getItem('pwa_install_dismissed')) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'pwa-banner';
+    banner.style.cssText = [
+      'position:fixed','bottom:70px','left:12px','right:12px',
+      'background:var(--card-bg,#0f1629)','border:1px solid var(--neon-cyan)',
+      'border-radius:12px','padding:12px 14px','z-index:9999',
+      'display:flex','align-items:center','gap:10px',
+      'box-shadow:0 4px 20px rgba(0,240,255,0.15)'
+    ].join(';');
+    banner.innerHTML =
+      '<span style="font-size:1.3rem">📲</span>' +
+      '<div style="flex:1">' +
+        '<div class="text-sm font-bold">Install Finance Tracker</div>' +
+        '<div class="text-xs text-secondary">Add to home screen for offline use</div>' +
+      '</div>' +
+      '<button id="pwa-install-btn" class="btn btn--primary btn--sm">Install</button>' +
+      '<button id="pwa-dismiss-btn" class="btn btn--secondary btn--sm">✕</button>';
+    document.body.appendChild(banner);
+
+    document.getElementById('pwa-install-btn').addEventListener('click', function() {
+      if (_deferredInstallPrompt) {
+        _deferredInstallPrompt.prompt();
+        _deferredInstallPrompt.userChoice.then(function() {
+          _deferredInstallPrompt = null;
+          banner.remove();
+        });
+      }
+    });
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', function() {
+      localStorage.setItem('pwa_install_dismissed', '1');
+      banner.remove();
+    });
+  }
+
+  // iOS install hint (no beforeinstallprompt on iOS)
+  function showIOSInstallHint() {
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isStandalone = window.navigator.standalone;
+    var dismissed = localStorage.getItem('ios_install_dismissed');
+    if (!isIOS || isStandalone || dismissed) return;
+
+    var hint = document.createElement('div');
+    hint.id = 'ios-hint';
+    hint.style.cssText = 'position:fixed;bottom:70px;left:12px;right:12px;background:var(--card-bg,#0f1629);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px 14px;z-index:9999;font-size:0.82rem';
+    hint.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<strong>📲 Install on iPhone</strong>' +
+        '<button id="ios-hint-close" style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:1rem">✕</button>' +
+      '</div>' +
+      '<div class="text-secondary">Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong> to install offline.</div>';
+    document.body.appendChild(hint);
+    document.getElementById('ios-hint-close').addEventListener('click', function() {
+      localStorage.setItem('ios_install_dismissed', '1');
+      hint.remove();
+    });
+  }
+
+
+
   // ── In-memory state ───────────────────────────────────────
   let _state     = null;
   let _activeTab = 'dashboard';
@@ -279,5 +352,91 @@
   }
 
   document.addEventListener('DOMContentLoaded', initApp);
+
+})(window.App = window.App || {});
+
+// ── Setup Wizard (injected at end of app.js) ──────────────
+// Shows on first open when no data exists yet.
+(function(App) {
+  'use strict';
+
+  function needsSetup(state) {
+    if (!state) return true;
+    var bank  = (state.accounts && state.accounts.bank)   || [];
+    var dates = (state.income && state.income.paydayDates) || [];
+    return bank.length === 0 && dates.length === 0;
+  }
+
+  function showWizard() {
+    var bd = document.getElementById('modal-backdrop');
+    var mc = document.getElementById('modal-content');
+    if (!bd || !mc) return;
+
+    mc.innerHTML =
+      '<div style="padding:8px">' +
+        '<div style="text-align:center;margin-bottom:16px">' +
+          '<div style="font-size:2.5rem;margin-bottom:6px">💰</div>' +
+          '<div style="font-size:1.2rem;font-weight:700">Welcome to Finance Tracker</div>' +
+          '<div class="text-secondary text-sm" style="margin-top:4px">Let\'s get you set up in 3 quick steps.</div>' +
+        '</div>' +
+
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' +
+          '<div style="text-align:center;padding:10px 6px;background:rgba(0,240,255,0.08);border-radius:8px;border:1px solid var(--neon-cyan)">' +
+            '<div style="font-size:1.3rem">💵</div>' +
+            '<div class="text-xs font-bold" style="margin-top:4px">1. Income</div>' +
+            '<div class="text-xs text-secondary">Payday &amp; amount</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:10px 6px;background:var(--surface-2);border-radius:8px">' +
+            '<div style="font-size:1.3rem">🏦</div>' +
+            '<div class="text-xs font-bold" style="margin-top:4px">2. Accounts</div>' +
+            '<div class="text-xs text-secondary">Banks &amp; cards</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:10px 6px;background:var(--surface-2);border-radius:8px">' +
+            '<div style="font-size:1.3rem">🎯</div>' +
+            '<div class="text-xs font-bold" style="margin-top:4px">3. Goals</div>' +
+            '<div class="text-xs text-secondary">Savings targets</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.2);border-radius:8px;padding:10px 12px;margin-bottom:16px">' +
+          '<div class="text-xs text-secondary">' +
+            '⚡ Quick start: Go to <strong>Settings → Setup</strong> to configure your income, accounts, and categories.<br><br>' +
+            '📱 Works offline on any device. Install it: tap <strong>Share → Add to Home Screen</strong> on iPhone, or the install icon in your browser address bar on PC.' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;gap:8px">' +
+          '<button class="btn btn--secondary" style="flex:1" id="wizard-skip">Skip for now</button>' +
+          '<button class="btn btn--primary" style="flex:1" id="wizard-go">Go to Setup ➜</button>' +
+        '</div>' +
+      '</div>';
+
+    bd.classList.remove('hidden');
+    bd.setAttribute('aria-hidden', 'false');
+
+    document.getElementById('wizard-skip').addEventListener('click', function() {
+      localStorage.setItem('wizard_dismissed', '1');
+      bd.classList.add('hidden');
+      mc.innerHTML = '';
+    });
+    document.getElementById('wizard-go').addEventListener('click', function() {
+      localStorage.setItem('wizard_dismissed', '1');
+      bd.classList.add('hidden');
+      mc.innerHTML = '';
+      App.showTab('settings');
+    });
+  }
+
+  // Hook into App.init
+  var _origInit = App.init;
+  App.init = function() {
+    _origInit && _origInit.apply(this, arguments);
+    if (!localStorage.getItem('wizard_dismissed')) {
+      var state = App.Storage.loadState();
+      if (needsSetup(state)) {
+        setTimeout(showWizard, 600);
+      }
+    }
+  };
 
 })(window.App = window.App || {});

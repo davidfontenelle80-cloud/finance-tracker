@@ -509,9 +509,20 @@
 
         <div class="divider"></div>
 
+        <div style="background:rgba(0,240,255,0.06);border:1px solid rgba(0,240,255,0.2);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+          <div class="text-sm font-bold" style="color:var(--neon-cyan);margin-bottom:4px">📱 Using on Multiple Devices?</div>
+          <div class="text-xs text-secondary">
+            1. Tap <strong>Export JSON Backup</strong> on this device<br>
+            2. Save the file to <strong>OneDrive</strong> or <strong>Google Drive</strong><br>
+            3. On the other device, open the app → Settings → Import JSON Backup<br>
+            4. Pick the file from your cloud drive<br><br>
+            Repeat whenever you make major changes.
+          </div>
+        </div>
+
         <div class="text-xs text-secondary">
-          <strong>Export:</strong> Downloads all your data as a .json file. Store it in Google Drive or iCloud as a manual backup.<br><br>
-          <strong>Import:</strong> Replaces ALL current data with the backup file. This cannot be undone.
+          <strong>Export:</strong> Downloads all your data as a .json file — your accounts, vaults, goals, transactions, everything.<br><br>
+          <strong>Import:</strong> Replaces ALL current data with the backup file. Cannot be undone — export first.
         </div>
       </div>
 
@@ -1030,7 +1041,7 @@
       </div>
       <div style="border-top:1px solid var(--border);margin:14px 0 12px;padding-top:12px">
         <div class="text-sm font-bold" style="margin-bottom:4px">📅 Weekly Budget <span class="text-dim" style="font-weight:400;font-size:0.78rem">(optional — for Food & Gas)</span></div>
-        <div class="text-xs text-secondary" style="margin-bottom:10px">If set, the Planner multiplies this by how many matching days fall in the month — instead of using annual ÷ 26.</div>
+        <div class="text-xs text-secondary" style="margin-bottom:10px">If set, the Planner multiplies this by how many matching days fall in the month — auto-adjusts for 5-week months.</div>
         <div class="form-row">
           <div class="form-group">
             <label>$/week</label>
@@ -1043,6 +1054,13 @@
               <option value="saturday" ${cat.weeklyDay === 'saturday' ? 'selected' : ''}>Saturdays (Gas)</option>
               <option value="sunday" ${cat.weeklyDay === 'sunday' ? 'selected' : ''}>Sundays (Food)</option>
             </select>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:rgba(251,191,36,0.08);border-radius:8px;border:1px solid rgba(251,191,36,0.25)">
+          <input type="checkbox" id="m-cat-5week" ${cat.fiveWeekBonus ? 'checked' : ''} style="width:16px;height:16px;flex-shrink:0" />
+          <div>
+            <div class="text-sm font-bold" style="color:var(--neon-amber)">🗓️ 5-Week Month Bonus</div>
+            <div class="text-xs text-secondary">When this month has a 3rd paycheck, automatically add one extra week's allocation to this category.</div>
           </div>
         </div>
       </div>
@@ -1058,8 +1076,9 @@
       if (idx !== -1) {
         fresh.yearlyCategories[idx].name        = name;
         fresh.yearlyCategories[idx].annualGoal  = goal;
-        fresh.yearlyCategories[idx].weeklyBudget = weekly !== '' ? (parseFloat(weekly) || 0) : null;
-        fresh.yearlyCategories[idx].weeklyDay    = weeklyDay || null;
+        fresh.yearlyCategories[idx].weeklyBudget  = weekly !== '' ? (parseFloat(weekly) || 0) : null;
+        fresh.yearlyCategories[idx].weeklyDay     = weeklyDay || null;
+        fresh.yearlyCategories[idx].fiveWeekBonus = !!content.querySelector('#m-cat-5week').checked;
       }
       App.setState(fresh);
       closeModal();

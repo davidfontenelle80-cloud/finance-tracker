@@ -986,6 +986,34 @@
   }
 
   // ── Public API ────────────────────────────────────────────
+  // Auto-snapshot on paycheck arrival
+  function logPaycheckSnapshot(state) {
+    var today    = App.Storage.toISODate(new Date());
+    var accts    = state.accounts || {};
+    var bank     = accts.bank || [];
+    var cards    = accts.cards || [];
+    var vaults   = accts.vaults || [];
+    var holdings = ((state.investments || {}).accounts || []);
+
+    var cash = bank.reduce(function(s,a) { return s + (Number(a.balance)||0); }, 0);
+    var debt = cards.reduce(function(s,c) { return s + (Number(c.balance)||0); }, 0);
+    var invested = holdings.reduce(function(acctSum, a) {
+      return acctSum + (a.holdings||[]).reduce(function(s,h) {
+        return s + ((h.shares||0)*(h.price||0));
+      }, 0);
+    }, 0);
+    var netWorth = cash + invested - debt;
+
+    var ns = App.Storage.cloneState(state);
+    if (!ns.netWorthHistory) ns.netWorthHistory = [];
+    // Only add if no entry for today yet
+    if (!ns.netWorthHistory.some(function(h) { return h.date === today; })) {
+      ns.netWorthHistory.push({ date: today, netWorth: netWorth, cash: cash, debt: debt, investments: invested });
+      if (ns.netWorthHistory.length > 36) ns.netWorthHistory.shift();
+      App.Storage.saveState(ns);
+    }
+  }
+
   App.Transfers = { render: render };
 
 })(window.App = window.App || {});
