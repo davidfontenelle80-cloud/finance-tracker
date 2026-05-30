@@ -245,6 +245,23 @@
         ]
       },
 
+      // ── Subscriptions / Hold Account ──────────────────
+      // Monthly recurring bills tracked separately from vaults.
+      // dueDay: day of month (1-31). paid: resets each month.
+      // addToPaycheck: flag to roll unpaid balance into next check.
+      subscriptions: [
+        { id: generateId(), name: 'Viki',        amount: 6.99,  dueDay: 1,  paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'YouTube TV',  amount: 22.99, dueDay: 2,  paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Netflix',     amount: 10.00, dueDay: 6,  paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'ChatGPT',     amount: 9.00,  dueDay: 7,  paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Claude',      amount: 22.00, dueDay: 7,  paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Apple',       amount: 1.00,  dueDay: 16, paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Cox',         amount: 41.00, dueDay: 22, paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Visible',     amount: 50.00, dueDay: 22, paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Microsoft',   amount: 6.00,  dueDay: 22, paid: false, addToPaycheck: false },
+        { id: generateId(), name: 'Costco',      amount: 93.17, dueDay: 0,  paid: false, addToPaycheck: false }
+      ],
+
       // ── Investment accounts ────────────────────────────
       // Holdings use unique IDs so add/edit/remove never breaks unrelated records.
       // targetPct = target allocation percentage (must sum to 100 per account).
@@ -378,6 +395,13 @@
         }
       });
     }
+    if (!state.subscriptions) state.subscriptions = [];
+    // Backfill paid field on existing subscriptions
+    (state.subscriptions || []).forEach(function(s) {
+      if (s.paid === undefined)          s.paid = false;
+      if (s.addToPaycheck === undefined) s.addToPaycheck = false;
+      if (s.dueDay === undefined)        s.dueDay = 0;
+    });
     if (!state.upcomingExpenses) state.upcomingExpenses = [];
     // v1.3 -> v1.4: paycheck notes + tracker ledger
     if (!state.paycheckNotes)  state.paycheckNotes  = {};

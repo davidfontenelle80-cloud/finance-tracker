@@ -33,10 +33,116 @@
     const accts = state.accounts || { bank: [], vaults: [], cards: [] };
     return `
       ${renderSafetyBanner(state, accts)}
+      ${renderSubscriptions(state)}
       ${renderVaults(accts)}
       ${renderBank(accts)}
       ${renderCards(accts)}
     `;
+  }
+
+
+  // ── Subscription / Hold Account tracker ──────────────────
+  // Monthly recurring bills: name, amount, due day, paid toggle,
+  // add-to-paycheck toggle. Past-due items show a warning badge.
+  function renderSubscriptions(state) {
+    const subs  = state.subscriptions || [];
+    const today = new Date();
+    const dom   = today.getDate();   // current day of month
+    const month = today.getMonth();
+    const year  = today.getFullYear();
+
+    if (!subs.length) {
+      return `<details class="card">
+        <summary><div class="card-title">📋 Subscriptions</div></summary>
+        <div><p class="text-secondary text-sm">No subscriptions. Add one below.</p>
+        <button class="btn btn--secondary btn--sm mt-8" data-action="add-sub">+ Add Subscription</button></div>
+      </details>`;
+    }
+
+    const total     = subs.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const paidTotal = subs.filter(x => x.paid).reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const unpaid    = total - paidTotal;
+    const addTotal  = subs.filter(x => x.addToPaycheck && !x.paid)
+                          .reduce((s, x) => s + (Number(x.amount) || 0), 0);
+
+    function dueStatus(sub) {
+      if (sub.paid) return { label: '✓ Paid', cls: 'text-green', urgent: false };
+      if (!sub.dueDay) return { label: 'No date', cls: 'text-secondary', urgent: false };
+      const dueDate = new Date(year, month, sub.dueDay);
+      const diff    = Math.ceil((dueDate - today) / 86400000);
+      if (diff < 0)  return { label: `${Math.abs(diff)}d overdue`, cls: 'text-red',   urgent: true  };
+      if (diff === 0) return { label: 'Due today',                  cls: 'text-amber', urgent: true  };
+      if (diff <= 5)  return { label: `Due in ${diff}d`,           cls: 'text-amber', urgent: true  };
+      return { label: `Due ${sub.dueDay < 10 ? '0' : ''}${sub.dueDay}`,
+               cls: 'text-secondary', urgent: false };
+    }
+
+    const rows = subs.map(sub => {
+      const ds  = dueStatus(sub);
+      return `
+        <div class="list-item" style="display:block;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="font-bold text-sm">${esc(sub.name)}</span>
+                ${ds.urgent && !sub.paid ? `<span class="badge" style="background:rgba(255,100,0,0.18);color:var(--amber);font-size:0.65rem;padding:1px 5px;border-radius:4px">${ds.label}</span>` : ''}
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+                <span class="font-mono text-sm">${fmt(sub.amount)}/mo</span>
+                ${!ds.urgent || sub.paid ? `<span class="text-xs ${ds.cls}">${ds.label}</span>` : ''}
+                ${sub.addToPaycheck && !sub.paid ? '<span class="text-xs text-cyan">→ Adding to paycheck</span>' : ''}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button class="btn btn--sm ${sub.paid ? 'btn--primary' : 'btn--secondary'}"
+                      data-action="sub-toggle-paid"
+                      data-id="${sub.id}"
+                      style="min-width:52px;font-size:0.75rem">
+                ${sub.paid ? '✓ Paid' : 'Mark Paid'}
+              </button>
+              <button class="btn btn--sm ${sub.addToPaycheck ? 'btn--primary' : 'btn--secondary'}"
+                      data-action="sub-toggle-add"
+                      data-id="${sub.id}"
+                      title="Add to next paycheck"
+                      style="font-size:0.75rem;padding:4px 8px">
+                ${sub.addToPaycheck ? '📋 Added' : '+ Check'}
+              </button>
+              <button class="btn btn--icon btn--secondary"
+                      data-action="sub-edit"
+                      data-id="${sub.id}"
+                      data-name="${esc(sub.name)}"
+                      data-amount="${sub.amount}"
+                      data-dueday="${sub.dueDay || 0}"
+                      style="font-size:0.8rem;padding:4px 7px">✎</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const urgentCount = subs.filter(s => !s.paid && dueStatus(s).urgent).length;
+
+    return `
+      <details class="card" ${urgentCount > 0 ? 'open' : ''} style="padding:0;overflow:hidden">
+        <summary style="padding:14px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="card-title">📋 Subscriptions
+                ${urgentCount > 0 ? `<span class="badge" style="background:rgba(255,100,0,0.18);color:var(--amber);margin-left:6px;font-size:0.7rem">${urgentCount} due soon</span>` : ''}
+              </div>
+              <div class="card-subtitle">${subs.length} subs · ${fmt(total)}/mo · ${fmt(unpaid)} unpaid</div>
+            </div>
+          </div>
+        </summary>
+        <div>
+          ${rows}
+          <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px">
+            <div class="text-xs text-secondary">
+              ${addTotal > 0 ? `<span class="text-cyan font-bold">${fmt(addTotal)} queued for next paycheck</span>` : 'None queued for paycheck'}
+            </div>
+            <button class="btn btn--secondary btn--sm" data-action="add-sub">+ Add</button>
+          </div>
+        </div>
+      </details>`;
   }
 
   // ── Safety net banner ─────────────────────────────────────
@@ -413,6 +519,106 @@
           });
           break;
         }
+
+        // ── Subscription: mark paid ──────────────────────────
+        case 'sub-toggle-paid': {
+          const ns  = App.Storage.cloneState(App.getState());
+          const sub = (ns.subscriptions || []).find(s => s.id === btn.dataset.id);
+          if (sub) { sub.paid = !sub.paid; App.setState(ns); }
+          break;
+        }
+
+        // ── Subscription: add to paycheck toggle ─────────────
+        case 'sub-toggle-add': {
+          const ns  = App.Storage.cloneState(App.getState());
+          const sub = (ns.subscriptions || []).find(s => s.id === btn.dataset.id);
+          if (sub) { sub.addToPaycheck = !sub.addToPaycheck; App.setState(ns); }
+          break;
+        }
+
+        // ── Subscription: edit ────────────────────────────────
+        case 'sub-edit':
+          openModal(`
+            <div class="modal-header">
+              <div class="modal-title">Edit Subscription</div>
+              <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="m-sub-name" value="${esc(btn.dataset.name)}" />
+            </div>
+            <div class="form-group">
+              <label>Monthly Amount ($)</label>
+              <input type="number" id="m-sub-amt" value="${btn.dataset.amount}" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Day of Month Due (0 = no fixed date)</label>
+              <input type="number" id="m-sub-day" value="${btn.dataset.dueday}" min="0" max="31" step="1" />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn--primary" style="flex:1" data-action="modal-submit">Save</button>
+              <button class="btn btn--secondary" style="color:var(--coral)" data-action="sub-delete" data-id="${btn.dataset.id}">Delete</button>
+            </div>
+          `, mc => {
+            const name   = mc.querySelector('#m-sub-name').value.trim();
+            const amount = parseFloat(mc.querySelector('#m-sub-amt').value) || 0;
+            const dueDay = parseInt(mc.querySelector('#m-sub-day').value)  || 0;
+            if (!name) return;
+            const ns  = App.Storage.cloneState(App.getState());
+            const sub = (ns.subscriptions || []).find(s => s.id === btn.dataset.id);
+            if (sub) { sub.name = name; sub.amount = amount; sub.dueDay = dueDay; }
+            App.setState(ns);
+            closeModal();
+            App.showToast(name + ' updated ✓', 'success');
+          });
+          break;
+
+        // ── Subscription: delete (from edit modal) ────────────
+        case 'sub-delete': {
+          const ns = App.Storage.cloneState(App.getState());
+          ns.subscriptions = (ns.subscriptions || []).filter(s => s.id !== btn.dataset.id);
+          App.setState(ns);
+          closeModal();
+          App.showToast('Subscription removed', 'success');
+          break;
+        }
+
+        // ── Subscription: add new ─────────────────────────────
+        case 'add-sub':
+          openModal(`
+            <div class="modal-header">
+              <div class="modal-title">Add Subscription</div>
+              <button class="btn btn--icon btn--secondary" data-action="modal-close">✕</button>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="m-sub-name" placeholder="e.g. Spotify" />
+            </div>
+            <div class="form-group">
+              <label>Monthly Amount ($)</label>
+              <input type="number" id="m-sub-amt" placeholder="0.00" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label>Day of Month Due (0 = no fixed date)</label>
+              <input type="number" id="m-sub-day" placeholder="1-31" min="0" max="31" step="1" />
+            </div>
+            <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add</button>
+          `, mc => {
+            const name   = mc.querySelector('#m-sub-name').value.trim();
+            const amount = parseFloat(mc.querySelector('#m-sub-amt').value) || 0;
+            const dueDay = parseInt(mc.querySelector('#m-sub-day').value)  || 0;
+            if (!name) return;
+            const ns = App.Storage.cloneState(App.getState());
+            if (!ns.subscriptions) ns.subscriptions = [];
+            ns.subscriptions.push({
+              id: App.Storage.generateId(),
+              name, amount, dueDay, paid: false, addToPaycheck: false
+            });
+            App.setState(ns);
+            closeModal();
+            App.showToast(name + ' added ✓', 'success');
+          });
+          break;
 
         // ── Toggle Transfer Account exclude ──────────────
         case 'toggle-transfer-exclude': {
