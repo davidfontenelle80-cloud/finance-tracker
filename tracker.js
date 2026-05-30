@@ -123,7 +123,10 @@
       renderSavingsPlan(state, ranked) +
 
       '<!-- Savings Challenge: next year planning -->' +
-      renderSavingsChallenge(state);
+      renderSavingsChallenge(state) +
+
+      '<!-- 26-Period Year Forecast -->' +
+      renderYearForecast(state);
   }
 
   // -- Build period data ------------------------------------------------
@@ -387,6 +390,121 @@
         '<tbody>' + catRows + '</tbody>' +
       '</table>' +
     '</div>';
+  }
+
+
+  // -- 26-Period Year Forecast (Savings Plan) ---------------------------
+  // Mirrors the Savings Plan sheet from House_Budgetper.xlsx.
+  // Each row = one pay period. Shows: expected savings, fixed expenses
+  // (alternating P1/P2), total outflow, surplus/deficit vs base pay, rank.
+  // 5-week bonus months (P3) show $0 fixed expenses.
+  // Summary: negative periods count, total deficit load, avg per check.
+  function renderYearForecast(state) {
+    var cats    = state.yearlyCategories || [];
+    var dates   = (state.income && state.income.paydayDates) || [];
+    var fixed   = state.fixedMonthlyExpenses || [];
+    var base    = (state.income && state.income.defaultPaycheckAmount) || 3000;
+    var ppy     = (state.income && state.income.paychecksPerYear) || 26;
+    var today   = App.Storage.toISODate(new Date());
+
+    if (!dates.length || !cats.length) return '';
+
+    // Total savings goal per check (simple: annualGoal / ppy)
+    var savingsPerCheck = round2(cats.reduce(function(s, c) { return s + (c.annualGoal || 0); }, 0) / ppy);
+
+    // P1 and P2 fixed totals
+    var p1Fixed = round2(fixed.filter(function(f) { return (f.paycheckAssign || 1) === 1; })
+                              .reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0));
+    var p2Fixed = round2(fixed.filter(function(f) { return (f.paycheckAssign || 1) === 2; })
+                              .reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0));
+
+    // Determine P1/P2/P3 position for each payday within its month
+    function monthKey(d) { return d.slice(0, 7); }
+    var posMap = {}; // date -> position (1, 2, or 3) within its month
+    var monthCounts = {};
+    dates.forEach(function(d) {
+      var mk = monthKey(d);
+      monthCounts[mk] = (monthCounts[mk] || 0) + 1;
+      posMap[d] = monthCounts[mk];
+    });
+
+    // Build rows
+    var rows = dates.map(function(d, idx) {
+      var pos      = posMap[d] || 1;
+      var isBonus  = pos >= 3;
+      var fixedAmt = isBonus ? 0 : (pos === 1 ? p1Fixed : p2Fixed);
+      var total    = round2(savingsPerCheck + fixedAmt);
+      var delta    = round2(base - total);   // positive = surplus, negative = deficit
+      return { idx: idx, date: d, pos: pos, isBonus: isBonus, fixedAmt: fixedAmt, total: total, delta: delta, absDelta: Math.abs(delta) };
+    });
+
+    // Rank by abs(delta) descending — hardest period (biggest deficit) = rank 1
+    var sorted = rows.slice().sort(function(a, b) { return b.absDelta - a.absDelta; });
+    sorted.forEach(function(r, i) { r.rank = i + 1; });
+
+    // Summary stats
+    var deficitRows  = rows.filter(function(r) { return r.delta < 0; });
+    var surplusRows  = rows.filter(function(r) { return r.delta >= 0; });
+    var totalDeficit = round2(deficitRows.reduce(function(s, r) { return s + r.absDelta; }, 0));
+    var avgDeficit   = deficitRows.length > 0 ? round2(totalDeficit / deficitRows.length) : 0;
+
+    var tableRows = rows.map(function(r) {
+      var isCurrent = r.date === today || (r.date <= today && (rows[r.idx + 1] ? rows[r.idx + 1].date > today : true));
+      var rowStyle  = isCurrent ? ' style="background:rgba(0,240,255,0.05)"' : '';
+      var dClass    = r.delta >= 0 ? 'text-green' : 'text-red';
+      var rClass    = r.rank <= 5 ? 'text-red' : r.rank >= rows.length - 4 ? 'text-green' : 'text-secondary';
+      return '<tr' + rowStyle + '>' +
+        '<td class="text-center font-bold text-sm">' + (r.idx + 1) + (r.isBonus ? ' <span style="color:var(--amber);font-size:0.65rem">B</span>' : '') + '</td>' +
+        '<td class="text-xs text-secondary">' + r.date.slice(5) + '</td>' +
+        '<td class="font-mono text-right text-sm">' + fmt0(savingsPerCheck) + '</td>' +
+        '<td class="font-mono text-right text-sm ' + (r.isBonus ? 'text-amber' : '') + '">' + (r.isBonus ? '—' : fmt0(r.fixedAmt)) + '</td>' +
+        '<td class="font-mono text-right text-sm">' + fmt0(r.total) + '</td>' +
+        '<td class="font-mono text-right text-sm font-bold ' + dClass + '">' + (r.delta >= 0 ? '+' : '') + fmt0(r.delta) + '</td>' +
+        '<td class="text-center text-xs ' + rClass + '">' + r.rank + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<details class="card" style="padding:0;margin-top:16px">' +
+      '<summary style="padding:14px 16px">' +
+        '<div class="section-title">26-Period Year Forecast</div>' +
+        '<div class="text-secondary text-xs" style="margin-top:2px">' +
+          'Savings ' + fmt0(savingsPerCheck) + '/check &middot; ' +
+          'P1 fixed ' + fmt0(p1Fixed) + ' &middot; P2 fixed ' + fmt0(p2Fixed) + ' &middot; base pay ' + fmt0(base) +
+        '</div>' +
+      '</summary>' +
+      '<div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 16px 12px;border-bottom:1px solid var(--border);text-align:center">' +
+          '<div><div class="text-xs text-secondary font-bold">DEFICIT PERIODS</div><div class="font-mono font-heavy text-red" style="font-size:1rem;margin-top:3px">' + deficitRows.length + '</div></div>' +
+          '<div><div class="text-xs text-secondary font-bold">SURPLUS PERIODS</div><div class="font-mono font-heavy text-green" style="font-size:1rem;margin-top:3px">' + surplusRows.length + '</div></div>' +
+          '<div><div class="text-xs text-secondary font-bold">TOTAL DEFICIT</div><div class="font-mono font-heavy text-red" style="font-size:1rem;margin-top:3px">' + fmt0(totalDeficit) + '</div></div>' +
+          '<div><div class="text-xs text-secondary font-bold">AVG DEFICIT</div><div class="font-mono font-heavy text-amber" style="font-size:1rem;margin-top:3px">' + fmt0(avgDeficit) + '</div></div>' +
+        '</div>' +
+        '<div style="overflow-x:auto">' +
+          '<table class="data-table">' +
+            '<thead><tr>' +
+              '<th style="text-align:center">#</th>' +
+              '<th>Date</th>' +
+              '<th style="text-align:right">Savings</th>' +
+              '<th style="text-align:right">Fixed</th>' +
+              '<th style="text-align:right">Total Out</th>' +
+              '<th style="text-align:right">+/−</th>' +
+              '<th style="text-align:center" title="1 = hardest period">Rank</th>' +
+            '</tr></thead>' +
+            '<tbody>' + tableRows + '</tbody>' +
+            '<tfoot><tr>' +
+              '<td colspan="2" class="text-xs text-secondary font-bold">TOTAL</td>' +
+              '<td class="font-mono text-right font-bold">' + fmt0(savingsPerCheck * ppy) + '</td>' +
+              '<td class="font-mono text-right font-bold">' + fmt0(p1Fixed * Math.ceil(ppy/2) + p2Fixed * Math.floor(ppy/2)) + '</td>' +
+              '<td colspan="3"></td>' +
+            '</tr></tfoot>' +
+          '</table>' +
+        '</div>' +
+        '<div class="text-xs text-secondary" style="padding:8px 16px">' +
+          'B = bonus paycheck (5-week month, no fixed expenses). ' +
+          'Rank 1 = tightest period. Green rank = comfortable periods.' +
+        '</div>' +
+      '</div>' +
+    '</details>';
   }
 
   // -- Helpers -----------------------------------------------------------
