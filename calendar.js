@@ -191,7 +191,7 @@
               <option value="2">Period 2</option>
             </select>
           </div>
-          <button class="btn btn--primary btn--sm" data-action="ot-add" style="min-height:36px">+ Log OT</button>
+          <button class="btn btn--primary btn--sm" data-action="ot-add" style="min-height:36px">' + t('cal.logOT') + '</button>
         </div>
 
         <!-- Period grids -->
@@ -314,7 +314,7 @@
         <label>Label <span class="text-dim">(optional)</span></label>
         <input type="text" id="m-evt-label" enterkeyhint="done" placeholder="e.g. Spring Assembly" />
       </div>
-      <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add Event</button>
+      <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">'+t('cal.addEventBtn')+'</button>
     `;
 
     bd.classList.remove('hidden');

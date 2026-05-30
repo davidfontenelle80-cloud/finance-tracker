@@ -43,9 +43,9 @@
         </div>
 
         <div class="form-group">
-          <label for="ent-category">Category</label>
+          <label for="ent-category">${t('entry.category')}</label>
           <select id="ent-category">
-            <option value="">— Select category —</option>
+            <option value="">${t('entry.selectCat')}</option>
             <optgroup label="Yearly Goals">
               ${categories.yearly}
             </optgroup>
@@ -58,7 +58,7 @@
         <div class="form-group">
           <label for="ent-account">Account / Card Used</label>
           <select id="ent-account">
-            <option value="">— Select account —</option>
+            <option value="">${t('entry.selectAcct')}</option>
             <optgroup label="Bank Accounts">
               ${accounts.bank}
             </optgroup>
@@ -73,13 +73,13 @@
           <input type="text" id="ent-note" enterkeyhint="done" autocorrect="off" placeholder="e.g. Gas stop, Walmart run…" />
         </div>
 
-        <button class="btn btn--primary btn--full" data-action="submit-entry">Record Transaction</button>
+        <button class="btn btn--primary btn--full" data-action="submit-entry">${t('entry.record')}</button>
       </div>
 
       <!-- Recent transactions -->
       <div class="card">
         <div class="flex-between mb-12">
-          <div class="card-title">Recent Transactions</div>
+          <div class="card-title">${t('entry.recent')}</div>
           <span class="text-secondary text-xs">${(state.transactions || []).length} total</span>
         </div>
         <div id="tx-list">
@@ -226,7 +226,7 @@
       if (acctOptGroup) {
         const bankOpts  = buildAccountOptions(fresh);
         acctOptGroup.innerHTML =
-          `<option value="">— Select account —</option>` +
+          `<option value="">${t('entry.selectAcct')}</option>` +
           `<optgroup label="Bank Accounts">${bankOpts.bank}</optgroup>` +
           `<optgroup label="Credit Cards">${bankOpts.cards}</optgroup>`;
       }

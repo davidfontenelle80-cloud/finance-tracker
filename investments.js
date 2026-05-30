@@ -206,12 +206,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Ticker</th>
-                  <th style="text-align:right">Shares</th>
-                  <th style="text-align:right">Price</th>
+                  <th>${t('inv.ticker')}</th>
+                  <th style="text-align:right">${t('inv.shares')}</th>
+                  <th style="text-align:right">${t('common.amount')}</th>
                   <th style="text-align:right">Value</th>
-                  <th style="text-align:right">Target%</th>
-                  <th style="text-align:right">Actual%</th>
+                  <th style="text-align:right">${t('inv.targetPct')}</th>
+                  <th style="text-align:right">${t('inv.actualPct')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -271,13 +271,13 @@
     return `
       <details style="margin-top:16px">
         <summary style="cursor:pointer;padding:8px 0;font-size:0.85rem;font-weight:700;color:var(--text-dim);list-style:none;-webkit-appearance:none">
-          ⚖ Rebalance Calculator ▾
+          ${t('inv.rebalance')} ▾
         </summary>
         <div style="overflow-x:auto;margin-top:8px">
           <table class="data-table">
             <thead><tr>
-              <th>Ticker</th>
-              <th style="text-align:right">Target%</th>
+              <th>${t('inv.ticker')}</th>
+              <th style="text-align:right">${t('inv.targetPct')}</th>
               <th style="text-align:right">Target $</th>
               <th style="text-align:right">Current $</th>
               <th style="text-align:right">+/− $</th>

@@ -122,7 +122,7 @@
 
     return '<div class="card" style="padding:0;margin-bottom:4px">' +
       '<div style="padding:14px 16px 0">' +
-        '<div class="section-title">Vault Savings Goals</div>' +
+        '<div class="section-title">' + t('goal.vaultGoals') + '</div>' +
         (withTarget.length === 0 ? '<div class="text-secondary text-xs" style="margin-bottom:12px">Set a target on any vault to track progress here.</div>' : '<div class="text-secondary text-xs" style="margin-bottom:4px">Tap a target to edit it.</div>') +
       '</div>' +
       (rows || '') +
@@ -221,7 +221,7 @@
 
     return '<div class="card" style="padding:0;overflow-x:auto;margin-bottom:4px">' +
       '<div style="padding:14px 16px 0">' +
-        '<div class="section-title">Yearly Spending Goals</div>' +
+        '<div class="section-title">' + t('goal.spendGoals') + '</div>' +
         '<div class="text-secondary text-xs" style="margin-bottom:4px">' +
           pastChecks + ' of ' + totalChecks + ' paychecks elapsed &mdash; ' +
           'Total budget: ' + fmt0(totalAnnual) + '/yr' +
@@ -230,10 +230,10 @@
       '<table class="data-table">' +
         '<thead><tr>' +
           '<th>Category</th>' +
-          '<th style="text-align:right">Annual Goal</th>' +
-          '<th style="text-align:right">YTD Spent</th>' +
-          '<th style="text-align:right">Remaining</th>' +
-          '<th>Pace</th>' +
+          '<th style="text-align:right">' + t('track.annualGoal') + '</th>' +
+          '<th style="text-align:right">' + t('track.ytdSpent') + '</th>' +
+          '<th style="text-align:right">' + t('common.remaining') + '</th>' +
+          '<th>' + t('track.paceLabel') + '</th>' +
         '</tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
         '<tfoot><tr style="font-weight:700;border-top:2px solid var(--border)">' +

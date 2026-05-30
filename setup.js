@@ -265,11 +265,25 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="cat-new-name">Category Name</label>
-                <input type="text" id="cat-new-name" placeholder="e.g. Auto Insurance" />
+                <input type="text" id="cat-new-name" placeholder="e.g. Auto Insurance" enterkeyhint="next" />
               </div>
               <div class="form-group">
                 <label for="cat-new-goal">Annual Goal ($)</label>
                 <input type="number" id="cat-new-goal" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:4px">
+              <div class="form-group">
+                <label for="cat-new-weekly">$/week <span class="text-dim" style="font-size:0.75rem">(optional)</span></label>
+                <input type="number" id="cat-new-weekly" placeholder="e.g. 200" min="0" step="1" inputmode="numeric" />
+              </div>
+              <div class="form-group">
+                <label for="cat-new-weekday">Count by</label>
+                <select id="cat-new-weekday">
+                  <option value="">— None —</option>
+                  <option value="saturday">Saturdays</option>
+                  <option value="sunday">Sundays</option>
+                </select>
               </div>
             </div>
             <button class="btn btn--primary btn--sm" data-action="add-category">+ Add Category</button>
@@ -640,7 +654,9 @@
         // ── Yearly categories ──────────────────────────────
         case 'add-category': {
           const name = container.querySelector('#cat-new-name').value.trim();
-          const goal = parseFloat(container.querySelector('#cat-new-goal').value) || 0;
+          const goal      = parseFloat(container.querySelector('#cat-new-goal').value) || 0;
+          const weeklyRaw = container.querySelector('#cat-new-weekly') ? container.querySelector('#cat-new-weekly').value.trim() : '';
+          const weeklyDay = container.querySelector('#cat-new-weekday') ? container.querySelector('#cat-new-weekday').value : '';
           if (!name) { App.showToast('Category name is required.', 'error'); return; }
           const ns = App.getState();
           ns.yearlyCategories.push({ id: S().generateId(), name, annualGoal: goal });
@@ -966,6 +982,7 @@
 
   // Category edit modal
   function openCategoryEditModal(cat, ns) {
+    const hasWeekly = cat.weeklyBudget !== null && cat.weeklyBudget !== undefined;
     openModal(`
       <div class="modal-header">
         <div class="modal-title">Edit Category</div>
@@ -973,20 +990,45 @@
       </div>
       <div class="form-group">
         <label for="m-cat-name">Category Name</label>
-        <input type="text" id="m-cat-name" value="${esc(cat.name)}" />
+        <input type="text" id="m-cat-name" value="${esc(cat.name)}" enterkeyhint="next" />
       </div>
       <div class="form-group">
         <label for="m-cat-goal">Annual Goal ($)</label>
         <input type="number" id="m-cat-goal" value="${cat.annualGoal}" min="0" step="0.01" inputmode="decimal" />
       </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0 12px;padding-top:12px">
+        <div class="text-sm font-bold" style="margin-bottom:4px">📅 Weekly Budget <span class="text-dim" style="font-weight:400;font-size:0.78rem">(optional — for Food & Gas)</span></div>
+        <div class="text-xs text-secondary" style="margin-bottom:10px">If set, the Planner multiplies this by how many matching days fall in the month — instead of using annual ÷ 26.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>$/week</label>
+            <input type="number" id="m-cat-weekly" value="${hasWeekly ? cat.weeklyBudget : ''}" placeholder="e.g. 200" min="0" step="1" inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label>Count by</label>
+            <select id="m-cat-weekday">
+              <option value="" ${!cat.weeklyDay ? 'selected' : ''}>— None —</option>
+              <option value="saturday" ${cat.weeklyDay === 'saturday' ? 'selected' : ''}>Saturdays (Gas)</option>
+              <option value="sunday" ${cat.weeklyDay === 'sunday' ? 'selected' : ''}>Sundays (Food)</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save Changes</button>
     `, (content) => {
-      const name = content.querySelector('#m-cat-name').value.trim();
-      const goal = parseFloat(content.querySelector('#m-cat-goal').value) || 0;
+      const name      = content.querySelector('#m-cat-name').value.trim();
+      const goal      = parseFloat(content.querySelector('#m-cat-goal').value) || 0;
+      const weekly    = content.querySelector('#m-cat-weekly').value.trim();
+      const weeklyDay = content.querySelector('#m-cat-weekday').value;
       if (!name) { App.showToast('Name required.', 'error'); return; }
       const fresh = App.getState();
       const idx   = fresh.yearlyCategories.findIndex(c => c.id === cat.id);
-      if (idx !== -1) { fresh.yearlyCategories[idx].name = name; fresh.yearlyCategories[idx].annualGoal = goal; }
+      if (idx !== -1) {
+        fresh.yearlyCategories[idx].name        = name;
+        fresh.yearlyCategories[idx].annualGoal  = goal;
+        fresh.yearlyCategories[idx].weeklyBudget = weekly !== '' ? (parseFloat(weekly) || 0) : null;
+        fresh.yearlyCategories[idx].weeklyDay    = weeklyDay || null;
+      }
       App.setState(fresh);
       closeModal();
       App.refreshCurrentTab();

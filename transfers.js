@@ -56,7 +56,7 @@
   function buildModeSelector() {
     const modes = [
       { id: 'paycheck',  icon: '💰', label: 'Paycheck Arrived' },
-      { id: 'paycards',  icon: '💳', label: 'Pay Credit Cards' },
+      { id: 'paycards',  icon: '💳', label: t('xfr.payCards') },
       { id: 'movemoney', icon: '🏦', label: 'Move Money'       },
       { id: 'fundvault', icon: '🎯', label: 'Fund a Vault'     },
       { id: 'withdraw',  icon: '📤', label: 'Withdraw / Spend' }
@@ -481,7 +481,7 @@
         '<div id="cp-card-rows">' + cardRows + '</div>' +
         '<div id="cp-totals" class="totals-row"></div>' +
         '<div class="workflow-actions">' +
-          '<button id="cp-execute" class="btn-execute">Execute Payments</button>' +
+          '<button id="cp-execute" class="btn-execute">' + t('xfr.executePayments') + '</button>' +
         '</div>' +
       '</div>';
 
