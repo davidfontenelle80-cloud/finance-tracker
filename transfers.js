@@ -489,26 +489,39 @@
   }
 
   function buildCardPayRow(card) {
-    const util = card.limit > 0 ? (card.balance / card.limit) : 0;
-    const utilPct = (util * 100).toFixed(1) + '%';
-    let utilClass = 'util-good', utilLabel = '✓ ' + utilPct;
-    if (util >= 0.5) { utilClass = 'util-bad';  utilLabel = '🚨 ' + utilPct; }
-    else if (util >= 0.3) { utilClass = 'util-warn'; utilLabel = '⚠ ' + utilPct; }
+    const util     = card.limit > 0 ? (card.balance / card.limit) : 0;
+    const utilPct  = (util * 100).toFixed(0) + '%';
+    const avail    = Math.max(0, (card.limit || 0) - (card.balance || 0));
+    let utilClass = 'util-good', utilLabel = '✓ Good &middot; ' + utilPct;
+    if (util >= 0.5) { utilClass = 'util-bad';  utilLabel = '🚨 High &middot; ' + utilPct; }
+    else if (util >= 0.3) { utilClass = 'util-warn'; utilLabel = '⚠ Watch &middot; ' + utilPct; }
 
-    return '<div class="card-pay-row" data-card-id="' + card.id + '" data-full="' + card.balance + '">' +
+    return '<div class="card-pay-row" data-card-id="' + card.id + '" data-full="' + card.balance + '" data-limit="' + (card.limit||0) + '">' +
       '<div class="card-pay-header">' +
         '<input type="checkbox" class="cp-check" checked />' +
-        '<span class="card-pay-name">' + card.name + '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<span class="card-pay-name">' + card.name + '</span>' +
+          '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:1px">' +
+            'Owed: <strong>' + fmt(card.balance) + '</strong> &middot; Avail: <strong style="color:var(--accent)">' + fmt(avail) + '</strong> / ' + fmt(card.limit||0) +
+          '</div>' +
+        '</div>' +
         '<span class="card-pay-util ' + utilClass + '">' + utilLabel + '</span>' +
       '</div>' +
       '<div class="pay-mode-btns">' +
         '<button class="pay-mode-btn active" data-pmode="full">Full</button>' +
-        '<button class="pay-mode-btn" data-pmode="min">Min</button>' +
+        '<button class="pay-mode-btn" data-pmode="min">Min ($25)</button>' +
         '<button class="pay-mode-btn" data-pmode="custom">Custom</button>' +
       '</div>' +
       '<div class="card-pay-amount-row">' +
-        '<label>Balance: ' + fmt(card.balance) + '</label>' +
+        '<label>Payment Amount</label>' +
         '<input type="number" class="cp-amount" value="' + card.balance.toFixed(2) + '" min="0" step="0.01" />' +
+      '</div>' +
+      '<div class="card-pay-amount-row" style="margin-top:6px">' +
+        '<label style="color:var(--text-dim)">Extra / Adjustment ($)</label>' +
+        '<input type="number" class="cp-adjust" value="0" min="0" step="0.01" placeholder="0.00" />' +
+      '</div>' +
+      '<div class="cp-after-row text-xs" style="text-align:right;margin-top:4px;color:var(--text-dim)">' +
+        'Balance after: <strong class="cp-after-val text-green">' + fmt(0) + '</strong>' +
       '</div>' +
     '</div>';
   }
@@ -517,22 +530,36 @@
     // Wire pay-mode buttons
     container.querySelectorAll('.card-pay-row').forEach(function(row) {
       const fullAmt = parseFloat(row.dataset.full) || 0;
+
+      function refreshAfterBal() {
+        const amt    = parseFloat(row.querySelector('.cp-amount').value)  || 0;
+        const adj    = parseFloat(row.querySelector('.cp-adjust').value)  || 0;
+        const total  = Math.round((amt + adj) * 100) / 100;
+        const after  = Math.max(0, Math.round((fullAmt - total) * 100) / 100);
+        const el     = row.querySelector('.cp-after-val');
+        if (el) {
+          el.textContent = fmt(after);
+          el.style.color = after <= 0 ? 'var(--accent)' : 'var(--text-dim)';
+        }
+        updateCardPayTotals(container, bank);
+      }
+
       row.querySelectorAll('.pay-mode-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
           row.querySelectorAll('.pay-mode-btn').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
           const amtInput = row.querySelector('.cp-amount');
-          if (btn.dataset.pmode === 'full') amtInput.value = fullAmt.toFixed(2);
+          if (btn.dataset.pmode === 'full')   amtInput.value = fullAmt.toFixed(2);
           else if (btn.dataset.pmode === 'min') amtInput.value = Math.min(25, fullAmt).toFixed(2);
-          updateCardPayTotals(container, bank);
+          else amtInput.value = '0.00';
+          row.querySelector('.cp-adjust').value = '0';
+          refreshAfterBal();
         });
       });
-      row.querySelector('.cp-check').addEventListener('change', function() {
-        updateCardPayTotals(container, bank);
-      });
-      row.querySelector('.cp-amount').addEventListener('input', function() {
-        updateCardPayTotals(container, bank);
-      });
+      row.querySelector('.cp-check').addEventListener('change', refreshAfterBal);
+      row.querySelector('.cp-amount').addEventListener('input', refreshAfterBal);
+      row.querySelector('.cp-adjust').addEventListener('input', refreshAfterBal);
+      refreshAfterBal();
     });
     updateCardPayTotals(container, bank);
 
@@ -559,12 +586,14 @@
         if (!row.querySelector('.cp-check').checked) return;
         const cardId = row.dataset.cardId;
         const amt    = parseFloat(row.querySelector('.cp-amount').value) || 0;
-        if (amt <= 0) return;
+        const adj    = parseFloat(row.querySelector('.cp-adjust').value) || 0;
+        const amt_total = Math.round((amt + adj) * 100) / 100;
+        if (amt_total <= 0) return;
         const card = (s.accounts.cards || []).find(function(c) { return c.id === cardId; });
         if (!card) return;
-        card.balance  = Math.max(0, Math.round((card.balance - amt) * 100) / 100);
-        from.balance  = Math.round((from.balance - amt) * 100) / 100;
-        totalPaid    += amt;
+        card.balance  = Math.max(0, Math.round((card.balance - amt_total) * 100) / 100);
+        from.balance  = Math.round((from.balance - amt_total) * 100) / 100;
+        totalPaid    += amt_total;
         movements.push({ account: cardId, change: -amt });
         movements.push({ account: fromId, change: -amt });
         const txId = App.Storage.generateId();

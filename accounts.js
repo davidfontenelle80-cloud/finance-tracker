@@ -341,21 +341,27 @@
 
     const cardHtml = cards.map(c => {
       const pct        = c.limit > 0 ? Math.min(100, (c.balance / c.limit) * 100) : 0;
-      const color      = pct >= 50 ? 'red' : pct >= 30 ? 'amber' : 'green';
-      const healthIcon = pct >= 50 ? '&#128680;' : pct >= 30 ? '&#9888;&#65039;' : '&#10003;';
+      const color      = pct >= 30 ? (pct >= 50 ? 'red' : 'amber') : 'green';
+      const statusText = pct >= 50 ? '🚨 High' : pct >= 30 ? '⚠ Watch' : '✓ Good';
       const avail      = (c.limit || 0) - (c.balance || 0);
 
       return `
         <details class="card" style="background:var(--bg-tertiary);margin-bottom:10px">
           <summary>
             <div style="flex:1;min-width:0">
-              <div class="card-title text-sm">${esc(c.name)}</div>
-              <div class="flex-between mt-4">
-                <span class="font-mono text-sm">
-                  <span class="text-${color} font-bold">${fmt(c.balance)}</span>
-                  <span class="text-secondary"> / ${fmt(c.limit)}</span>
-                </span>
-                <span class="badge badge--${color}">${healthIcon} ${pct.toFixed(0)}% used</span>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div class="card-title text-sm">${esc(c.name)}</div>
+                <span class="badge badge--${color}" style="flex-shrink:0;margin-left:8px">${statusText} &middot; ${pct.toFixed(0)}%</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px">
+                <div>
+                  <div class="text-xs text-secondary">Balance</div>
+                  <div class="font-mono font-bold text-${color} text-sm">${fmt(c.balance)}</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="text-xs text-secondary">Available</div>
+                  <div class="font-mono font-bold text-green text-sm">${fmt(avail)}</div>
+                </div>
               </div>
               <div class="progress-bar mt-6">
                 <div class="progress-bar__fill progress-bar__fill--${color}" style="width:${pct.toFixed(1)}%"></div>
@@ -404,7 +410,7 @@
         <summary>
           <div>
             <div class="card-title">&#128179; Credit Cards</div>
-            <div class="card-subtitle">${cards.length} cards &middot; ${fmt(total)} total balance</div>
+            <div class="card-subtitle">${cards.length} cards &middot; <span class="text-red">${fmt(total)} owed</span> &middot; <span class="text-green">${fmt(cards.reduce((s,c) => s + Math.max(0, (c.limit||0) - (c.balance||0)), 0))} available</span></div>
           </div>
         </summary>
         <div>
