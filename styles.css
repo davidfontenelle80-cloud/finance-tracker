@@ -105,10 +105,18 @@ body {
   display: flex;
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
 }
+.tab-nav::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
 
 .tab-btn {
-  flex: 1;
+  flex: 0 0 auto;              /* don't shrink — scroll instead */
+  min-width: 56px;             /* minimum tap target */
+  width: calc(12.5vw);        /* 1/8 of viewport — fills 8 tabs without scroll on wide screens */
+  max-width: 90px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -123,7 +131,6 @@ body {
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   -webkit-tap-highlight-color: transparent;
-  min-width: 0;
 }
 
 .tab-icon {
@@ -132,11 +139,14 @@ body {
 }
 
 .tab-label {
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .tab-btn:hover {
@@ -746,9 +756,22 @@ input[type="checkbox"] {
 @media (min-width: 680px) {
   .tab-btn {
     gap: 4px;
+    width: calc(100% / 8);     /* equal columns on wider screens */
+    max-width: none;
   }
   .tab-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tab-nav {
+    overflow-x: visible;       /* no need to scroll on desktop */
+  }
+  .tab-btn {
+    width: auto;
+    flex: 1;                   /* equal spread on desktop */
+    max-width: 120px;
   }
 }
 

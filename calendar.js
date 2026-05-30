@@ -78,7 +78,7 @@
       <div class="card" style="padding:10px 12px 4px">
         ${legend}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:8px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:8px;margin-top:8px">
         ${months}
       </div>
       ${buildOTSection(state)}
