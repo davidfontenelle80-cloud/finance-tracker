@@ -67,7 +67,8 @@
     return (
       buildSummaryCard(totalTarget, totalSaved, totalNeeded, overallPct, withTarget.length, vaults.length) +
       buildVaultGoals(withTarget, withoutTarget) +
-      buildSpendingGoals(cats, txs, state)
+      buildSpendingGoals(cats, txs, state) +
+      buildChallenges(state)
     );
   }
 
@@ -247,11 +248,151 @@
     '</div>';
   }
 
+
+  // ── Savings Challenges ───────────────────────────────────
+  function buildChallenges(state) {
+    var challenges = state.challenges || [];
+    if (!challenges.length) return '';
+
+    var cards = challenges.map(function(ch) {
+      var periods   = ch.type === '52week' ? 52 : 26;
+      var start     = Number(ch.startAmount) || (ch.type === '52week' ? 3 : 50);
+      var checked   = ch.checkedPeriods || [];
+
+      // Calculate totals
+      var grandTotal = 0;
+      for (var i = 1; i <= periods; i++) grandTotal += start * i;
+
+      var savedTotal = checked.reduce(function(s, p) { return s + (start * p); }, 0);
+      var pct        = grandTotal > 0 ? Math.min(100, (savedTotal / grandTotal) * 100) : 0;
+      var color      = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
+      var nextPeriod = 1;
+      for (var j = 1; j <= periods; j++) {
+        if (checked.indexOf(j) === -1) { nextPeriod = j; break; }
+      }
+      var nextAmt = start * nextPeriod;
+
+      // Build period grid
+      var gridItems = '';
+      for (var k = 1; k <= periods; k++) {
+        var isChecked = checked.indexOf(k) !== -1;
+        var amt       = start * k;
+        gridItems +=
+          '<button class="ch-cell' + (isChecked ? ' ch-cell--done' : '') + '" ' +
+            'data-action="ch-toggle" data-chid="' + ch.id + '" data-period="' + k + '" ' +
+            'title="Period ' + k + ': ' + fmt(amt) + '">' +
+            '<span class="ch-period">' + k + '</span>' +
+            '<span class="ch-amt">' + fmt0(amt) + '</span>' +
+          '</button>';
+      }
+
+      return '<div class="card" style="margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+          '<div>' +
+            '<div class="card-title" style="margin-bottom:2px">' +
+              (ch.type === '52week' ? '📅' : '💰') + ' ' + esc(ch.name) +
+            '</div>' +
+            '<div class="text-xs text-secondary">' +
+              '$' + start + ' × period # · Total goal: ' + fmt0(grandTotal) +
+            '</div>' +
+          '</div>' +
+          '<button class="btn btn--secondary btn--sm" data-action="ch-config" data-chid="' + ch.id + '" ' +
+            'data-start="' + start + '" data-name="' + esc(ch.name) + '">⚙️</button>' +
+        '</div>' +
+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
+          '<span class="font-mono font-bold text-green">' + fmt(savedTotal) + '</span>' +
+          '<span class="text-xs text-secondary">' + checked.length + ' / ' + periods + ' periods checked</span>' +
+        '</div>' +
+
+        '<div class="progress-bar" style="margin-bottom:4px;height:8px">' +
+          '<div class="progress-bar__fill progress-bar__fill--' + color + '" style="width:' + pct.toFixed(1) + '%;border-radius:4px"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:14px">' +
+          '<span class="text-xs text-secondary">' + pct.toFixed(0) + '% complete</span>' +
+          (checked.length < periods
+            ? '<span class="text-xs text-cyan">Next: ' + fmt(nextAmt) + ' (period ' + nextPeriod + ')</span>'
+            : '<span class="text-xs text-green">🎉 Challenge complete!</span>') +
+        '</div>' +
+
+        '<div class="ch-grid">' + gridItems + '</div>' +
+
+        '<div class="text-xs text-secondary" style="margin-top:8px;text-align:center">' +
+          'Tap a period to check/uncheck it' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    return '<div style="margin-top:8px">' +
+      '<div class="section-title" style="margin-bottom:8px">💪 Savings Challenges</div>' +
+      cards +
+    '</div>';
+  }
+
   // ── Events ───────────────────────────────────────────────
   function wireEvents(container, state) {
     container.addEventListener('click', function(e) {
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
+
+      if (btn.dataset.action === 'ch-toggle') {
+        var chId   = btn.dataset.chid;
+        var period = parseInt(btn.dataset.period);
+        var ns     = App.Storage.cloneState(App.getState());
+        var ch     = (ns.challenges || []).find(function(c) { return c.id === chId; });
+        if (!ch) return;
+        var idx = ch.checkedPeriods.indexOf(period);
+        if (idx === -1) ch.checkedPeriods.push(period);
+        else            ch.checkedPeriods.splice(idx, 1);
+        App.setState(ns);
+        return;
+      }
+
+      if (btn.dataset.action === 'ch-config') {
+        var chId   = btn.dataset.chid;
+        var curAmt = parseFloat(btn.dataset.start) || 0;
+        var chName = btn.dataset.name;
+        App.showModal(
+          '<div style="padding:8px">' +
+            '<div class="card-title mb-12">⚙️ ' + esc(chName) + '</div>' +
+            '<label class="text-xs text-secondary">Starting Amount per Period ($)</label>' +
+            '<input id="ch-start-input" type="number" min="1" step="1" inputmode="numeric" ' +
+              'class="form-control mb-4" value="' + curAmt + '" />' +
+            '<div class="text-xs text-secondary mb-12">' +
+              'Each period = this amount × the period number.<br>' +
+              'E.g. $3 → Period 1: $3, Period 2: $6, Period 52: $156.' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+              '<button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">Cancel</button>' +
+              '<button class="btn btn--primary" style="flex:1" id="ch-save-btn">Save</button>' +
+            '</div>' +
+            '<button class="btn btn--danger btn--full" id="ch-reset-btn">Reset All Progress</button>' +
+          '</div>'
+        );
+        setTimeout(function() {
+          var inp     = document.getElementById('ch-start-input');
+          var saveBtn = document.getElementById('ch-save-btn');
+          var resetBtn = document.getElementById('ch-reset-btn');
+          if (inp) inp.focus();
+          if (saveBtn) saveBtn.addEventListener('click', function() {
+            var val = parseInt(inp.value) || 1;
+            var ns  = App.Storage.cloneState(App.getState());
+            var ch  = (ns.challenges || []).find(function(c) { return c.id === chId; });
+            if (ch) { ch.startAmount = val; App.setState(ns); }
+            App.closeModal();
+            App.showToast('Starting amount updated ✓', 'success');
+          });
+          if (resetBtn) resetBtn.addEventListener('click', function() {
+            if (!confirm('Reset all checked periods for this challenge?')) return;
+            var ns = App.Storage.cloneState(App.getState());
+            var ch = (ns.challenges || []).find(function(c) { return c.id === chId; });
+            if (ch) { ch.checkedPeriods = []; App.setState(ns); }
+            App.closeModal();
+            App.showToast('Challenge reset', 'info');
+          });
+        }, 50);
+        return;
+      }
 
       if (btn.dataset.action === 'set-target') {
         var vaultId   = btn.dataset.id;
@@ -301,7 +442,7 @@
         bd.addEventListener('click', function h(e) {
           if (e.target === bd) { bd.classList.add('hidden'); mc.innerHTML = ''; bd.removeEventListener('click', h); }
         });
-      }
+      } // end set-target
     });
   }
 

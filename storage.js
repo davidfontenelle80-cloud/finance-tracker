@@ -341,6 +341,28 @@
       // Dated reminders: { id, text, amount, date }
       reminders: [],
 
+      // ── Savings Challenges ─────────────────────────────
+      // type: '52week' | '26biweekly'
+      // checkedPeriods: array of period numbers (1-based) that are checked off
+      challenges: [
+        {
+          id: 'challenge-52w',
+          type: '52week',
+          name: '52-Week Challenge',
+          startAmount: 3,
+          checkedPeriods: [],
+          startDate: null
+        },
+        {
+          id: 'challenge-26bw',
+          type: '26biweekly',
+          name: '26 Bi-Weekly Challenge',
+          startAmount: 50,
+          checkedPeriods: [],
+          startDate: null
+        }
+      ],
+
       // ── Calendar events ────────────────────────────────
       // User-added events. type: 'vacation'|'asamblea'|'note'
       // Payday dates come from income.paydayDates (not stored here).
@@ -393,6 +415,10 @@
     if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
       state.settings.excludeTransferFromDeficit = false;
     if (state.settings.claudeApiKey === undefined) state.settings.claudeApiKey = '';
+    if (!state.challenges) state.challenges = [
+      { id: 'challenge-52w',  type: '52week',      name: '52-Week Challenge',      startAmount: 3,  checkedPeriods: [], startDate: null },
+      { id: 'challenge-26bw', type: '26biweekly',  name: '26 Bi-Weekly Challenge', startAmount: 50, checkedPeriods: [], startDate: null }
+    ];
     }
     // v1.2 -> v1.3: weekly budget + goal countdown + upcoming expenses on categories
     if (state.yearlyCategories) {

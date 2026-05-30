@@ -1474,3 +1474,31 @@ input[type="checkbox"] {
   transition: opacity 0.15s;
 }
 .qe-btn:hover { opacity: 1; background: var(--surface-2); }
+
+/* ── Savings Challenge Grid ────────────────────────────────── */
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 4px;
+}
+.ch-cell {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 2px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.ch-cell:hover { border-color: var(--neon-cyan); }
+.ch-cell--done {
+  background: rgba(0,240,255,0.12);
+  border-color: var(--neon-cyan);
+}
+.ch-cell--done .ch-period { color: var(--neon-cyan); }
+.ch-period { font-size: 0.65rem; color: var(--text-secondary); font-weight: 700; }
+.ch-amt    { font-size: 0.6rem;  color: var(--text-dim); font-family: var(--font-mono, monospace); }
