@@ -263,6 +263,8 @@
       </div>`;
   }
 
+  function round2(n) { return Math.round(n * 100) / 100; }
+
   function esc(s) {
     return String(s || '').replace(/[&<>"']/g, function(c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
