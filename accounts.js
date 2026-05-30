@@ -551,15 +551,15 @@
             </div>
             <div class="form-group">
               <label>Name</label>
-              <input type="text" id="m-sub-name" value="${esc(btn.dataset.name)}" />
+              <input type="text" id="m-sub-name" enterkeyhint="next" value="${esc(btn.dataset.name)}" />
             </div>
             <div class="form-group">
               <label>Monthly Amount ($)</label>
-              <input type="number" id="m-sub-amt" value="${btn.dataset.amount}" min="0" step="0.01" />
+              <input type="number" id="m-sub-amt" value="${btn.dataset.amount}" min="0" step="0.01" inputmode="decimal" />
             </div>
             <div class="form-group">
               <label>Day of Month Due (0 = no fixed date)</label>
-              <input type="number" id="m-sub-day" value="${btn.dataset.dueday}" min="0" max="31" step="1" />
+              <input type="number" id="m-sub-day" value="${btn.dataset.dueday}" min="0" max="31" step="1" inputmode="numeric" />
             </div>
             <div style="display:flex;gap:8px;margin-top:12px">
               <button class="btn btn--primary" style="flex:1" data-action="modal-submit">Save</button>
@@ -598,15 +598,15 @@
             </div>
             <div class="form-group">
               <label>Name</label>
-              <input type="text" id="m-sub-name" placeholder="e.g. Spotify" />
+              <input type="text" id="m-sub-name" enterkeyhint="next" placeholder="e.g. Spotify" />
             </div>
             <div class="form-group">
               <label>Monthly Amount ($)</label>
-              <input type="number" id="m-sub-amt" placeholder="0.00" min="0" step="0.01" />
+              <input type="number" id="m-sub-amt" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
             </div>
             <div class="form-group">
               <label>Day of Month Due (0 = no fixed date)</label>
-              <input type="number" id="m-sub-day" placeholder="1-31" min="0" max="31" step="1" />
+              <input type="number" id="m-sub-day" placeholder="1-31" min="0" max="31" step="1" inputmode="numeric" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add</button>
           `, mc => {
@@ -644,7 +644,7 @@
             </div>
             <div class="form-group">
               <label>Current Balance ($)</label>
-              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" />
+              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
@@ -671,7 +671,7 @@
             </div>
             <div class="form-group mt-8">
               <label>Amount ($)</label>
-              <input type="number" id="m-item-amt" value="0" min="0" step="0.01" />
+              <input type="number" id="m-item-amt" value="0" min="0" step="0.01" inputmode="decimal" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add Item</button>
           `, mc => {
@@ -708,7 +708,7 @@
             </div>
             <div class="form-group mt-8">
               <label>Amount ($)</label>
-              <input type="number" id="m-item-amt" value="${ds.itemAmount}" min="0" step="0.01" />
+              <input type="number" id="m-item-amt" value="${ds.itemAmount}" min="0" step="0.01" inputmode="decimal" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
@@ -757,7 +757,7 @@
             </div>
             <div class="form-group">
               <label>Current Balance ($)</label>
-              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" />
+              <input type="number" id="m-val" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
           `, mc => {
@@ -782,18 +782,16 @@
             </div>
             <div class="form-group">
               <label>Credit Limit ($)</label>
-              <input type="number" id="m-lim" value="${ds.limit}" min="0" step="1" />
+              <input type="number" id="m-lim" value="${ds.limit}" min="0" step="1" inputmode="numeric" />
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
               <div class="form-group">
                 <label style="color:var(--color-success)">Available Credit ($)</label>
-                <input type="number" id="m-avail" value="${ds.avail}" min="0" step="0.01"
-                       style="border-color:var(--color-success)" />
+                <input type="number" id="m-avail" value="${ds.avail}" min="0" step="0.01" inputmode="decimal" style="border-color:var(--color-success)" />
               </div>
               <div class="form-group">
                 <label style="color:var(--color-danger)">Balance ($)</label>
-                <input type="number" id="m-bal" value="${ds.bal}" min="0" step="0.01"
-                       style="border-color:var(--color-danger)" />
+                <input type="number" id="m-bal" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" style="border-color:var(--color-danger)" />
               </div>
             </div>
             <p class="text-xs text-secondary mt-4">Enter either field &mdash; the other updates automatically.</p>
@@ -850,7 +848,7 @@
             <p class="text-secondary text-sm mb-12">Current balance: <strong>${fmt(Number(ds.bal))}</strong></p>
             <div class="form-group">
               <label>Payment Amount ($)</label>
-              <input type="number" id="m-pay" value="${ds.bal}" min="0" step="0.01" />
+              <input type="number" id="m-pay" value="${ds.bal}" min="0" step="0.01" inputmode="decimal" />
             </div>
             <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Record Payment</button>
           `, mc => {

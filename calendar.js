@@ -181,7 +181,7 @@
           </div>
           <div class="form-group" style="margin:0;flex:0 0 60px">
             <label class="text-xs text-secondary">Hours</label>
-            <input type="number" id="ot-hours" placeholder="8" min="0.5" max="24" step="0.5"
+            <input type="number" id="ot-hours" placeholder="8" min="0.5" max="24" step="0.5" inputmode="decimal"
                    style="padding:6px 8px;min-height:36px;width:70px" />
           </div>
           <div class="form-group" style="margin:0">
@@ -312,7 +312,7 @@
       </div>
       <div class="form-group">
         <label>Label <span class="text-dim">(optional)</span></label>
-        <input type="text" id="m-evt-label" placeholder="e.g. Spring Assembly" />
+        <input type="text" id="m-evt-label" enterkeyhint="done" placeholder="e.g. Spring Assembly" />
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add Event</button>
     `;

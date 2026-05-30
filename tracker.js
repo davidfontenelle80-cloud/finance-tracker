@@ -57,7 +57,7 @@
       } else {
         var entryVal = p.saved > 0 ? p.saved.toFixed(2) : '';
         savedCell = '<td class="font-mono text-right tracker-saved-cell">' +
-          '<input type="number" class="tracker-amount-input" min="0" step="0.01" ' +
+          '<input type="number" class="tracker-amount-input" min="0" step="0.01" inputmode="decimal" ' +
           'placeholder="0.00" value="' + entryVal + '" ' +
           'data-action="tracker-entry" data-idx="' + p.idx + '" />' +
           '</td>';

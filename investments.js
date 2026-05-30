@@ -169,8 +169,7 @@
           <td class="text-right font-mono">${(h.shares || 0).toFixed(4)}</td>
           <td class="text-right">
             <input type="number" class="price-input" data-id="${h.id}"
-                   value="${h.price || 0}" min="0" step="0.01"
-                   style="width:80px;padding:4px 8px;min-height:32px;text-align:right" />
+                   value="${h.price || 0}" min="0" step="0.01" inputmode="decimal" style="width:80px;padding:4px 8px;min-height:32px;text-align:right" />
           </td>
           <td class="text-right font-mono text-cyan">${fmt(h.value)}</td>
           <td class="text-right">${(h.targetPct || 0).toFixed(0)}%</td>
@@ -436,7 +435,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Ticker</label>
-          <input type="text" id="m-ticker" value="${existing ? esc(existing.ticker) : ''}" placeholder="VOO" style="text-transform:uppercase" />
+          <input type="text" id="m-ticker" enterkeyhint="next" autocapitalize="characters" autocorrect="off" value="${existing ? esc(existing.ticker) : ''}" placeholder="VOO" style="text-transform:uppercase" />
         </div>
         <div class="form-group">
           <label>Shares</label>
@@ -446,11 +445,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>Current Price ($)</label>
-          <input type="number" id="m-price" value="${existing ? existing.price : 0}" min="0" step="0.01" />
+          <input type="number" id="m-price" value="${existing ? existing.price : 0}" min="0" step="0.01" inputmode="decimal" />
         </div>
         <div class="form-group">
           <label>Target % <span class="text-dim">(of account)</span></label>
-          <input type="number" id="m-target" value="${existing ? existing.targetPct : 0}" min="0" max="100" step="1" />
+          <input type="number" id="m-target" value="${existing ? existing.targetPct : 0}" min="0" max="100" step="1" inputmode="numeric" />
         </div>
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">
@@ -494,7 +493,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Add Contribution ($)</label>
-          <input type="number" id="m-contrib" value="0" min="0" step="0.01" />
+          <input type="number" id="m-contrib" value="0" min="0" step="0.01" inputmode="decimal" />
         </div>
         <div class="form-group">
           <label>Date</label>
@@ -503,7 +502,7 @@
       </div>
       <div class="form-group">
         <label>Override YTD Total ($) <span class="text-dim">(optional)</span></label>
-        <input type="number" id="m-ytd" placeholder="${acct.ytdContribution}" min="0" step="0.01" />
+        <input type="number" id="m-ytd" placeholder="${acct.ytdContribution}" min="0" step="0.01" inputmode="decimal" />
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
     `, mc => {
@@ -535,16 +534,16 @@
       </div>
       <div class="form-group">
         <label>Account Name</label>
-        <input type="text" id="m-acct-name" placeholder="e.g. Taxable Brokerage" />
+        <input type="text" id="m-acct-name" enterkeyhint="next" placeholder="e.g. Taxable Brokerage" />
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Annual Contribution Goal ($)</label>
-          <input type="number" id="m-acct-goal" value="0" min="0" step="1" />
+          <input type="number" id="m-acct-goal" value="0" min="0" step="1" inputmode="numeric" />
         </div>
         <div class="form-group">
           <label>YTD Contributions ($)</label>
-          <input type="number" id="m-acct-ytd" value="0" min="0" step="0.01" />
+          <input type="number" id="m-acct-ytd" value="0" min="0" step="0.01" inputmode="decimal" />
         </div>
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Add Account</button>

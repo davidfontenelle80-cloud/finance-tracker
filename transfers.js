@@ -101,7 +101,7 @@
         '<div class="form-group"><label class="form-label">Pay Period</label>' +
           '<select id="pc-period" class="form-control">' + periodOptions + '</select></div>' +
         '<div class="form-group"><label class="form-label">Amount Received</label>' +
-          '<input id="pc-amount" type="number" class="form-control" value="' + defaultAmt + '" min="0" step="0.01" /></div>' +
+          '<input id="pc-amount" type="number" class="form-control" value="' + defaultAmt + '" min="0" step="0.01" inputmode="decimal" /></div>' +
         '<div class="form-group"><label class="form-label">Date Deposited</label>' +
           '<input id="pc-date" type="date" class="form-control" value="' + today + '" /></div>' +
         '<div class="form-group"><label class="form-label">Deposit To</label>' +
@@ -129,7 +129,7 @@
         return '<div class="alloc-row' + (a.complete ? ' alloc-complete' : '') + '" data-idx="' + i + '">' +
           '<input type="checkbox" class="alloc-check"' + (a.complete ? '' : ' checked') + ' />' +
           '<span class="alloc-name">' + a.name + completeBadge + '</span>' +
-          '<input type="number" class="alloc-amount" value="' + a.amount.toFixed(2) + '" min="0" step="0.01" />' +
+          '<input type="number" class="alloc-amount" value="' + a.amount.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" />' +
           '</div>';
       }).join('');
       allocList.querySelectorAll('.alloc-check, .alloc-amount').forEach(function(el) {
@@ -514,11 +514,11 @@
       '</div>' +
       '<div class="card-pay-amount-row">' +
         '<label>Payment Amount</label>' +
-        '<input type="number" class="cp-amount" value="' + card.balance.toFixed(2) + '" min="0" step="0.01" />' +
+        '<input type="number" class="cp-amount" value="' + card.balance.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" />' +
       '</div>' +
       '<div class="card-pay-amount-row" style="margin-top:6px">' +
         '<label style="color:var(--text-dim)">Extra / Adjustment ($)</label>' +
-        '<input type="number" class="cp-adjust" value="0" min="0" step="0.01" placeholder="0.00" />' +
+        '<input type="number" class="cp-adjust" value="0" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />' +
       '</div>' +
       '<div class="cp-after-row text-xs" style="text-align:right;margin-top:4px;color:var(--text-dim)">' +
         'Balance after: <strong class="cp-after-val text-green">' + fmt(0) + '</strong>' +
@@ -655,7 +655,7 @@
           '<select id="mm-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="mm-from-bal" class="field-hint"></span></div>' +
         '<div class="form-group"><label class="form-label">Amount</label>' +
-          '<input id="mm-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+          '<input id="mm-amount" type="number" class="form-control" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /></div>' +
         '<div class="form-group"><label class="form-label">To</label>' +
           '<select id="mm-to" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="mm-to-bal" class="field-hint"></span></div>' +
@@ -754,7 +754,7 @@
           '<select id="fv-vault" class="form-control">' + vaultOptions + '</select></div>' +
         '<div id="fv-info" class="vault-info-card hidden"></div>' +
         '<div class="form-group"><label class="form-label">Amount</label>' +
-          '<input id="fv-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+          '<input id="fv-amount" type="number" class="form-control" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /></div>' +
         '<div id="fv-preview" class="transfer-preview hidden"></div>' +
         '<div class="workflow-actions">' +
           '<button id="fv-execute" class="btn-execute">Fund Vault</button>' +
@@ -859,7 +859,7 @@
           '<select id="wd-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="wd-from-bal" class="field-hint"></span></div>' +
         '<div class="form-group"><label class="form-label">Amount</label>' +
-          '<input id="wd-amount" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" /></div>' +
+          '<input id="wd-amount" type="number" class="form-control" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /></div>' +
         '<div class="form-group"><label class="form-label">Category</label>' +
           '<select id="wd-category" class="form-control">' + catOptions + '</select></div>' +
         '<div class="form-group"><label class="form-label">Date</label>' +

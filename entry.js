@@ -38,7 +38,7 @@
           </div>
           <div class="form-group">
             <label for="ent-amount">Amount ($)</label>
-            <input type="number" id="ent-amount" placeholder="0.00" min="0" step="0.01" />
+            <input type="number" id="ent-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
           </div>
         </div>
 
@@ -70,7 +70,7 @@
 
         <div class="form-group">
           <label for="ent-note">Note <span class="text-dim">(optional)</span></label>
-          <input type="text" id="ent-note" placeholder="e.g. Gas stop, Walmart run…" />
+          <input type="text" id="ent-note" enterkeyhint="done" autocorrect="off" placeholder="e.g. Gas stop, Walmart run…" />
         </div>
 
         <button class="btn btn--primary btn--full" data-action="submit-entry">Record Transaction</button>

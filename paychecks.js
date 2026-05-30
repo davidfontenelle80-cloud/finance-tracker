@@ -128,7 +128,7 @@
           '<input type="number" class="weekly-budget-input" ' +
             'data-cat-id="' + cat.id + '" ' +
             'value="' + cat.weeklyBudget + '" ' +
-            'min="0" step="1" ' +
+            'min="0" step="1" inputmode="numeric" ' +
             'style="width:70px;padding:4px 8px" />' +
         '</div>' +
       '</div>';
@@ -194,7 +194,7 @@
           '</div>' +
           '<div class="form-group">' +
             '<label>Amount ($)</label>' +
-            '<input type="number" id="ue-amount" placeholder="0.00" min="0" step="0.01" />' +
+            '<input type="number" id="ue-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />' +
           '</div>' +
         '</div>' +
         '<div class="form-group mt-8">' +
@@ -345,7 +345,7 @@
         '<td>' +
           '<input type="number" class="inline-amt" ' +
             'data-check="' + num + '" data-idx="' + idx + '" data-field="cat-amount" ' +
-            'value="' + c.amount.toFixed(2) + '" min="0" step="0.01" ' +
+            'value="' + c.amount.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" ' +
             'style="width:90px;padding:4px 8px;min-height:32px" />' +
           '<div class="text-xs text-dim" style="margin-top:2px;padding-left:2px">&times;' + ppy + '&nbsp;=&nbsp;' + fmt(annualCost) + '/yr</div>' +
         '</td>' +
@@ -406,7 +406,7 @@
         '<div class="form-group">' +
           '<label>Paycheck Amount ($)</label>' +
           '<input type="number" class="check-amount" data-check="' + num + '" ' +
-            'value="' + check.amount + '" min="0" step="0.01" />' +
+            'value="' + check.amount + '" min="0" step="0.01" inputmode="decimal" />' +
         '</div>' +
         '<table class="data-table" style="margin:10px 0 4px">' +
           '<thead><tr>' +
@@ -435,7 +435,7 @@
           '</div>' +
           '<div style="width:90px">' +
             '<label class="text-xs text-secondary">Amount</label>' +
-            '<input type="number" class="custom-amt" data-check="' + num + '" placeholder="0" min="0" step="0.01" />' +
+            '<input type="number" class="custom-amt" data-check="' + num + '" placeholder="0" min="0" step="0.01" inputmode="decimal" />' +
           '</div>' +
           '<button class="btn btn--secondary btn--sm" data-action="add-custom" data-check="' + num + '" data-key="' + key + '">+</button>' +
         '</div>' +
@@ -480,7 +480,7 @@
         // Transfer Account
         '<label class="text-sm">Transfer Account (CC buffer)</label>' +
         '<input type="number" class="dist-input" data-dist="transferAccount" data-check="' + num + '" data-key="' + key + '" ' +
-          'value="' + transferAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'value="' + transferAmt.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" ' +
           'style="width:90px;padding:4px 8px;text-align:right" />' +
 
         // Hold (subscriptions) — auto-calculated
@@ -491,19 +491,19 @@
             : '<div class="text-xs text-secondary">No subs queued — enter manually</div>') +
         '</div>' +
         '<input type="number" class="dist-input" data-dist="hold" data-check="' + num + '" data-key="' + key + '" ' +
-          'value="' + holdAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'value="' + holdAmt.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" ' +
           'style="width:90px;padding:4px 8px;text-align:right" />' +
 
         // American Eagle
         '<label class="text-sm">Transfer to American Eagle</label>' +
         '<input type="number" class="dist-input" data-dist="americanEagle" data-check="' + num + '" data-key="' + key + '" ' +
-          'value="' + eagleAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'value="' + eagleAmt.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" ' +
           'style="width:90px;padding:4px 8px;text-align:right" />' +
 
         // Investing
         '<label class="text-sm">Investing</label>' +
         '<input type="number" class="dist-input" data-dist="investing" data-check="' + num + '" data-key="' + key + '" ' +
-          'value="' + investAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'value="' + investAmt.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" ' +
           'style="width:90px;padding:4px 8px;text-align:right" />' +
 
       '</div>' +

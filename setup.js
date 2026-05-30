@@ -101,7 +101,7 @@
             </div>
             <div class="form-group">
               <label for="si-amount">Paycheck Amount ($)</label>
-              <input type="number" id="si-amount" value="${inc.defaultPaycheckAmount}" min="0" step="0.01" />
+              <input type="number" id="si-amount" value="${inc.defaultPaycheckAmount}" min="0" step="0.01" inputmode="decimal" />
             </div>
           </div>
           <div class="form-group">
@@ -136,7 +136,7 @@
               </div>
               <div class="form-group">
                 <label for="si-pamount">Partner Amount ($)</label>
-                <input type="number" id="si-pamount" value="${inc.partnerPaycheckAmount}" min="0" step="0.01" />
+                <input type="number" id="si-pamount" value="${inc.partnerPaycheckAmount}" min="0" step="0.01" inputmode="decimal" />
               </div>
             </div>
             <div class="form-group">
@@ -269,7 +269,7 @@
               </div>
               <div class="form-group">
                 <label for="cat-new-goal">Annual Goal ($)</label>
-                <input type="number" id="cat-new-goal" placeholder="0.00" min="0" step="0.01" />
+                <input type="number" id="cat-new-goal" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
               </div>
             </div>
             <button class="btn btn--primary btn--sm" data-action="add-category">+ Add Category</button>
@@ -326,7 +326,7 @@
             </div>
             <div class="form-group">
               <label for="fx-new-amount">Monthly Amount ($)</label>
-              <input type="number" id="fx-new-amount" placeholder="0.00" min="0" step="0.01" />
+              <input type="number" id="fx-new-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
             </div>
           </div>
           <div class="form-row">
@@ -977,7 +977,7 @@
       </div>
       <div class="form-group">
         <label for="m-cat-goal">Annual Goal ($)</label>
-        <input type="number" id="m-cat-goal" value="${cat.annualGoal}" min="0" step="0.01" />
+        <input type="number" id="m-cat-goal" value="${cat.annualGoal}" min="0" step="0.01" inputmode="decimal" />
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save Changes</button>
     `, (content) => {
@@ -1007,7 +1007,7 @@
       </div>
       <div class="form-group">
         <label for="m-fx-amount">Monthly Amount ($)</label>
-        <input type="number" id="m-fx-amount" value="${item.amount}" min="0" step="0.01" />
+        <input type="number" id="m-fx-amount" value="${item.amount}" min="0" step="0.01" inputmode="decimal" />
       </div>
       <div class="form-group">
         <label for="m-fx-date">Effective Date</label>
@@ -1051,7 +1051,7 @@
       </div>
       <div class="form-group">
         <label for="m-bank-bal">Current Balance ($)</label>
-        <input type="number" id="m-bank-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" />
+        <input type="number" id="m-bank-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" inputmode="decimal" />
       </div>
       <div class="form-group">
         <label for="m-bank-tier">Liquidity Tier</label>
@@ -1105,7 +1105,7 @@
       </div>
       <div class="form-group">
         <label for="m-vault-bal">Current Balance ($)</label>
-        <input type="number" id="m-vault-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" />
+        <input type="number" id="m-vault-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" inputmode="decimal" />
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">${isNew ? 'Add Vault' : 'Save Changes'}</button>
     `, (content) => {
@@ -1141,11 +1141,11 @@
       <div class="form-row">
         <div class="form-group">
           <label for="m-card-limit">Credit Limit ($)</label>
-          <input type="number" id="m-card-limit" value="${existing ? existing.limit : 0}" min="0" step="1" />
+          <input type="number" id="m-card-limit" value="${existing ? existing.limit : 0}" min="0" step="1" inputmode="numeric" />
         </div>
         <div class="form-group">
           <label for="m-card-bal">Current Balance ($)</label>
-          <input type="number" id="m-card-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" />
+          <input type="number" id="m-card-bal" value="${existing ? existing.balance : 0}" min="0" step="0.01" inputmode="decimal" />
         </div>
       </div>
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">${isNew ? 'Add Card' : 'Save Changes'}</button>
