@@ -229,7 +229,22 @@
   function buildDefaultCheck(state, checkNum, paydates) {
     const ppy = state.income.paychecksPerYear || 26;
 
+    // P3 (bonus paycheck in a 5-week month) starts blank — user decides allocation
+    const isBonus = checkNum >= 3;
+
     const categories = (state.yearlyCategories || []).map(function(cat) {
+      // Bonus paycheck: all categories default to 0, user fills in freely
+      if (isBonus) {
+        return {
+          categoryId:   cat.id,
+          name:         cat.name,
+          amount:       0,
+          locked:       false,
+          weeklyBudget: null,
+          weeklyDay:    null,
+          targetDate:   null
+        };
+      }
       // Use goal-countdown amount if target date is set, else weekly/annual allocation
       var amount = weeklyAlloc(cat, _year, _month, ppy);
       var paychecksLeft = paychecksToGoal(cat.targetDate, state.income.paydayDates);
@@ -363,11 +378,22 @@
     }).join('');
 
     const datelabel = paydate ? '<span class="text-secondary text-xs"> &middot; ' + paydate + '</span>' : '';
+    const isBonus   = num >= 3;
+    const bonusBadge = isBonus
+      ? ' <span class="badge badge--amber" style="margin-left:6px;font-size:0.65rem;vertical-align:middle">&#127381; BONUS</span>'
+      : '';
+    const bonusNote = isBonus
+      ? '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:0.82rem">' +
+          '<strong style="color:var(--amber)">&#127381; 5-Week Bonus Paycheck</strong><br>' +
+          '<span class="text-secondary">This is your extra check this month. No fixed expenses — ' +
+          'allocate freely to savings, goals, or debt payoff. All categories start at $0.</span>' +
+        '</div>'
+      : '';
 
     return '<details class="card card--glow-cyan" open data-check-card="' + num + '">' +
       '<summary>' +
         '<div>' +
-          '<div class="card-title">Paycheck ' + num + ' of ' + totalCount + datelabel + '</div>' +
+          '<div class="card-title">Paycheck ' + num + ' of ' + totalCount + bonusBadge + datelabel + '</div>' +
           '<div class="flex-gap-8 mt-4">' +
             '<span class="font-mono text-cyan text-sm">' + fmt(check.amount) + '</span>' +
             '<span class="text-dim">&middot;</span>' +
@@ -376,6 +402,7 @@
         '</div>' +
       '</summary>' +
       '<div>' +
+        bonusNote +
         '<div class="form-group">' +
           '<label>Paycheck Amount ($)</label>' +
           '<input type="number" class="check-amount" data-check="' + num + '" ' +
