@@ -76,11 +76,24 @@
         <button class="btn btn--primary btn--full" data-action="submit-entry">${t('entry.record')}</button>
       </div>
 
+      <!-- Category Summary -->
+      ${buildCategorySummary(state)}
+
       <!-- Recent transactions -->
       <div class="card">
-        <div class="flex-between mb-12">
+        <div class="flex-between mb-8">
           <div class="card-title">${t('entry.recent')}</div>
           <span class="text-secondary text-xs">${(state.transactions || []).length} total</span>
+        </div>
+        <!-- Filter row -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <select id="tx-filter-cat" style="flex:1;padding:6px 10px;font-size:0.85rem">
+            <option value="">All Categories</option>
+            ${(state.yearlyCategories||[]).map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('')}
+          </select>
+          <input type="month" id="tx-filter-month" style="flex:1;padding:6px 10px;font-size:0.85rem"
+            value="${today.slice(0,7)}" title="Filter by month" />
+          <button class="btn btn--secondary btn--sm" id="tx-filter-clear">Clear</button>
         </div>
         <div id="tx-list">
           ${renderTransactionList(recent, state)}
@@ -142,6 +155,62 @@
     return { bank, cards };
   }
 
+
+  // ── Category Summary Card ─────────────────────────────────
+  function buildCategorySummary(state) {
+    var cats = state.yearlyCategories || [];
+    if (!cats.length) return '';
+    var txs  = state.transactions || [];
+    var now  = App.Storage.toISODate(new Date());
+    var year = now.slice(0, 4);
+
+    var rows = cats
+      .filter(function(c) { return c.annualGoal > 0; })
+      .map(function(c) {
+        var spent = txs
+          .filter(function(tx) { return tx.categoryId === c.id && tx.date && tx.date.startsWith(year); })
+          .reduce(function(s, tx) { return s + (Number(tx.amount) || 0); }, 0);
+        var goal      = c.annualGoal || 0;
+        var pct       = goal > 0 ? Math.min(100, (spent / goal) * 100) : 0;
+        var remaining = goal - spent;
+        var barColor  = pct > 90 ? 'red' : pct > 65 ? 'amber' : 'cyan';
+        return (
+          '<div style="margin-bottom:10px">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
+              '<span class="text-sm font-bold">' + esc(c.name) + '</span>' +
+              '<span class="font-mono text-sm">' +
+                fmt(spent) +
+                '<span class="text-secondary text-xs"> / ' + fmt(goal) + '</span>' +
+              '</span>' +
+            '</div>' +
+            '<div class="progress-bar" style="height:6px;margin-bottom:2px">' +
+              '<div class="progress-bar__fill progress-bar__fill--' + barColor + '"' +
+                ' style="width:' + pct.toFixed(1) + '%;border-radius:3px"></div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between">' +
+              '<span class="text-xs text-secondary">' + pct.toFixed(0) + '% of annual goal</span>' +
+              '<span class="text-xs ' + (remaining >= 0 ? 'text-secondary' : 'text-red') + '">' +
+                (remaining >= 0 ? fmt(remaining) + ' remaining' : fmt(Math.abs(remaining)) + ' over budget') +
+              '</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+    if (!rows) return '';
+
+    return (
+      '<div class="card" id="cat-summary-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"' +
+          ' data-action="toggle-cat-summary">' +
+          '<div class="card-title" style="margin:0">📊 YTD by Category</div>' +
+          '<span id="cat-summary-chevron" class="text-secondary text-xs">▼</span>' +
+        '</div>' +
+        '<div id="cat-summary-body" style="display:none;margin-top:12px">' + rows + '</div>' +
+      '</div>'
+    );
+  }
+
   // ── Events ────────────────────────────────────────────────
   function wireEvents(container, state) {
     container.addEventListener('click', e => {
@@ -156,6 +225,39 @@
         deleteTx(btn.dataset.id);
         return;
       }
+      if (btn.dataset.action === 'toggle-cat-summary') {
+        const body    = document.getElementById('cat-summary-body');
+        const chevron = document.getElementById('cat-summary-chevron');
+        if (!body) return;
+        const open = body.style.display === 'block';
+        body.style.display = open ? 'none' : 'block';
+        if (chevron) chevron.textContent = open ? '▼' : '▲';
+        return;
+      }
+    });
+
+    // Filter by category and/or month
+    function applyFilter() {
+      const catId  = (container.querySelector('#tx-filter-cat')   || {}).value || '';
+      const month  = (container.querySelector('#tx-filter-month') || {}).value || '';
+      const st     = App.getState();
+      let   txs    = (st.transactions || []).slice().reverse();
+      if (catId)  txs = txs.filter(tx => tx.categoryId === catId);
+      if (month)  txs = txs.filter(tx => tx.date && tx.date.startsWith(month));
+      const listEl = container.querySelector('#tx-list');
+      if (listEl) listEl.innerHTML = renderTransactionList(txs.slice(0, 100), st) ||
+        '<p class="text-secondary text-sm">No transactions match this filter.</p>';
+    }
+
+    const catFilter   = container.querySelector('#tx-filter-cat');
+    const monthFilter = container.querySelector('#tx-filter-month');
+    const clearBtn    = container.querySelector('#tx-filter-clear');
+    if (catFilter)   catFilter.addEventListener('change', applyFilter);
+    if (monthFilter) monthFilter.addEventListener('change', applyFilter);
+    if (clearBtn)    clearBtn.addEventListener('click', () => {
+      if (catFilter)   catFilter.value   = '';
+      if (monthFilter) monthFilter.value = '';
+      applyFilter();
     });
   }
 
