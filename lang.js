@@ -18,6 +18,8 @@
       'nav.settings':    'Settings',
       'nav.tracker':     'Tracker',
       'nav.entry':       'Entry',
+      'nav.goals':       'Goals',
+      'nav.calendar':    'Calendar',
 
       // Common actions / labels
       'common.save':       'Save',
@@ -267,6 +269,8 @@
       'nav.settings':    'Ajustes',
       'nav.tracker':     'Registro',
       'nav.entry':       'Entrada',
+      'nav.goals':       'Metas',
+      'nav.calendar':    'Calendario',
 
       // Comun
       'common.save':       'Guardar',
@@ -554,7 +558,9 @@
       'transfers':   'nav.transfers',
       'planner':     'nav.planner',
       'investments': 'nav.invest',
-      'settings':    'nav.settings'
+      'settings':    'nav.settings',
+      'goals':       'nav.goals',
+      'calendar':    'nav.calendar'
     };
     document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn) {
       var key = map[btn.dataset.tab];
@@ -565,7 +571,10 @@
     });
     // Also update the lang toggle button text if it exists
     var toggle = document.getElementById('lang-toggle');
-    if (toggle) toggle.textContent = _lang === 'en' ? 'ES' : 'EN';
+    if (toggle) {
+      var lbl = toggle.querySelector('#lang-label') || toggle;
+      lbl.textContent = _lang === 'en' ? 'Español' : 'English';
+    }
   }
 
   App.Lang = { t: t, setLang: setLang, getLang: getLang, init: init };

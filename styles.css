@@ -657,6 +657,13 @@ input[type="checkbox"] {
   max-height: 90dvh;
   overflow-y: auto;
   animation: slideUp 0.25s ease;
+  /* iOS keyboard: allow shrinking when keyboard appears */
+  transition: max-height 0.2s ease;
+}
+
+/* iOS keyboard shim — applied via JS when visualViewport shrinks */
+.modal-box.keyboard-open {
+  max-height: 55dvh;
 }
 
 @keyframes slideUp {

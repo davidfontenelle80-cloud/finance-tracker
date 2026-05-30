@@ -242,6 +242,25 @@
       REACTIVE_TABS.forEach(refreshTabIfVisible);
     });
 
+    // 3b. iOS keyboard — shrink modal when keyboard appears
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var box = document.querySelector('.modal-box');
+        if (!box) return;
+        var kbHeight = window.innerHeight - window.visualViewport.height;
+        if (kbHeight > 100) {
+          box.classList.add('keyboard-open');
+          // Scroll focused input into view after a brief delay
+          setTimeout(function() {
+            var focused = box.querySelector('input:focus, textarea:focus, select:focus');
+            if (focused) focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 150);
+        } else {
+          box.classList.remove('keyboard-open');
+        }
+      });
+    }
+
     // 4. Restore last tab
     const lastTab = (() => {
       try { return localStorage.getItem('financeApp_activeTab') || 'dashboard'; }

@@ -118,7 +118,7 @@
 
       // Dot indicators for events
       const dots = dayEvents.map(e => {
-        const t = EVENT_TYPES[e.type] || EVENT_TYPES.note;
+        const t = EVENT_TYPES[e.type] || { color: '#94A3B8', bg: 'rgba(148,163,184,0.18)', label: e.customType || e.type };
         return `<span style="width:4px;height:4px;border-radius:50%;background:${t.color};display:inline-block;margin:0 1px" title="${esc(e.label || e.type)}"></span>`;
       }).join('');
 
@@ -284,10 +284,10 @@
 
     const existList = existing.length
       ? existing.map(e => {
-          const t = EVENT_TYPES[e.type] || EVENT_TYPES.note;
+          const t = EVENT_TYPES[e.type] || { color: '#94A3B8', label: e.customType || e.type };
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
             <div>
-              <span style="color:${t.color};font-weight:700;font-size:0.8rem">${t.label}</span>
+              <span style="color:${t.color};font-weight:700;font-size:0.8rem">${e.customType || t.label}</span>
               ${e.label ? `<div class="text-xs text-secondary">${esc(e.label)}</div>` : ''}
             </div>
             <button class="btn btn--icon btn--secondary" style="font-size:0.7rem;padding:1px 6px"
@@ -321,12 +321,26 @@
     bd.setAttribute('aria-hidden', 'false');
 
     mc.querySelector('[data-action="modal-close"]')?.addEventListener('click', closeModal);
+
+    // Show/hide custom type input when "Other" is selected
+    const typeSelect = mc.querySelector('#m-evt-type');
+    const customWrap = mc.querySelector('#m-custom-type-wrap');
+    typeSelect.addEventListener('change', function() {
+      customWrap.style.display = this.value === 'other' ? 'block' : 'none';
+      if (this.value === 'other') mc.querySelector('#m-evt-custom').focus();
+    });
+
     mc.querySelector('[data-action="modal-submit"]')?.addEventListener('click', () => {
-      const type  = mc.querySelector('#m-evt-type').value;
-      const label = mc.querySelector('#m-evt-label').value.trim();
+      const typeVal  = mc.querySelector('#m-evt-type').value;
+      const custom   = mc.querySelector('#m-evt-custom').value.trim();
+      const label    = mc.querySelector('#m-evt-label').value.trim();
+      // For "other" type, use the custom text as both type key and display
+      const type     = typeVal === 'other' ? (custom || 'note') : typeVal;
       const ns    = App.Storage.cloneState(App.getState());
       if (!ns.calendarEvents) ns.calendarEvents = [];
-      ns.calendarEvents.push({ id: App.Storage.generateId(), date, type, label });
+      // Store custom type name in label if it was an "other" entry
+      const finalLabel = typeVal === 'other' && custom ? (label ? custom + ' — ' + label : custom) : label;
+      ns.calendarEvents.push({ id: App.Storage.generateId(), date, type, label: finalLabel, customType: typeVal === 'other' ? custom : null });
       App.setState(ns);
       closeModal();
       App.showToast('Event added ✓', 'success');

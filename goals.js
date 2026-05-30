@@ -257,19 +257,50 @@
         var vaultId   = btn.dataset.id;
         var vaultName = btn.dataset.name;
         var current   = parseFloat(btn.dataset.current) || 0;
-        var val = prompt(
-          'Set savings target for "' + vaultName + '":\n(Enter 0 to remove target)',
-          current > 0 ? current.toFixed(2) : ''
-        );
-        if (val === null) return; // cancelled
-        var amount = parseFloat(val) || 0;
-        var ns = App.Storage.cloneState(App.getState());
-        var vault = (ns.accounts.vaults || []).find(function(v) { return v.id === vaultId; });
-        if (vault) {
-          vault.targetAmount = amount > 0 ? amount : null;
-          App.setState(ns);
-          App.showToast(amount > 0 ? 'Target set to ' + fmt(amount) : 'Target removed', 'success');
-        }
+        // Custom modal — no browser prompt
+        var bd = document.getElementById('modal-backdrop');
+        var mc = document.getElementById('modal-content');
+        if (!bd || !mc) return;
+        mc.innerHTML =
+          '<div class="modal-header">' +
+            '<div class="modal-title">&#127919; ' + esc(vaultName) + '</div>' +
+            '<button class="btn btn--icon btn--secondary" data-action="modal-close">&#10005;</button>' +
+          '</div>' +
+          '<p class="text-secondary text-sm" style="margin-bottom:12px">Set a savings target to track progress toward this vault goal.</p>' +
+          '<div class="form-group">' +
+            '<label>Savings Target ($)</label>' +
+            '<input type="number" id="m-goal-amt" inputmode="decimal" min="0" step="0.01" ' +
+              'value="' + (current > 0 ? current.toFixed(2) : '') + '" ' +
+              'placeholder="e.g. 35000" />' +
+          '</div>' +
+          '<p class="text-xs text-secondary" style="margin-bottom:12px">Enter 0 or leave blank to remove the target.</p>' +
+          '<button class="btn btn--primary btn--full" data-action="modal-submit">Save Target</button>';
+        bd.classList.remove('hidden');
+        bd.setAttribute('aria-hidden', 'false');
+        var inp = mc.querySelector('#m-goal-amt');
+        if (inp) setTimeout(function() { inp.focus(); inp.select(); }, 80);
+        mc.querySelector('[data-action="modal-close"]').addEventListener('click', function() {
+          bd.classList.add('hidden');
+          mc.innerHTML = '';
+        });
+        mc.querySelector('[data-action="modal-submit"]').addEventListener('click', function() {
+          var amount = parseFloat(mc.querySelector('#m-goal-amt').value) || 0;
+          var ns = App.Storage.cloneState(App.getState());
+          var vault = (ns.accounts.vaults || []).find(function(v) { return v.id === vaultId; });
+          if (vault) {
+            vault.targetAmount = amount > 0 ? amount : null;
+            App.setState(ns);
+            App.showToast(amount > 0 ? 'Target set to ' + fmt(amount) : 'Target removed', 'success');
+          }
+          bd.classList.add('hidden');
+          mc.innerHTML = '';
+        });
+        inp.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') mc.querySelector('[data-action="modal-submit"]').click();
+        });
+        bd.addEventListener('click', function h(e) {
+          if (e.target === bd) { bd.classList.add('hidden'); mc.innerHTML = ''; bd.removeEventListener('click', h); }
+        });
       }
     });
   }
