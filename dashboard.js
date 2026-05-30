@@ -38,6 +38,39 @@
       if (!btn) return;
       const action = btn.dataset.action;
 
+      if (action === 'set-nw-target') {
+        var cur = (App.getState().settings && App.getState().settings.netWorthTarget) || 0;
+        App.showModal(
+          '<div style="padding:8px">' +
+            '<div class="card-title mb-12">🎯 Net Worth Target</div>' +
+            '<label class="text-xs text-secondary">Target Amount ($)</label>' +
+            '<input id="nw-target-input" type="number" min="0" step="1000" inputmode="numeric" ' +
+              'class="form-control mb-4" value="' + (cur || '') + '" placeholder="e.g. 500000" />' +
+            '<div class="text-xs text-secondary mb-12">Your retirement goal is $500K–$600K</div>' +
+            '<div style="display:flex;gap:8px">' +
+              '<button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">Cancel</button>' +
+              '<button class="btn btn--primary" style="flex:1" id="nw-target-save">Save</button>' +
+            '</div>' +
+          '</div>'
+        );
+        setTimeout(function() {
+          var inp = document.getElementById('nw-target-input');
+          var btn = document.getElementById('nw-target-save');
+          if (inp) inp.focus();
+          if (btn) btn.addEventListener('click', function() {
+            var val = parseFloat(inp.value) || 0;
+            var ns  = App.Storage.cloneState(App.getState());
+            if (!ns.settings) ns.settings = {};
+            ns.settings.netWorthTarget = val;
+            App.setState(ns);
+            App.closeModal();
+            App.showToast(val ? 'Target set to ' + App.Storage.formatCurrency(val) + ' ✓' : 'Target cleared', 'success');
+            App.refreshCurrentTab();
+          });
+        }, 50);
+        return;
+      }
+
       if (action === 'qe-toggle') {
         const body    = document.getElementById('qe-body');
         const chevron = document.getElementById('qe-chevron');
@@ -272,6 +305,7 @@
       <div class="card card--glow-cyan nw-card">
         <div class="nw-title">TOTAL NET WORTH</div>
         <div class="nw-total ${nwClass}">${fmt(netWorth)}</div>
+        ${buildNetWorthTarget(state, netWorth)}
         <div class="nw-tiers">
           <div class="nw-tier">
             <span class="nw-tier-icon">💵</span>
@@ -528,6 +562,40 @@
     '</div>';
   }
 
+
+
+  // ── Net Worth Target Progress ─────────────────────────────
+  function buildNetWorthTarget(state, netWorth) {
+    var target = (state.settings && state.settings.netWorthTarget) || 0;
+    if (!target) {
+      return '<div style="margin-top:6px">' +
+        '<button class="btn btn--secondary btn--sm" data-action="set-nw-target" ' +
+          'style="font-size:0.7rem;padding:3px 10px">+ Set a target</button>' +
+      '</div>';
+    }
+    var pct      = Math.min(100, (netWorth / target) * 100);
+    var needed   = Math.max(0, target - netWorth);
+    var barColor = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
+    return (
+      '<div style="margin-top:10px">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+          '<span class="text-xs text-secondary">Target: ' + fmt(target) + '</span>' +
+          '<span class="text-xs ' + (needed > 0 ? 'text-amber' : 'text-green') + '">' +
+            (needed > 0 ? fmt(needed) + ' to go' : '🎉 Goal reached!') +
+          '</span>' +
+        '</div>' +
+        '<div class="progress-bar" style="height:6px">' +
+          '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" ' +
+            'style="width:' + pct.toFixed(1) + '%;border-radius:3px"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
+          '<span class="text-xs text-secondary">' + pct.toFixed(0) + '%</span>' +
+          '<button class="btn btn--secondary" data-action="set-nw-target" ' +
+            'style="font-size:0.65rem;padding:1px 7px;min-height:auto">edit</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
 
   // ── Quick Edit panel ─────────────────────────────────────
   // Collapsible panel on Dashboard — tap any balance to edit

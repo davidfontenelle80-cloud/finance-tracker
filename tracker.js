@@ -119,6 +119,9 @@
       '<!-- YTD by category -->' +
       renderCategoryYTD(state) +
 
+      '<!-- Vault gap view -->' +
+      renderVaultGap(state) +
+
       '<!-- Savings Plan: 26-period simulation -->' +
       renderSavingsPlan(state, ranked) +
 
@@ -239,6 +242,78 @@
             '<th>% of Year</th>' +
           '</tr>' +
         '</thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+
+
+  // ── Savings vs Vault Gap ──────────────────────────────────
+  // Mirrors Paycheck Tracker rows 32-33: compares YTD savings
+  // per category against what's actually in the vault right now.
+  function renderVaultGap(state) {
+    var cats   = state.yearlyCategories || [];
+    var vaults = (state.accounts && state.accounts.vaults) || [];
+    if (!cats.length) return '';
+
+    var dates      = (state.income && state.income.paydayDates) || [];
+    var today      = App.Storage.toISODate(new Date());
+    var pastChecks = dates.filter(function(d) { return d <= today; }).length;
+    var totalChecks= (state.income && state.income.paychecksPerYear) || 26;
+
+    var totalNeeded = 0, totalInVaults = 0;
+
+    var rows = cats.filter(function(c) { return c.annualGoal > 0; }).map(function(cat) {
+      var vault    = vaults.find(function(v) { return v.name.toLowerCase() === cat.name.toLowerCase(); });
+      var vaultBal = vault ? (Number(vault.balance) || 0) : 0;
+      var goal     = cat.annualGoal || 0;
+      var paceTarget = pastChecks > 0 ? (goal / totalChecks) * pastChecks : 0;
+      var gap      = round2(vaultBal - paceTarget);   // positive = ahead, negative = behind
+      var needed   = Math.max(0, goal - vaultBal);
+      totalNeeded  += needed;
+      totalInVaults+= vaultBal;
+      var gapClass = gap >= 0 ? 'text-green' : 'text-red';
+      var pct      = goal > 0 ? Math.min(100, (vaultBal / goal) * 100) : 0;
+      var barColor = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
+      return '<tr>' +
+        '<td class="text-sm font-bold">' + esc(cat.name) + '</td>' +
+        '<td class="font-mono text-right text-dim">' + fmt0(goal) + '</td>' +
+        '<td class="font-mono text-right text-cyan">' + fmt0(vaultBal) + '</td>' +
+        '<td class="font-mono text-right text-dim">' + fmt0(paceTarget) + '</td>' +
+        '<td class="font-mono text-right font-bold ' + gapClass + '">' + (gap >= 0 ? '+' : '') + fmt0(gap) + '</td>' +
+        '<td class="font-mono text-right ' + (needed > 0 ? 'text-amber' : 'text-green') + '">' + (needed > 0 ? fmt0(needed) : '✓') + '</td>' +
+        '<td style="min-width:70px">' +
+          '<div class="progress-bar">' +
+            '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" style="width:' + pct.toFixed(1) + '%"></div>' +
+          '</div>' +
+          '<div class="text-xs text-' + barColor + '" style="margin-top:2px">' + pct.toFixed(0) + '%</div>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="card" style="padding:0;overflow-x:auto;margin-top:16px">' +
+      '<div style="padding:14px 16px 0">' +
+        '<div class="section-title">💰 Vault Balance vs. Pace</div>' +
+        '<div class="text-secondary text-xs mb-8">' +
+          'What is in each vault now vs. where it should be (' + pastChecks + ' of ' + totalChecks + ' paychecks)' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid var(--border)">' +
+          '<div><div class="text-xs text-secondary font-bold">TOTAL IN VAULTS</div>' +
+            '<div class="font-mono font-bold text-cyan" style="font-size:1rem;margin-top:3px">' + fmt0(totalInVaults) + '</div></div>' +
+          '<div><div class="text-xs text-secondary font-bold">STILL NEEDED</div>' +
+            '<div class="font-mono font-bold text-amber" style="font-size:1rem;margin-top:3px">' + fmt0(totalNeeded) + '</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<table class="data-table">' +
+        '<thead><tr>' +
+          '<th>Category</th>' +
+          '<th style="text-align:right">Goal</th>' +
+          '<th style="text-align:right">In Vault</th>' +
+          '<th style="text-align:right">Expected Pace</th>' +
+          '<th style="text-align:right">Ahead/Behind</th>' +
+          '<th style="text-align:right">Still Needed</th>' +
+          '<th>Progress</th>' +
+        '</tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
       '</table>' +
     '</div>';

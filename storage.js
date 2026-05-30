@@ -415,6 +415,7 @@
     if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
       state.settings.excludeTransferFromDeficit = false;
     if (state.settings.claudeApiKey === undefined) state.settings.claudeApiKey = '';
+    if (state.settings.netWorthTarget === undefined) state.settings.netWorthTarget = 0;
     if (!state.challenges) state.challenges = [
       { id: 'challenge-52w',  type: '52week',      name: '52-Week Challenge',      startAmount: 3,  checkedPeriods: [], startDate: null },
       { id: 'challenge-26bw', type: '26biweekly',  name: '26 Bi-Weekly Challenge', startAmount: 50, checkedPeriods: [], startDate: null }

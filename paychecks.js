@@ -58,6 +58,17 @@
     return future.length;
   }
 
+
+  // Count paychecks from today (or paycheck date) through end of year
+  function paychecksRemainingInYear(paydayDates, year) {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var yearEnd = new Date(year, 11, 31);
+    return (paydayDates || []).filter(function(d) {
+      var pd = new Date(d);
+      return pd >= today && pd <= yearEnd;
+    }).length || 1; // never divide by zero
+  }
+
   // Per-paycheck contribution needed to hit goal
   function perPaycheckForGoal(cat, vaultBalance, paychecksLeft) {
     if (!paychecksLeft || paychecksLeft <= 0) return null;
@@ -245,17 +256,28 @@
           targetDate:   null
         };
       }
-      // Use goal-countdown amount if target date is set, else weekly/annual allocation
-      var amount = weeklyAlloc(cat, _year, _month, ppy);
-      var paychecksLeft = paychecksToGoal(cat.targetDate, state.income.paydayDates);
-      var vaultBal = 0;
-      if (cat.targetDate && paychecksLeft !== null) {
-        var vault = (state.accounts && state.accounts.vaults || []).find(function(v) {
-          return v.name.toLowerCase() === cat.name.toLowerCase();
-        });
-        vaultBal = vault ? (Number(vault.balance) || 0) : 0;
-        var cdAmount = perPaycheckForGoal(cat, vaultBal, paychecksLeft);
-        if (cdAmount !== null) amount = cdAmount;
+      // Dynamic allocation: (goal - vault balance) / paydays remaining
+      // Uses target date countdown if set, otherwise remaining paychecks in year
+      var vault = (state.accounts && state.accounts.vaults || []).find(function(v) {
+        return v.name.toLowerCase() === cat.name.toLowerCase();
+      });
+      var vaultBal = vault ? (Number(vault.balance) || 0) : 0;
+
+      var amount;
+      if (cat.weeklyBudget && cat.weeklyDay) {
+        // Weekly-budget categories keep their own logic
+        amount = weeklyAlloc(cat, _year, _month, ppy);
+      } else if (cat.targetDate) {
+        // Target date set: count down to that date
+        var paychecksLeft = paychecksToGoal(cat.targetDate, state.income.paydayDates);
+        var cdAmount = perPaycheckForGoal(cat, vaultBal, paychecksLeft || 1);
+        amount = cdAmount !== null ? cdAmount : weeklyAlloc(cat, _year, _month, ppy);
+      } else {
+        // No target: spread remaining gap across remaining paychecks in year
+        var remaining = paychecksRemainingInYear(state.income.paydayDates, _year);
+        var goal = cat.annualGoal || 0;
+        var needed = Math.max(0, goal - vaultBal);
+        amount = round2(needed / remaining);
       }
       return {
         categoryId:    cat.id,
@@ -522,7 +544,62 @@
       '<button class="btn btn--secondary btn--sm btn--full mt-8" data-action="save-distributions" data-check="' + num + '" data-key="' + key + '">' +
         'Save Distribution Plan' +
       '</button>' +
+
+      buildSurplusAllocator(state, key, num, surplus) +
+
     '</div>';
+  }
+
+  // ── Surplus Allocation by Percentage ─────────────────────
+  // Mirrors the "Extra Pay" section in the Paycheck Planner sheet.
+  // Lets you assign % of surplus to specific vaults (Car Savings, Emergency, etc.)
+  function buildSurplusAllocator(state, key, num, surplus) {
+    if (surplus <= 0) return '';
+    var cats    = (state.yearlyCategories || []).filter(function(c) { return c.annualGoal > 0; });
+    if (!cats.length) return '';
+    var saved   = ((state.paychecks || {})[key] || {})[num] || {};
+    var allocs  = saved.surplusAlloc || {};
+    var totalPct = 0;
+
+    var rows = cats.map(function(cat) {
+      var pct    = Number(allocs[cat.id] || 0);
+      totalPct  += pct;
+      var dollar = round2(surplus * pct / 100);
+      return (
+        '<div style="display:grid;grid-template-columns:1fr 60px 70px;gap:6px;align-items:center;margin-bottom:4px">' +
+          '<span class="text-sm">' + esc(cat.name) + '</span>' +
+          '<input type="number" class="surplus-pct" min="0" max="100" step="1" inputmode="numeric" ' +
+            'data-catid="' + cat.id + '" data-check="' + num + '" data-key="' + key + '" ' +
+            'value="' + pct + '" style="padding:3px 6px;text-align:right;width:100%" />' +
+          '<span class="font-mono text-xs text-cyan">' + (dollar > 0 ? fmt(dollar) : '—') + '</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    var remaining = round2(surplus * (1 - totalPct / 100));
+    var remClass  = remaining < 0 ? 'text-red' : 'text-green';
+
+    return (
+      '<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px">' +
+        '<div class="section-title" style="font-size:0.8rem;margin-bottom:4px">📊 Surplus Allocation</div>' +
+        '<div class="text-xs text-secondary" style="margin-bottom:8px">' +
+          'Surplus: <strong class="text-cyan">' + fmt(surplus) + '</strong> — assign % to vaults' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 60px 70px;gap:4px;margin-bottom:6px">' +
+          '<span class="text-xs text-secondary font-bold">Category</span>' +
+          '<span class="text-xs text-secondary font-bold" style="text-align:right">%</span>' +
+          '<span class="text-xs text-secondary font-bold" style="text-align:right">Amount</span>' +
+        '</div>' +
+        rows +
+        '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:6px">' +
+          '<span class="text-xs text-secondary">Unallocated surplus</span>' +
+          '<span class="font-mono text-xs ' + remClass + '">' + fmt(remaining) + '</span>' +
+        '</div>' +
+        '<button class="btn btn--secondary btn--sm btn--full mt-8" data-action="save-surplus-alloc" data-check="' + num + '" data-key="' + key + '">' +
+          'Save Surplus Plan' +
+        '</button>' +
+      '</div>'
+    );
   }
 
   // ── Paycheck notes section ───────────────────────────────
@@ -605,6 +682,21 @@
       }
       if (action === 'save-distributions') {
         saveDistributions(container, parseInt(btn.dataset.check, 10), btn.dataset.key); return;
+      }
+      if (action === 'save-surplus-alloc') {
+        var checkNum = parseInt(btn.dataset.check, 10);
+        var key      = btn.dataset.key;
+        var inputs   = container.querySelectorAll('.surplus-pct[data-check="' + checkNum + '"]');
+        var allocs   = {};
+        inputs.forEach(function(inp) { allocs[inp.dataset.catid] = parseFloat(inp.value) || 0; });
+        var ns = App.Storage.cloneState(App.getState());
+        if (!ns.paychecks) ns.paychecks = {};
+        if (!ns.paychecks[key]) ns.paychecks[key] = {};
+        if (!ns.paychecks[key][checkNum]) ns.paychecks[key][checkNum] = {};
+        ns.paychecks[key][checkNum].surplusAlloc = allocs;
+        App.setState(ns);
+        App.showToast('Surplus plan saved ✓', 'success');
+        return;
       }
     });
 
