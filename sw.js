@@ -5,7 +5,7 @@
    Cache-busted by CACHE_NAME version — bump it to force update.
 ══════════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'finance-tracker-v7';
+const CACHE_NAME = 'finance-tracker-v8';
 
 // All static assets to pre-cache on install
 const PRECACHE_URLS = [
