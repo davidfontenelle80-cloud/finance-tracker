@@ -669,7 +669,8 @@
     if (!ns.paychecks[key][num]) ns.paychecks[key][num] = buildDefaultCheck(ns, num, paydates);
 
     const dist = {};
-    container.querySelectorAll('.dist-input[data-check="' + num + '"]').forEach(function(inp) {
+    const card = container.querySelector('[data-check-card="' + num + '"]') || container;
+    card.querySelectorAll('.dist-input').forEach(function(inp) {
       dist[inp.dataset.dist] = parseFloat(inp.value) || 0;
     });
     ns.paychecks[key][num].distributions = dist;
