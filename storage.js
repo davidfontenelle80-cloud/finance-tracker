@@ -124,7 +124,7 @@
 
     return {
       // ── Schema version — bump when adding migrations ──
-      version: '1.1',
+      version: '1.5',
 
       // ── User identity ──────────────────────────────────
       user: {
@@ -196,16 +196,16 @@
         // Envelope vaults — all 20 from House_Budgetper.xlsx Bank Accounts sheet (May 2026).
         // Total should reconcile to SoFi online balance.
         vaults: [
-          { id: generateId(), name: 'Gasoline',         balance: 250.00,  items: [] },
-          { id: generateId(), name: 'Asamblea',         balance: 872.21,  items: [] },
-          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52, items: [] },
-          { id: generateId(), name: 'Entertainment',    balance: 300.00,  items: [] },
-          { id: generateId(), name: 'Food',             balance: 750.00,  items: [] },
-          { id: generateId(), name: 'Car Maintenance',  balance: 247.99,  items: [] },
-          { id: generateId(), name: 'Eversource',       balance: 274.71,  items: [] },
-          { id: generateId(), name: 'CNG',              balance: 102.63,  items: [] },
-          { id: generateId(), name: 'Car Taxes',        balance: 268.69,  items: [] },
-          { id: generateId(), name: 'Hold Account',     balance: 183.99,  items: [
+          { id: generateId(), name: 'Gasoline',         balance: 250.00, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Asamblea',         balance: 872.21, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Bilt / Rent',      balance: 2284.52, targetAmount: null, items: [] },
+          { id: generateId(), name: 'Entertainment',    balance: 300.00, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Food',             balance: 750.00, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Car Maintenance',  balance: 247.99, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Eversource',       balance: 274.71, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'CNG',              balance: 102.63, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Car Taxes',        balance: 268.69, targetAmount: null,  items: [] },
+          { id: generateId(), name: 'Hold Account',     balance: 183.99, targetAmount: null,  items: [
             { id: generateId(), name: 'Viki',       amount: 6.99  },
             { id: generateId(), name: 'YouTube',    amount: 22.99 },
             { id: generateId(), name: 'Netflix',    amount: 10.00 },
@@ -217,16 +217,16 @@
             { id: generateId(), name: 'Microsoft',  amount: 9.99  },
             { id: generateId(), name: 'Costco',     amount: 31.03 }
           ]},
-          { id: generateId(), name: 'Slush Fund',       balance: 32.00,   items: [] },
-          { id: generateId(), name: 'Amica Insurance',  balance: 0.72,    items: [] },
-          { id: generateId(), name: 'Vacation Fund',    balance: 0.00,    items: [] },
-          { id: generateId(), name: 'Yamel Personal',   balance: 0.00,    items: [] },
-          { id: generateId(), name: 'David Personal',   balance: 0.00,    items: [] },
-          { id: generateId(), name: 'Investing',        balance: 0.00,    items: [] },
-          { id: generateId(), name: 'Clothing',         balance: 0.00,    items: [] },
-          { id: generateId(), name: 'Taxes',            balance: 17.30,   items: [] },
-          { id: generateId(), name: 'Emergency',        balance: 0.00,    items: [] },
-          { id: generateId(), name: 'Misc',             balance: 0.00,    items: [] }
+          { id: generateId(), name: 'Slush Fund',       balance: 32.00, targetAmount: null,   items: [] },
+          { id: generateId(), name: 'Amica Insurance',  balance: 0.72, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Vacation Fund',    balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Yamel Personal',   balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'David Personal',   balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Investing',        balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Clothing',         balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Taxes',            balance: 17.30, targetAmount: null,   items: [] },
+          { id: generateId(), name: 'Emergency',        balance: 0.00, targetAmount: null,    items: [] },
+          { id: generateId(), name: 'Misc',             balance: 0.00, targetAmount: null,    items: [] }
         ],
 
         // All 10 credit cards — balances from House_Budgetper.xlsx May 2026.
@@ -356,6 +356,7 @@
     if (state.accounts && state.accounts.vaults) {
       state.accounts.vaults.forEach(function(v) {
         if (!v.items) v.items = [];
+        if (v.targetAmount === undefined) v.targetAmount = null;
       });
     }
     if (state.settings && state.settings.excludeTransferFromDeficit === undefined) {
@@ -381,7 +382,7 @@
     // v1.3 -> v1.4: paycheck notes + tracker ledger
     if (!state.paycheckNotes)  state.paycheckNotes  = {};
     if (!state.trackerEntries) state.trackerEntries = {};
-    state.version = '1.4';
+    state.version = '1.5';
     return state;
   }
 

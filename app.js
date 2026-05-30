@@ -89,6 +89,11 @@
       else renderStub('tab-investments', 'Investments', 'Phase 3',
         'Track your Roth IRA holdings and YTD contributions.');
     },
+    goals: () => {
+      if (App.Goals) App.Goals.render(_state, el('tab-goals'));
+      else renderStub('tab-goals', 'Goals', 'Coming Soon',
+        'Vault savings targets and yearly spending goal progress.');
+    },
     dashboard: () => {
       if (App.Dashboard) App.Dashboard.render(_state, el('tab-dashboard'));
       else renderStub('tab-dashboard', 'Dashboard', 'Phase 3',
