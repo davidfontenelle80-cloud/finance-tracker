@@ -276,7 +276,29 @@
     App.events.emit('state:changed', _state);
   };
 
+
+  // ── Modal API ─────────────────────────────────────────────
+  function showModal(html) {
+    var bd = document.getElementById('modal-backdrop');
+    var mc = document.getElementById('modal-content');
+    if (!bd || !mc) return;
+    mc.innerHTML = html;
+    bd.classList.remove('hidden');
+    bd.setAttribute('aria-hidden', 'false');
+    // Close on backdrop click
+    bd.onclick = function(e) { if (e.target === bd) closeModal(); };
+  }
+
+  function closeModal() {
+    var bd = document.getElementById('modal-backdrop');
+    var mc = document.getElementById('modal-content');
+    if (bd) { bd.classList.add('hidden'); bd.setAttribute('aria-hidden', 'true'); bd.onclick = null; }
+    if (mc) mc.innerHTML = '';
+  }
+
   App.showToast         = showToast;
+  App.showModal         = showModal;
+  App.closeModal        = closeModal;
   App.showTab           = showTab;
   App.refreshCurrentTab = () => showTab(_activeTab);
 

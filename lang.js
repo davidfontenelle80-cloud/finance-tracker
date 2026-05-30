@@ -369,6 +369,25 @@
       'setup.paycheck':       'Paycheck Amount ($)',
 
     es: {
+
+      // UI Labels
+      'ui.vaults':            'Bóvedas',
+      'ui.bankAccounts':      'Cuentas Bancarias',
+      'ui.creditCards':       'Tarjetas de Crédito',
+      'ui.subscriptions':     'Suscripciones',
+      'ui.setTarget':         'Establecer Meta',
+      'ui.editBalance':       'Editar Saldo',
+      'ui.addItem':           'Agregar Ítem',
+      'ui.addPayment':        'Agregar Pago',
+      'ui.saveTarget':        'Guardar Meta',
+      'ui.markPaid':          'Marcar Pagado',
+      'ui.addToCheck':        '+ Nómina',
+      'ui.added':             '📋 Agregado',
+      'ui.excludeTransfer':   'Excluir Cta. Transferencia',
+      'ui.transferExcluded':  '✓ Transferencia Excluida',
+      'ui.noDueDate':         'Sin fecha fija',
+      'ui.dueToday':          'Vence hoy',
+
       // Navegacion
       'nav.dashboard':   'Tablero',
       'nav.accounts':    'Cuentas',
@@ -617,8 +636,27 @@
       'set.saveExpense':     'Guardar Gasto',
       'set.partnerIncome':   'Ingresos del Conyuge',
       'set.partnerEnabled':  'Activar ingresos del conyuge',
+      // Additional keys
+      'cal.addEventBtn': 'Agregar Evento',
+      'cal.logOT': 'Registrar HE',
+      'entry.category': 'Categoría',
+      'entry.recent': 'Transacciones Recientes',
+      'entry.record': 'Registrar',
+      'entry.selectAcct': '-- Seleccionar Cuenta --',
+      'entry.selectCat': '-- Seleccionar Categoría --',
+      'goal.spendGoals': 'Metas de Gastos',
+      'goal.vaultGoals': 'Metas de Bóvedas',
+      'inv.actualPct': '% Real',
+      'inv.rebalance': 'Rebalancear',
+      'inv.shares': 'Acciones',
+      'inv.targetPct': '% Meta',
+      'inv.ticker': 'Símbolo',
+      'track.paceLabel': 'Ritmo',
+      'xfr.executePayments': 'Ejecutar Pagos',
+      'xfr.payCards': 'Pagar Tarjetas',
     }
-  };
+  
+    };
 
   var _lang = 'en';
 
