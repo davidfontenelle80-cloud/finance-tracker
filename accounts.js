@@ -10,6 +10,8 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
+
   const fmt = (n) => App.Storage.formatCurrency(n);
 
   // Vault effective balance: sum of items when defined, else manual balance
@@ -665,11 +667,3 @@
   App.Accounts = { render };
 
 })(window.App = window.App || {});
-          input.step   = '0.01';
-          input.min    = '0';
-          input.value  = oldVal;
-          input.style.cssText = [
-            'width:90px',
-            'font-family:var(--font-mono,monospace)',
-            'font-size:0.9rem',
-            'background:var(--bg-te

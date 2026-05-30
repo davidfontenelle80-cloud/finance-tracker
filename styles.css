@@ -11,6 +11,8 @@
   --bg-secondary:  #131826;  /* card background */
   --bg-tertiary:   #1c2333;  /* elevated / input bg */
   --bg-hover:      #222b3d;  /* hover state */
+  --card-bg:       #131826;  /* alias for --bg-secondary */
+  --color-danger:  #ff3d00;  /* destructive actions */
 
   /* Text */
   --text-primary:   #e4e8f0;
@@ -50,6 +52,8 @@
   --bg-primary:    #f4f6fb;
   --bg-secondary:  #ffffff;
   --bg-tertiary:   #eef1f7;
+  --card-bg:       #ffffff;
+  --color-danger:  #d6244d;
   --text-primary:  #0a0e1a;
   --text-secondary: #5a6478;
   --neon-cyan:     #006eff;
@@ -84,7 +88,7 @@ body {
   min-height: 100dvh;           /* dvh = dynamic viewport height (mobile safe) */
   overflow-x: hidden;
   transition: background-color 0.3s, color 0.2s;
-  padding-top: 0;
+  padding-top: 36px; /* app-header height */
   padding-bottom: calc(var(--tab-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -1321,3 +1325,99 @@ input[type="checkbox"] {
 
 .theme-seg-btn:hover { color: var(--text-primary); }
 
+.theme-seg-btn.active {
+  background: var(--neon-cyan);
+  color: #0a0e1a;
+}
+
+/* Ensure cards transition smoothly on theme switch */
+.card {
+  transition: background-color 0.3s, border-color 0.2s;
+}
+
+/* ── Advance Funding Banner (Step 12) ──────────────────────── */
+.advance-funding-banner {
+  background: rgba(255,176,0,0.08);
+  border: 1px solid rgba(255,176,0,0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.afb-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--neon-amber);
+  margin-bottom: 10px;
+}
+
+.afb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,176,0,0.15);
+}
+
+.afb-row:last-child { border-bottom: none; }
+
+.afb-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.afb-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.afb-detail {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.afb-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.afb-yes {
+  background: rgba(0,255,136,0.12);
+  border-color: var(--neon-green) !important;
+  color: var(--neon-green) !important;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
+
+.afb-no {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+}
+
+/* ── Goal Completion Notice ─────────────────────────────── */
+.goal-complete-notice {
+  background: linear-gradient(135deg, var(--color-success, #22c55e) 0%, #16a34a 100%);
+  color: #fff;
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  animation: fadeIn 0.3s ease;
+}
+.gcn-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.gcn-row {
+  font-size: 0.9rem;
+  opacity: 0.92;
+  padding: 2px 0;
+}

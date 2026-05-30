@@ -10,6 +10,7 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
   const fmt = (n) => App.Storage.formatCurrency(n);
 
   let _year  = new Date().getFullYear();
@@ -143,7 +144,7 @@
       '<div>' +
         rows +
         '<button class="btn btn--primary btn--sm btn--full mt-12" data-action="save-weekly-budgets">' +
-          'Save Weekly Budgets' +
+          t('plan.saveWeekly') +
         '</button>' +
       '</div>' +
     '</details>';

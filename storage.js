@@ -313,8 +313,12 @@
       settings: {
         theme:    'dark-neon', // 'dark-neon' | 'light' | 'system'
         currency: 'USD',
-        excludeTransferFromDeficit: false  // when true, Transfer Account ignored in CC coverage calc
-      }
+        lang:     'en',        // 'en' | 'es'
+        excludeTransferFromDeficit: false
+      },
+
+      // Dated reminders: { id, text, amount, date }
+      reminders: []
     };
   }
 
@@ -340,6 +344,10 @@
         }
       });
     }
+    // v1.4 -> v1.5: add lang + reminders
+    if (state.settings && !state.settings.lang) state.settings.lang = 'en';
+    if (!state.reminders) state.reminders = [];
+
     // Ensure settings.theme exists
     if (state.settings && !state.settings.theme) {
       state.settings.theme = 'dark-neon';

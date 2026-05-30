@@ -9,6 +9,8 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
+
   const fmt = (n) => App.Storage.formatCurrency(n);
 
   // Which account tab is active (module-level)

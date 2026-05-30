@@ -213,6 +213,13 @@
     // 1. Load state
     _state = App.Storage.loadState();
 
+    // 1b. Init language engine
+    if (App.Lang) {
+      var savedLang = (_state.settings && _state.settings.lang) || 'en';
+      App.Lang._lang = savedLang; // set before init to avoid extra render
+      App.Lang.init();
+    }
+
     // 2. Wire tab nav
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => showTab(btn.dataset.tab));

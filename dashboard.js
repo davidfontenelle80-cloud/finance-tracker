@@ -8,6 +8,7 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
   const fmt  = (n) => App.Storage.formatCurrency(n);
   const fmt0 = (n) => App.Storage.formatCurrency(n, false);
 
@@ -409,6 +410,9 @@
     const yearOptions = buildYearOptions(state);
 
     return `
+      <!-- Reminders alert banner -->
+      \${buildRemindersAlert(state)}
+
       <!-- Net worth hero card with liquidity tiers -->
       ${buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass)}
 

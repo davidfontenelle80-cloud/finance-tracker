@@ -7,6 +7,7 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
   var fmt  = function(n) { return App.Storage.formatCurrency(n); };
   var fmt0 = function(n) { return App.Storage.formatCurrency(n, false); };
 
@@ -37,7 +38,7 @@
     var totalExpected = completed.reduce(function(s, p) { return s + p.expectedPerCheck; }, 0);
     var ytdDelta      = totalSaved - totalExpected;
     var deltaClass    = ytdDelta >= 0 ? 'text-green' : 'text-red';
-    var deltaLabel    = ytdDelta >= 0 ? 'Ahead of Pace' : 'Behind Pace';
+    var deltaLabel    = ytdDelta >= 0 ? t('track.aheadOfPace') : t('track.behindPace');
 
     // Table rows
     var rows = ranked.map(function(p) {
@@ -282,7 +283,7 @@
         '<td class="font-mono text-right text-dim">' + fmt0(cat.annualGoal || 0) + '</td>' +
         '<td style="min-width:80px">' +
           '<div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--' + barColor + '" style="width:' + pct.toFixed(1) + '%"></div></div>' +
-          '<div class="text-xs text-' + (onTrack ? 'green' : 'red') + '" style="margin-top:2px">' + (onTrack ? 'On track' : pct.toFixed(0) + '%') + '</div>' +
+          '<div class="text-xs text-' + (onTrack ? 'green' : 'red') + '" style="margin-top:2px">' + (onTrack ? t('common.onTrack') : pct.toFixed(0) + '%') + '</div>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -336,9 +337,9 @@
     var neededPerCheck = round2(annualTotal / ppy);
 
     var tiers = [
-      { label: 'Match Goals',    multiplier: 1.0, icon: '&#127919;' },
-      { label: '+10% Stretch',   multiplier: 1.1, icon: '&#128170;' },
-      { label: '+20% Ambitious', multiplier: 1.2, icon: '&#128640;' }
+      { label: t('track.matchGoals'),    multiplier: 1.0, icon: '&#127919;' },
+      { label: t('track.stretch10'),   multiplier: 1.1, icon: '&#128170;' },
+      { label: t('track.ambitious20'), multiplier: 1.2, icon: '&#128640;' }
     ];
 
     var tierCards = tiers.map(function(tier) {
@@ -346,7 +347,7 @@
       var perCheck   = round2(target / ppy);
       var delta      = round2(perCheck - avgPerCheck);
       var deltaClass = delta <= 0 ? 'text-green' : 'text-amber';
-      var deltaLabel = delta <= 0 ? "you're covered" : ('+' + fmt0(delta) + '/check needed');
+      var deltaLabel = delta <= 0 ? t('track.covered') : ('+' + fmt0(delta) + '/check needed');
       return '<div style="flex:1;min-width:140px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">' +
         '<div style="font-size:1.4rem;margin-bottom:4px">' + tier.icon + '</div>' +
         '<div class="text-xs font-bold text-secondary" style="text-transform:uppercase;letter-spacing:0.05em">' + tier.label + '</div>' +

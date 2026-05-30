@@ -12,37 +12,35 @@
 </head>
 <body>
 
-  <!-- ════════════════════════════════════════════
-       BOTTOM NAVIGATION — 6 tabs, fixed to bottom.
-       Icons + labels. Setup folded into Settings.
-       Tracker folded into Dashboard. Entry removed.
-  ════════════════════════════════════════════ -->
+  <!-- Language toggle + app header strip -->
+  <div id="app-header" class="app-header">
+    <span class="app-header__title">Finance Tracker</span>
+    <button id="lang-toggle" class="btn btn--secondary btn--sm lang-toggle" onclick="App.Lang.setLang(App.Lang.getLang()==='en'?'es':'en')" title="Switch language">ES</button>
+  </div>
+
+  <!-- Bottom Navigation -->
   <nav class="tab-nav" role="navigation" aria-label="Main navigation">
     <button class="tab-btn active" data-tab="dashboard"   aria-selected="true"  role="tab">
-      <span class="tab-icon">📊</span><span class="tab-label">Dashboard</span>
+      <span class="tab-icon">&#128202;</span><span class="tab-label">Dashboard</span>
     </button>
     <button class="tab-btn"        data-tab="accounts"    aria-selected="false" role="tab">
-      <span class="tab-icon">🏦</span><span class="tab-label">Accounts</span>
+      <span class="tab-icon">&#127982;</span><span class="tab-label">Accounts</span>
     </button>
     <button class="tab-btn"        data-tab="transfers"   aria-selected="false" role="tab">
-      <span class="tab-icon">💸</span><span class="tab-label">Transfers</span>
+      <span class="tab-icon">&#128184;</span><span class="tab-label">Transfers</span>
     </button>
     <button class="tab-btn"        data-tab="planner"     aria-selected="false" role="tab">
-      <span class="tab-icon">📅</span><span class="tab-label">Planner</span>
+      <span class="tab-icon">&#128197;</span><span class="tab-label">Planner</span>
     </button>
     <button class="tab-btn"        data-tab="investments" aria-selected="false" role="tab">
-      <span class="tab-icon">📈</span><span class="tab-label">Invest</span>
+      <span class="tab-icon">&#128200;</span><span class="tab-label">Invest</span>
     </button>
     <button class="tab-btn"        data-tab="settings"    aria-selected="false" role="tab">
-      <span class="tab-icon">⚙️</span><span class="tab-label">Settings</span>
+      <span class="tab-icon">&#9881;&#65039;</span><span class="tab-label">Settings</span>
     </button>
   </nav>
 
-  <!-- ════════════════════════════════════════════
-       TAB CONTENT PANES
-       Hidden panes remain in DOM for backward compat
-       (setup, tracker, entry) but are not in nav.
-  ════════════════════════════════════════════ -->
+  <!-- Tab Content Panes -->
   <main class="tab-content" id="main-content">
     <section id="tab-dashboard"   class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
     <section id="tab-accounts"    class="tab-pane"        role="tabpanel" aria-label="Accounts"></section>
@@ -50,7 +48,7 @@
     <section id="tab-planner"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Planner"></section>
     <section id="tab-investments" class="tab-pane"        role="tabpanel" aria-label="Investments"></section>
     <section id="tab-settings"    class="tab-pane"        role="tabpanel" aria-label="Settings"></section>
-    <!-- Legacy panes kept for JS module compat — not in nav -->
+    <!-- Legacy panes kept for JS module compat -->
     <section id="tab-setup"       class="tab-pane"        role="tabpanel" aria-label="Setup"></section>
     <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Tracker"></section>
     <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Entry"></section>
@@ -66,8 +64,9 @@
     </div>
   </div>
 
-  <!-- JS — load order matters: storage first, modules, app last -->
+  <!-- JS load order: storage first, lang second, modules, app last -->
   <script src="storage.js"></script>
+  <script src="lang.js"></script>
   <script src="setup.js"></script>
   <script src="paychecks.js"></script>
   <script src="entry.js"></script>

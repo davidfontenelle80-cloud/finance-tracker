@@ -18,6 +18,8 @@
 (function (App) {
   'use strict';
 
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
+
   // Shorthand references (set after App.Storage is loaded)
   const S  = () => App.Storage;
   const fmt = (n) => S().formatCurrency(n);
@@ -500,14 +502,33 @@
       </div>
 
       <div class="card">
-        <div class="card-title mb-8">🎨 Theme</div>
+        <div class="card-title mb-8">🎨 ${t('set.theme')}</div>
         <div class="theme-toggle-row">
           <span class="text-secondary text-sm">Appearance</span>
           <div class="theme-segment" id="theme-segment">
-            <button class="theme-seg-btn" data-theme="dark-neon">🌙 Dark</button>
-            <button class="theme-seg-btn" data-theme="light">☀️ Light</button>
-            <button class="theme-seg-btn" data-theme="system">⚙️ System</button>
+            <button class="theme-seg-btn" data-theme="dark-neon">🌙 ${t('set.dark')}</button>
+            <button class="theme-seg-btn" data-theme="light">☀️ ${t('set.light')}</button>
+            <button class="theme-seg-btn" data-theme="system">⚙️ ${t('set.system')}</button>
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title mb-12">🌐 ${t('set.language')}</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn ${(state.settings && state.settings.lang) === 'es' ? 'btn--secondary' : 'btn--primary'}" 
+            data-action="set-lang" data-lang="en" style="flex:1">
+            🇺🇸 ${t('set.english')}
+          </button>
+          <button class="btn ${(state.settings && state.settings.lang) === 'es' ? 'btn--primary' : 'btn--secondary'}" 
+            data-action="set-lang" data-lang="es" style="flex:1">
+            🇵🇷 ${t('set.spanish')}
+          </button>
+        </div>
+        <div class="text-xs text-secondary mt-8">
+          ${(state.settings && state.settings.lang) === 'es' 
+            ? 'Idioma actual: <strong>Espanol</strong>' 
+            : 'Current language: <strong>English</strong>'}
         </div>
       </div>
 
@@ -782,7 +803,19 @@
       if (!btn) return;
 
       switch (btn.dataset.action) {
-        case 'export-json':
+        case 'set-lang': {
+        const lang = btn.dataset.lang;
+        if (App.Lang) {
+          App.Lang.setLang(lang);
+          const ns = App.Storage.cloneState(App.getState());
+          if (!ns.settings) ns.settings = {};
+          ns.settings.lang = lang;
+          App.setState(ns);
+          if (App.refreshCurrentTab) App.refreshCurrentTab();
+        }
+        break;
+      }
+      case 'export-json':
           S().exportJSON(App.getState());
           App.showToast('Backup downloaded ✓', 'success');
           break;
