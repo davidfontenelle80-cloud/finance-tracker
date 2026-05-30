@@ -18,7 +18,7 @@
                        'July','August','September','October','November','December'];
 
   const EVENT_TYPES = {
-    vacation: { label: 'Vacation',  color: '#F59E0B', bg: 'rgba(245,158,11,0.18)'  },
+    vacation: { label: 'Vacation',  color: '#3B82F6', bg: 'rgba(59,130,246,0.18)'  },
     asamblea: { label: 'Asamblea',  color: '#8B5CF6', bg: 'rgba(139,92,246,0.18)'  },
     note:     { label: 'Note',      color: '#64748B', bg: 'rgba(100,116,139,0.18)' }
   };
@@ -55,7 +55,7 @@
     const legend = `
       <div style="display:flex;flex-wrap:wrap;gap:10px;padding:10px 0 4px;font-size:0.75rem">
         <span style="display:flex;align-items:center;gap:4px">
-          <span style="width:12px;height:12px;border-radius:50%;background:var(--blue);display:inline-block"></span> Payday
+          <span style="width:12px;height:12px;border-radius:50%;background:#10b981;display:inline-block"></span> Payday
         </span>
         ${Object.entries(EVENT_TYPES).map(([k, v]) => `
           <span style="display:flex;align-items:center;gap:4px">
@@ -110,7 +110,7 @@
       // Determine cell background/border
       let bg = 'transparent', border = '1px solid transparent', textColor = 'inherit';
       if (isToday)  { bg = 'var(--accent)'; textColor = '#000'; border = 'none'; }
-      else if (isPayday) { bg = 'rgba(59,130,246,0.22)'; border = '1px solid rgba(59,130,246,0.5)'; }
+      else if (isPayday) { bg = 'rgba(16,185,129,0.22)'; border = '1px solid rgba(16,185,129,0.55)'; textColor = 'var(--neon-green, #10b981)'; }
       else if (dayEvents.length) {
         const t = EVENT_TYPES[dayEvents[0].type] || EVENT_TYPES.note;
         bg = t.bg; border = `1px solid ${t.color}40`;
@@ -130,6 +130,7 @@
                     transition:background 0.1s"
              title="${iso}${isPayday ? ' · Payday' : ''}${dayEvents.map(e => ' · ' + (e.label || e.type)).join('')}">
           <div style="font-size:0.75rem;font-weight:${isToday || isPayday ? '700' : '400'}">${day}</div>
+          ${isPayday ? '<div style="font-size:0.5rem;font-weight:700;line-height:1;color:var(--neon-green,#10b981)">$</div>' : ''}
           ${dots ? `<div style="display:flex;justify-content:center;gap:1px;margin-top:1px">${dots}</div>` : ''}
         </div>`;
     }).join('');
