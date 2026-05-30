@@ -381,6 +381,42 @@
     '</div>';
   }
 
+
+  // -- Reminders alert banner -------------------------------------------
+  function buildRemindersAlert(state) {
+    var reminders = state.reminders || [];
+    if (!reminders.length) return '';
+    var today   = App.Storage.toISODate(new Date());
+    var in30    = new Date(); in30.setDate(in30.getDate() + 30);
+    var in30str = App.Storage.toISODate(in30);
+    var active  = reminders.filter(function(r) { return r.date && r.date <= in30str; });
+    if (!active.length) return '';
+
+    var rows = active.map(function(r) {
+      var isOverdue = r.date < today;
+      var badge = isOverdue
+        ? '<span class="badge badge--red" style="font-size:0.6rem">Overdue</span>'
+        : '<span class="badge badge--amber" style="font-size:0.6rem">Due ' + r.date + '</span>';
+      var amtStr = r.amount ? ' <span class="font-mono text-cyan text-xs">$' + Number(r.amount).toFixed(2) + '</span>' : '';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+        '<div>' +
+          '<div class="text-sm font-bold">' + esc(r.text || '') + amtStr + '</div>' +
+          '<div style="margin-top:2px">' + badge + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var hasOverdue  = active.some(function(r) { return r.date < today; });
+    var borderColor = hasOverdue ? 'var(--neon-red)' : 'var(--neon-amber)';
+    return '<div class="card" style="border-color:' + borderColor + ';margin-bottom:12px">' +
+      '<div class="card-title mb-8">&#128276; Reminders &amp; Alerts</div>' +
+      rows +
+      '<div class="text-xs text-secondary" style="margin-top:8px;text-align:right">' +
+        '<a href="#" onclick="App.showTab(&quot;planner&quot;);return false;" style="color:var(--neon-cyan)">Manage in Planner &rsaquo;</a>' +
+      '</div>' +
+    '</div>';
+  }
+
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
     const { investments, cash, debt, liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
