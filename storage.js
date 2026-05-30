@@ -124,7 +124,7 @@
 
     return {
       // ── Schema version — bump when adding migrations ──
-      version: '1.6',
+      version: '1.7',
 
       // ── User identity ──────────────────────────────────
       user: {
@@ -337,7 +337,17 @@
       },
 
       // Dated reminders: { id, text, amount, date }
-      reminders: []
+      reminders: [],
+
+      // ── Calendar events ────────────────────────────────
+      // User-added events. type: 'vacation'|'asamblea'|'note'
+      // Payday dates come from income.paydayDates (not stored here).
+      calendarEvents: [],
+
+      // ── OT Hours log ───────────────────────────────────
+      // Two periods (period 1 and 2). Flag when total >= 30.
+      // { id, date, hours, period: 1|2 }
+      otHours: []
     };
   }
 
@@ -414,7 +424,9 @@
     // v1.3 -> v1.4: paycheck notes + tracker ledger
     if (!state.paycheckNotes)  state.paycheckNotes  = {};
     if (!state.trackerEntries) state.trackerEntries = {};
-    state.version = '1.6';
+    if (!state.calendarEvents) state.calendarEvents = [];
+    if (!state.otHours)        state.otHours        = [];
+    state.version = '1.7';
     return state;
   }
 

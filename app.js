@@ -94,6 +94,11 @@
       else renderStub('tab-goals', 'Goals', 'Coming Soon',
         'Vault savings targets and yearly spending goal progress.');
     },
+    calendar: () => {
+      if (App.Calendar) App.Calendar.render(_state, el('tab-calendar'));
+      else renderStub('tab-calendar', 'Calendar', 'Coming Soon',
+        'Full-year calendar with payday highlights and OT tracker.');
+    },
     dashboard: () => {
       if (App.Dashboard) App.Dashboard.render(_state, el('tab-dashboard'));
       else renderStub('tab-dashboard', 'Dashboard', 'Phase 3',
