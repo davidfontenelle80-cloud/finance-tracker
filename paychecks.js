@@ -443,9 +443,86 @@
           'data-action="save-check" data-check="' + num + '" data-key="' + key + '">' +
           'Save Paycheck ' + num +
         '</button>' +
+        buildDistributionSection(state, key, num, surplus) +
         buildNotesSection(state, key, num) +
       '</div>' +
     '</details>';
+  }
+
+
+  // ── SoFi Distribution Summary ────────────────────────────
+  // Shows how the surplus gets routed via SoFi auto-distribution.
+  // Transfer Account, Hold (subscriptions), American Eagle, Investing.
+  // Hold auto-calculates from due subscriptions for this period.
+  function buildDistributionSection(state, key, num, surplus) {
+    const saved  = ((state.paychecks || {})[key] || {})[num] || {};
+    const dist   = saved.distributions || {};
+
+    // Auto-calculate Hold from subscriptions due this period
+    const subs   = state.subscriptions || [];
+    const subTotal = subs.filter(function(s) { return !s.paid && (s.addToPaycheck || false); })
+                        .reduce(function(s, x) { return s + (Number(x.amount) || 0); }, 0);
+    // Fall back to stored hold amount if no subscriptions queued
+    const holdAmt    = subTotal > 0 ? round2(subTotal) : (dist.hold || 0);
+    const transferAmt = dist.transferAccount || 0;
+    const eagleAmt    = dist.americanEagle   || 0;
+    const investAmt   = dist.investing       || 0;
+    const totalDist   = round2(transferAmt + holdAmt + eagleAmt + investAmt);
+    const netRemaining = round2(surplus - totalDist);
+    const netClass     = netRemaining >= 0 ? 'text-green' : 'text-red';
+
+    return '<div style="border-top:2px solid var(--border);margin-top:14px;padding-top:12px">' +
+      '<div class="section-title" style="margin-bottom:8px;font-size:0.8rem">&#128260; SoFi Auto-Distribution</div>' +
+      '<div class="text-xs text-secondary" style="margin-bottom:10px">Set these amounts in your SoFi vault rules so the distribution happens automatically when your paycheck arrives.</div>' +
+
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center">' +
+
+        // Transfer Account
+        '<label class="text-sm">Transfer Account (CC buffer)</label>' +
+        '<input type="number" class="dist-input" data-dist="transferAccount" data-check="' + num + '" data-key="' + key + '" ' +
+          'value="' + transferAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'style="width:90px;padding:4px 8px;text-align:right" />' +
+
+        // Hold (subscriptions) — auto-calculated
+        '<div>' +
+          '<div class="text-sm">Hold / Subscriptions</div>' +
+          (subTotal > 0
+            ? '<div class="text-xs text-cyan">Auto: ' + subs.filter(function(s) { return !s.paid && s.addToPaycheck; }).length + ' sub(s) queued</div>'
+            : '<div class="text-xs text-secondary">No subs queued — enter manually</div>') +
+        '</div>' +
+        '<input type="number" class="dist-input" data-dist="hold" data-check="' + num + '" data-key="' + key + '" ' +
+          'value="' + holdAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'style="width:90px;padding:4px 8px;text-align:right" />' +
+
+        // American Eagle
+        '<label class="text-sm">Transfer to American Eagle</label>' +
+        '<input type="number" class="dist-input" data-dist="americanEagle" data-check="' + num + '" data-key="' + key + '" ' +
+          'value="' + eagleAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'style="width:90px;padding:4px 8px;text-align:right" />' +
+
+        // Investing
+        '<label class="text-sm">Investing</label>' +
+        '<input type="number" class="dist-input" data-dist="investing" data-check="' + num + '" data-key="' + key + '" ' +
+          'value="' + investAmt.toFixed(2) + '" min="0" step="0.01" ' +
+          'style="width:90px;padding:4px 8px;text-align:right" />' +
+
+      '</div>' +
+
+      '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+          '<span class="text-xs text-secondary">Total distributed</span>' +
+          '<span class="font-mono text-sm">&#8722; ' + fmt(totalDist) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between">' +
+          '<span class="text-sm font-bold ' + netClass + '">Net in checking</span>' +
+          '<span class="font-mono font-bold text-sm ' + netClass + '">' + fmt(netRemaining) + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      '<button class="btn btn--secondary btn--sm btn--full mt-8" data-action="save-distributions" data-check="' + num + '" data-key="' + key + '">' +
+        'Save Distribution Plan' +
+      '</button>' +
+    '</div>';
   }
 
   // ── Paycheck notes section ───────────────────────────────
@@ -526,6 +603,9 @@
       if (action === 'del-upcoming') {
         deleteUpcoming(parseInt(btn.dataset.idx, 10)); return;
       }
+      if (action === 'save-distributions') {
+        saveDistributions(container, parseInt(btn.dataset.check, 10), btn.dataset.key); return;
+      }
     });
 
     // Paycheck notes — auto-save on blur
@@ -576,6 +656,25 @@
     ns.paychecks[key][num] = Object.assign({}, existing, { amount: amount, categories: categories });
     App.setState(ns);
     App.showToast('Paycheck ' + num + ' saved ✓', 'success');
+    App.refreshCurrentTab();
+  }
+
+
+  function saveDistributions(container, num, key) {
+    const ns = App.Storage.cloneState(App.getState());
+    if (!ns.paychecks)      ns.paychecks = {};
+    if (!ns.paychecks[key]) ns.paychecks[key] = {};
+
+    const paydates = App.Storage.getPaydaysInMonth(ns.income.paydayDates || [], _year, _month);
+    if (!ns.paychecks[key][num]) ns.paychecks[key][num] = buildDefaultCheck(ns, num, paydates);
+
+    const dist = {};
+    container.querySelectorAll('.dist-input[data-check="' + num + '"]').forEach(function(inp) {
+      dist[inp.dataset.dist] = parseFloat(inp.value) || 0;
+    });
+    ns.paychecks[key][num].distributions = dist;
+    App.setState(ns);
+    App.showToast('Distribution plan saved ✓', 'success');
     App.refreshCurrentTab();
   }
 
