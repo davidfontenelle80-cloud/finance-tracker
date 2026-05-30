@@ -124,7 +124,7 @@
 
     return {
       // ── Schema version — bump when adding migrations ──
-      version: '1.5',
+      version: '1.6',
 
       // ── User identity ──────────────────────────────────
       user: {
@@ -278,14 +278,16 @@
               { id: generateId(), ticker: 'VXUS', shares: 0, price: 0, targetPct: 5  }
             ],
             ytdContribution: 0,
-            annualGoal: 7000
+            annualGoal: 7000,
+            contributionLog: []
           },
           {
             id: generateId(),
             name: "Yamel's Roth (Fidelity)",
             holdings: [],
             ytdContribution: 0,
-            annualGoal: 7000
+            annualGoal: 7000,
+            contributionLog: []
           }
         ]
       },
@@ -395,6 +397,12 @@
         }
       });
     }
+    // v1.5 -> v1.6: contribution log per investment account
+    if (state.investments && state.investments.accounts) {
+      state.investments.accounts.forEach(function(a) {
+        if (!a.contributionLog) a.contributionLog = [];
+      });
+    }
     if (!state.subscriptions) state.subscriptions = [];
     // Backfill paid field on existing subscriptions
     (state.subscriptions || []).forEach(function(s) {
@@ -406,7 +414,7 @@
     // v1.3 -> v1.4: paycheck notes + tracker ledger
     if (!state.paycheckNotes)  state.paycheckNotes  = {};
     if (!state.trackerEntries) state.trackerEntries = {};
-    state.version = '1.5';
+    state.version = '1.6';
     return state;
   }
 

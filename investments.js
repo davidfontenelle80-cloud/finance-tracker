@@ -48,6 +48,9 @@
       </button>`).join('');
 
     return `
+      <!-- Portfolio summary (all accounts) -->
+      ${renderPortfolioSummary(accounts)}
+
       <!-- Contribution progress (all accounts) -->
       ${renderContributions(accounts)}
 
@@ -63,6 +66,42 @@
       <!-- Selected account -->
       ${renderAccount(acct)}
     `;
+  }
+
+
+  // ── Portfolio summary across all accounts ─────────────────
+  function renderPortfolioSummary(accounts) {
+    const totalValue  = accounts.reduce((s, a) => {
+      return s + (a.holdings || []).reduce((hs, h) => hs + round2((h.shares||0)*(h.price||0)), 0);
+    }, 0);
+    const totalGoal   = accounts.reduce((s, a) => s + (Number(a.annualGoal) || 0), 0);
+    const totalContrib = accounts.reduce((s, a) => s + (Number(a.ytdContribution) || 0), 0);
+    const remaining   = Math.max(0, totalGoal - totalContrib);
+
+    const acctRows = accounts.map(a => {
+      const val = (a.holdings || []).reduce((s, h) => s + round2((h.shares||0)*(h.price||0)), 0);
+      const pct = totalValue > 0 ? (val / totalValue * 100).toFixed(1) : '0.0';
+      return `<div class="flex-between" style="padding:5px 0;border-bottom:1px solid var(--border)">
+        <span class="text-sm">${esc(a.name)}</span>
+        <div style="text-align:right">
+          <span class="font-mono text-cyan text-sm">${fmt(val)}</span>
+          <span class="text-xs text-secondary" style="margin-left:6px">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="card" style="margin-bottom:4px">
+        <div class="flex-between mb-8">
+          <div class="card-title">📊 Portfolio Total</div>
+          <div class="font-mono font-heavy text-cyan" style="font-size:1.2rem">${fmt(totalValue)}</div>
+        </div>
+        ${acctRows}
+        <div class="flex-between mt-8" style="padding-top:8px;border-top:1px solid var(--border)">
+          <span class="text-xs text-secondary">2026 IRA remaining</span>
+          <span class="font-mono text-sm text-amber">${fmt(remaining)}</span>
+        </div>
+      </div>`;
   }
 
   // ── Contribution progress ─────────────────────────────────
@@ -200,7 +239,106 @@
                 data-acct-idx="${_activeAccountIdx}">
           + Add Holding
         </button>
+
+        ${totalValue > 0 ? renderRebalance(holdingsWithCalc, totalValue) : ''}
+
+        ${renderContribLog(acct)}
       </div>`;
+  }
+
+
+  // ── Rebalance calculator ──────────────────────────────────
+  // Shows how much $ to buy/sell per holding to reach target %.
+  function renderRebalance(holdings, totalValue) {
+    const hasTargets = holdings.some(h => (h.targetPct || 0) > 0);
+    if (!hasTargets) return '';
+
+    const rows = holdings.map(h => {
+      const targetVal  = round2(totalValue * (h.targetPct || 0) / 100);
+      const diff       = round2(targetVal - h.value);
+      const diffClass  = diff > 50 ? 'text-green' : diff < -50 ? 'text-red' : 'text-secondary';
+      const action     = diff > 50 ? '▲ Buy' : diff < -50 ? '▼ Sell' : '✓ Hold';
+      const actionCls  = diff > 50 ? 'text-green' : diff < -50 ? 'text-red' : 'text-dim';
+      return `<tr>
+        <td class="font-mono font-bold">${esc(h.ticker)}</td>
+        <td class="text-right text-dim">${(h.targetPct||0).toFixed(0)}%</td>
+        <td class="text-right font-mono text-dim">${fmt(targetVal)}</td>
+        <td class="text-right font-mono">${fmt(h.value)}</td>
+        <td class="text-right font-mono font-bold ${diffClass}">${diff >= 0 ? '+' : ''}${fmt(diff)}</td>
+        <td class="text-center text-sm ${actionCls}">${action}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <details style="margin-top:16px">
+        <summary style="cursor:pointer;padding:8px 0;font-size:0.85rem;font-weight:700;color:var(--text-dim);list-style:none;-webkit-appearance:none">
+          ⚖ Rebalance Calculator ▾
+        </summary>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table class="data-table">
+            <thead><tr>
+              <th>Ticker</th>
+              <th style="text-align:right">Target%</th>
+              <th style="text-align:right">Target $</th>
+              <th style="text-align:right">Current $</th>
+              <th style="text-align:right">+/− $</th>
+              <th style="text-align:center">Action</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p class="text-xs text-secondary" style="margin-top:6px">±$50 tolerance shown as Hold.</p>
+        </div>
+      </details>`;
+  }
+
+  // ── Contribution log ──────────────────────────────────────
+  function renderContribLog(acct) {
+    const log = (acct.contributionLog || []).slice().reverse(); // newest first
+    if (!log.length) {
+      return `<details style="margin-top:16px">
+        <summary style="cursor:pointer;padding:8px 0;font-size:0.85rem;font-weight:700;color:var(--text-dim);list-style:none;-webkit-appearance:none">
+          📋 Contribution Log ▾
+        </summary>
+        <p class="text-secondary text-sm" style="margin-top:8px">No contributions logged yet. Use "+ Contribution" to record one.</p>
+      </details>`;
+    }
+
+    // Running total (oldest first for calc, then reverse for display)
+    const oldest = (acct.contributionLog || []).slice();
+    let running = 0;
+    const withRunning = oldest.map(entry => {
+      running += entry.amount;
+      return { ...entry, running };
+    }).reverse(); // newest first for display
+
+    const limit = acct.annualGoal || 7000;
+    const rows  = withRunning.map(e => {
+      const remaining = Math.max(0, limit - e.running);
+      return `<tr>
+        <td class="text-xs text-secondary">${e.date}</td>
+        <td class="font-mono text-right text-green text-sm">+${fmt(e.amount)}</td>
+        <td class="font-mono text-right text-sm">${fmt(e.running)}</td>
+        <td class="font-mono text-right text-sm ${remaining === 0 ? 'text-green' : 'text-amber'}">${fmt(remaining)}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <details style="margin-top:16px">
+        <summary style="cursor:pointer;padding:8px 0;font-size:0.85rem;font-weight:700;color:var(--text-dim);list-style:none;-webkit-appearance:none">
+          📋 Contribution Log (${log.length}) ▾
+        </summary>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table class="data-table">
+            <thead><tr>
+              <th>Date</th>
+              <th style="text-align:right">Amount</th>
+              <th style="text-align:right">Running Total</th>
+              <th style="text-align:right">Remaining</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </details>`;
   }
 
   // ── Modal helpers ─────────────────────────────────────────
@@ -353,9 +491,15 @@
       <p class="text-secondary text-sm mb-12">
         YTD contributions: <strong>${fmt(acct.ytdContribution)}</strong> of ${fmt(acct.annualGoal)}
       </p>
-      <div class="form-group">
-        <label>Add Contribution ($)</label>
-        <input type="number" id="m-contrib" value="0" min="0" step="0.01" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Add Contribution ($)</label>
+          <input type="number" id="m-contrib" value="0" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="m-contrib-date" value="" />
+        </div>
       </div>
       <div class="form-group">
         <label>Override YTD Total ($) <span class="text-dim">(optional)</span></label>
@@ -364,14 +508,17 @@
       <button class="btn btn--primary btn--full mt-8" data-action="modal-submit">Save</button>
     `, mc => {
       const add      = parseFloat(mc.querySelector('#m-contrib').value) || 0;
+      const date     = mc.querySelector('#m-contrib-date').value || App.Storage.toISODate(new Date());
       const override = mc.querySelector('#m-ytd').value.trim();
       const ns       = App.getState();
       const a        = ns.investments.accounts[acctIdx];
       if (!a) return;
+      if (!a.contributionLog) a.contributionLog = [];
       if (override !== '') {
         a.ytdContribution = parseFloat(override) || 0;
-      } else {
+      } else if (add > 0) {
         a.ytdContribution = (a.ytdContribution || 0) + add;
+        a.contributionLog.push({ date, amount: add, id: App.Storage.generateId() });
       }
       App.setState(ns);
       closeModal();
