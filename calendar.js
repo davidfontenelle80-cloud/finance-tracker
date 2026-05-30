@@ -243,7 +243,7 @@
       // Day click — add/view event
       if (action === 'cal-day-click') {
         const date = btn.dataset.date;
-        openDayModal(date, state);
+        openDayModal(date, App.getState()); // always fresh state
         return;
       }
 
@@ -274,7 +274,7 @@
   }
 
   // ── Day modal ────────────────────────────────────────────
-  function openDayModal(date, state) {
+  function openDayModal(date, state) { // state = App.getState() at click time
     const bd = document.getElementById('modal-backdrop');
     const mc = document.getElementById('modal-content');
     if (!bd || !mc) return;
