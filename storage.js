@@ -338,7 +338,9 @@
         claudeApiKey: ''           // for Screenshot Balance Updater
       },
 
-      // Dated reminders: { id, text, amount, date }
+      // Reminders/Notes: { id, text, amount, date, action, done, repeat }
+      // action: 'note'|'pay'|'call'|'update'|'review'
+      // repeat: 'none'|'monthly'|'weekly'
       reminders: [],
 
       // ── Savings Challenges ─────────────────────────────
@@ -419,6 +421,12 @@
     // Backfill fiveWeekBonus on existing categories
     (state.yearlyCategories || []).forEach(function(c) {
       if (c.fiveWeekBonus === undefined) c.fiveWeekBonus = false;
+    });
+    // Backfill new reminder fields
+    (state.reminders || []).forEach(function(r) {
+      if (r.action === undefined) r.action = 'note';
+      if (r.done   === undefined) r.done   = false;
+      if (r.repeat === undefined) r.repeat = 'none';
     });
     if (!state.challenges) state.challenges = [
       { id: 'challenge-52w',  type: '52week',      name: '52-Week Challenge',      startAmount: 3,  checkedPeriods: [], startDate: null },

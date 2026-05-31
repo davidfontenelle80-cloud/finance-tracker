@@ -48,6 +48,13 @@
       eventMap[e.date].push(e);
     });
 
+    // Add active reminders to event map
+    const reminders = (state.reminders || []).filter(r => !r.done && r.date);
+    reminders.forEach(r => {
+      if (!eventMap[r.date]) eventMap[r.date] = [];
+      eventMap[r.date].push({ type: 'reminder', label: r.text, _isReminder: true, id: r.id });
+    });
+
     const months = Array.from({ length: 12 }, (_, i) =>
       buildMonth(state, _year, i + 1, paydaySet, eventMap)
     ).join('');
@@ -62,6 +69,9 @@
             <span style="width:12px;height:12px;border-radius:50%;background:${v.color};display:inline-block"></span>
             ${v.label}
           </span>`).join('')}
+        <span style="display:flex;align-items:center;gap:4px">
+          <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block"></span> Note/Reminder
+        </span>
         <span style="display:flex;align-items:center;gap:4px">
           <span style="width:12px;height:12px;border-radius:50%;background:var(--accent);display:inline-block"></span> Today
         </span>
@@ -118,6 +128,9 @@
 
       // Dot indicators for events
       const dots = dayEvents.map(e => {
+        if (e._isReminder) {
+          return `<span style="width:4px;height:4px;border-radius:50%;background:#f59e0b;display:inline-block;margin:0 1px" title="📝 ${esc(e.label || 'Note')}"></span>`;
+        }
         const t = EVENT_TYPES[e.type] || { color: '#94A3B8', bg: 'rgba(148,163,184,0.18)', label: e.customType || e.type };
         return `<span style="width:4px;height:4px;border-radius:50%;background:${t.color};display:inline-block;margin:0 1px" title="${esc(e.label || e.type)}"></span>`;
       }).join('');

@@ -28,6 +28,9 @@
     // Wire Quick Edit panel
     wireQuickEdit(container);
 
+    // Wire reminders
+    wireReminders(container);
+
     // Charts need Chart.js — load from CDN then draw
     loadChartJs(() => drawCharts(state));
   }
@@ -527,132 +530,257 @@
   }
 
 
-  // -- Reminders alert banner -------------------------------------------
-  function buildRemindersAlert(state) {
-    var reminders = state.reminders || [];
-    if (!reminders.length) return '';
-    var today   = App.Storage.toISODate(new Date());
-    var in30    = new Date(); in30.setDate(in30.getDate() + 30);
-    var in30str = App.Storage.toISODate(in30);
-    var active  = reminders.filter(function(r) { return r.date && r.date <= in30str; });
-    if (!active.length) return '';
 
-    var rows = active.map(function(r) {
-      var isOverdue = r.date < today;
-      var badge = isOverdue
-        ? '<span class="badge badge--red" style="font-size:0.6rem">Overdue</span>'
-        : '<span class="badge badge--amber" style="font-size:0.6rem">Due ' + r.date + '</span>';
-      var amtStr = r.amount ? ' <span class="font-mono text-cyan text-xs">$' + Number(r.amount).toFixed(2) + '</span>' : '';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+  // ── Notes & Reminders Manager ─────────────────────────────
+  // Full CRUD: add/edit/delete notes with date, action tag,
+  // optional amount. Overdue + today = alert banner.
+  // Within 7 days = upcoming list. Future = calendar dots.
+
+  var ACTION_ICONS = {
+    note:   '📝',
+    pay:    '💳',
+    call:   '📞',
+    update: '🔄',
+    review: '🔍'
+  };
+
+  function buildRemindersSection(state) {
+    var reminders = (state.reminders || []).filter(function(r) { return !r.done; });
+    var today     = App.Storage.toISODate(new Date());
+    var in7       = new Date(); in7.setDate(in7.getDate() + 7);
+    var in7str    = App.Storage.toISODate(in7);
+
+    var overdue   = reminders.filter(function(r) { return r.date && r.date < today; });
+    var dueToday  = reminders.filter(function(r) { return r.date === today; });
+    var upcoming  = reminders.filter(function(r) { return r.date > today && r.date <= in7str; });
+    var future    = reminders.filter(function(r) { return !r.date || r.date > in7str; });
+
+    var alertHtml = '';
+    if (overdue.length || dueToday.length) {
+      var alertItems = dueToday.concat(overdue).map(function(r) {
+        var icon  = ACTION_ICONS[r.action] || '📝';
+        var badge = r.date < today
+          ? '<span class="badge badge--red" style="font-size:0.6rem;margin-left:6px">Overdue</span>'
+          : '<span class="badge badge--cyan" style="font-size:0.6rem;margin-left:6px">Today</span>';
+        var amt = r.amount ? ' <span class="font-mono text-cyan text-xs">$' + Number(r.amount).toFixed(2) + '</span>' : '';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+          '<div>' +
+            '<div class="text-sm font-bold">' + icon + ' ' + esc(r.text) + amt + badge + '</div>' +
+            (r.date ? '<div class="text-xs text-secondary">' + r.date + '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button class="btn btn--secondary btn--sm" data-action="reminder-done" data-id="' + r.id + '" title="Mark done">✓</button>' +
+            '<button class="btn btn--secondary btn--sm" data-action="reminder-edit" data-id="' + r.id + '" title="Edit">✏️</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      var borderColor = overdue.length ? 'var(--neon-red)' : 'var(--neon-cyan)';
+      alertHtml = '<div class="card" style="border-color:' + borderColor + ';margin-bottom:8px">' +
+        '<div class="card-title mb-8">🔔 ' + (overdue.length ? 'Overdue & ' : '') + 'Due Today</div>' +
+        alertItems + '</div>';
+    }
+
+    // Upcoming (next 7 days)
+    var upcomingHtml = upcoming.length ? upcoming.map(function(r) {
+      var icon = ACTION_ICONS[r.action] || '📝';
+      var amt  = r.amount ? ' <span class="font-mono text-xs text-cyan">$' + Number(r.amount).toFixed(2) + '</span>' : '';
+      var days = Math.ceil((new Date(r.date) - new Date(today)) / 86400000);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">' +
         '<div>' +
-          '<div class="text-sm font-bold">' + esc(r.text || '') + amtStr + '</div>' +
-          '<div style="margin-top:2px">' + badge + '</div>' +
+          '<div class="text-sm">' + icon + ' ' + esc(r.text) + amt + '</div>' +
+          '<div class="text-xs text-secondary">In ' + days + ' day' + (days !== 1 ? 's' : '') + ' · ' + r.date + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn--secondary btn--sm" data-action="reminder-done" data-id="' + r.id + '">✓</button>' +
+          '<button class="btn btn--secondary btn--sm" data-action="reminder-edit" data-id="' + r.id + '">✏️</button>' +
         '</div>' +
       '</div>';
-    }).join('');
+    }).join('') : '';
 
-    var hasOverdue  = active.some(function(r) { return r.date < today; });
-    var borderColor = hasOverdue ? 'var(--neon-red)' : 'var(--neon-amber)';
-    return '<div class="card" style="border-color:' + borderColor + ';margin-bottom:12px">' +
-      '<div class="card-title mb-8">&#128276; Reminders &amp; Alerts</div>' +
-      rows +
-      '<div class="text-xs text-secondary" style="margin-top:8px;text-align:right">' +
-        '<a href="#" onclick="App.showTab(&quot;planner&quot;);return false;" style="color:var(--neon-cyan)">Manage in Planner &rsaquo;</a>' +
-      '</div>' +
-    '</div>';
+    // Future / no-date notes
+    var futureHtml = future.length ? future.map(function(r) {
+      var icon = ACTION_ICONS[r.action] || '📝';
+      var amt  = r.amount ? ' <span class="font-mono text-xs text-cyan">$' + Number(r.amount).toFixed(2) + '</span>' : '';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">' +
+        '<div>' +
+          '<div class="text-sm">' + icon + ' ' + esc(r.text) + amt + '</div>' +
+          (r.date ? '<div class="text-xs text-secondary">' + r.date + '</div>' : '<div class="text-xs text-secondary">No date</div>') +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn--secondary btn--sm" data-action="reminder-done" data-id="' + r.id + '">✓</button>' +
+          '<button class="btn btn--secondary btn--sm" data-action="reminder-edit" data-id="' + r.id + '">✏️</button>' +
+          '<button class="btn btn--danger btn--sm" data-action="reminder-delete" data-id="' + r.id + '">✕</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '';
+
+    var hasAny = reminders.length > 0;
+    var doneCount = (state.reminders || []).filter(function(r) { return r.done; }).length;
+
+    return alertHtml +
+      '<div class="card" style="margin-bottom:8px" id="reminders-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-action="toggle-reminders">' +
+          '<div class="card-title" style="margin:0">📝 Notes & Reminders' +
+            (reminders.length ? ' <span class="badge badge--cyan" style="font-size:0.65rem;margin-left:6px">' + reminders.length + '</span>' : '') +
+          '</div>' +
+          '<button class="btn btn--primary btn--sm" data-action="reminder-add" style="font-size:0.75rem;padding:4px 10px" onclick="event.stopPropagation()">+ Add</button>' +
+        '</div>' +
+        '<div id="reminders-body" style="margin-top:12px">' +
+          (upcomingHtml ? '<div class="text-xs text-secondary font-bold" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Next 7 Days</div>' + upcomingHtml : '') +
+          (futureHtml   ? '<div class="text-xs text-secondary font-bold" style="text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px">All Notes</div>' + futureHtml   : '') +
+          (!hasAny ? '<div class="text-secondary text-sm" style="padding:8px 0">No notes yet. Tap + Add to create one.</div>' : '') +
+          (doneCount ? '<div class="text-xs text-secondary" style="margin-top:10px;text-align:right"><a href="#" data-action="reminders-show-done" style="color:var(--text-secondary)">' + doneCount + ' completed note' + (doneCount !== 1 ? 's' : '') + '</a></div>' : '') +
+        '</div>' +
+      '</div>';
   }
 
-
-
-  // ── Net Worth Target Progress ─────────────────────────────
-  function buildNetWorthTarget(state, netWorth) {
-    var target = (state.settings && state.settings.netWorthTarget) || 0;
-    if (!target) {
-      return '<div style="margin-top:6px">' +
-        '<button class="btn btn--secondary btn--sm" data-action="set-nw-target" ' +
-          'style="font-size:0.7rem;padding:3px 10px">+ Set a target</button>' +
-      '</div>';
-    }
-    var pct      = Math.min(100, (netWorth / target) * 100);
-    var needed   = Math.max(0, target - netWorth);
-    var barColor = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
-    return (
-      '<div style="margin-top:10px">' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
-          '<span class="text-xs text-secondary">Target: ' + fmt(target) + '</span>' +
-          '<span class="text-xs ' + (needed > 0 ? 'text-amber' : 'text-green') + '">' +
-            (needed > 0 ? fmt(needed) + ' to go' : '🎉 Goal reached!') +
-          '</span>' +
+  function openReminderModal(existing) {
+    var today = App.Storage.toISODate(new Date());
+    var r = existing || { id: null, text: '', amount: '', date: today, action: 'note', repeat: 'none' };
+    App.showModal(
+      '<div style="padding:8px">' +
+        '<div class="card-title mb-12">' + (r.id ? '✏️ Edit Note' : '📝 New Note') + '</div>' +
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Note / Action</label>' +
+          '<input id="rm-text" class="form-control" type="text" value="' + esc(r.text) + '" placeholder="e.g. Pay Chase card, Call insurance..." />' +
         '</div>' +
-        '<div class="progress-bar" style="height:6px">' +
-          '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" ' +
-            'style="width:' + pct.toFixed(1) + '%;border-radius:3px"></div>' +
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Type</label>' +
+          '<select id="rm-action" class="form-control">' +
+            Object.entries(ACTION_ICONS).map(function(e) {
+              return '<option value="' + e[0] + '"' + (r.action === e[0] ? ' selected' : '') + '>' + e[1] + ' ' + e[0].charAt(0).toUpperCase() + e[0].slice(1) + '</option>';
+            }).join('') +
+          '</select>' +
         '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
-          '<span class="text-xs text-secondary">' + pct.toFixed(0) + '%</span>' +
-          '<button class="btn btn--secondary" data-action="set-nw-target" ' +
-            'style="font-size:0.65rem;padding:1px 7px;min-height:auto">edit</button>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Date (optional)</label>' +
+            '<input id="rm-date" class="form-control" type="date" value="' + (r.date || '') + '" />' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Amount $ (optional)</label>' +
+            '<input id="rm-amount" class="form-control" type="number" min="0" step="0.01" inputmode="decimal" value="' + (r.amount || '') + '" placeholder="0.00" />' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Repeat</label>' +
+          '<select id="rm-repeat" class="form-control">' +
+            '<option value="none"' + (r.repeat === 'none' ? ' selected' : '') + '>No repeat</option>' +
+            '<option value="weekly"' + (r.repeat === 'weekly' ? ' selected' : '') + '>Weekly</option>' +
+            '<option value="monthly"' + (r.repeat === 'monthly' ? ' selected' : '') + '>Monthly</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:4px">' +
+          '<button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">Cancel</button>' +
+          '<button class="btn btn--primary" style="flex:1" id="rm-save">Save</button>' +
         '</div>' +
       '</div>'
     );
+    setTimeout(function() {
+      var inp = document.getElementById('rm-text');
+      if (inp) inp.focus();
+      var saveBtn = document.getElementById('rm-save');
+      if (saveBtn) saveBtn.addEventListener('click', function() {
+        var text   = document.getElementById('rm-text').value.trim();
+        var action = document.getElementById('rm-action').value;
+        var date   = document.getElementById('rm-date').value;
+        var amount = parseFloat(document.getElementById('rm-amount').value) || null;
+        var repeat = document.getElementById('rm-repeat').value;
+        if (!text) { App.showToast('Add a note first', 'error'); return; }
+        var ns = App.Storage.cloneState(App.getState());
+        if (!ns.reminders) ns.reminders = [];
+        if (r.id) {
+          var idx = ns.reminders.findIndex(function(x) { return x.id === r.id; });
+          if (idx !== -1) ns.reminders[idx] = { id: r.id, text: text, action: action, date: date || null, amount: amount, repeat: repeat, done: false };
+        } else {
+          ns.reminders.push({ id: App.Storage.generateId(), text: text, action: action, date: date || null, amount: amount, repeat: repeat, done: false });
+        }
+        App.setState(ns);
+        App.closeModal();
+        App.showToast('Note saved ✓', 'success');
+        App.refreshCurrentTab();
+      });
+    }, 50);
   }
 
-  // ── Quick Edit panel ─────────────────────────────────────
-  // Collapsible panel on Dashboard — tap any balance to edit
-  // without leaving the tab.
-  function buildQuickEdit(state) {
-    const accts  = state.accounts || {};
-    const bank   = accts.bank   || [];
-    const vaults = accts.vaults || [];
-    const cards  = accts.cards  || [];
+  function wireReminders(container) {
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.dataset.action;
+      var id     = btn.dataset.id;
 
-    const bankRows = bank.map(a => `
-      <div class="qe-row">
-        <span class="qe-name text-sm">${esc(a.name)}</span>
-        <span class="qe-val font-mono text-sm" data-qe-id="${a.id}" data-qe-type="bank" data-qe-val="${a.balance||0}">
-          ${fmt(a.balance||0)}
-          <button class="qe-btn" data-action="qe-edit" data-id="${a.id}" data-type="bank" data-val="${a.balance||0}" title="Edit">✏️</button>
-        </span>
-      </div>`).join('');
-
-    const vaultRows = vaults.map(v => `
-      <div class="qe-row">
-        <span class="qe-name text-sm">${esc(v.name)}</span>
-        <span class="qe-val font-mono text-sm" data-qe-id="${v.id}" data-qe-type="vault" data-qe-val="${v.balance||0}">
-          ${fmt(v.balance||0)}
-          <button class="qe-btn" data-action="qe-edit" data-id="${v.id}" data-type="vault" data-val="${v.balance||0}" title="Edit">✏️</button>
-        </span>
-      </div>`).join('');
-
-    const cardRows = cards.map(c => {
-      const avail = Math.max(0, (c.limit||0) - (c.balance||0));
-      return `
-      <div class="qe-row">
-        <span class="qe-name text-sm">${esc(c.name)}</span>
-        <span class="qe-val font-mono text-sm">
-          <span class="text-secondary text-xs">avail </span>${fmt(avail)}
-          <button class="qe-btn" data-action="qe-edit-card" data-id="${c.id}" data-val="${avail}" data-limit="${c.limit||0}" title="Edit available credit">✏️</button>
-        </span>
-      </div>`;
-    }).join('');
-
-    return `
-      <div class="card" id="qe-panel" style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-action="qe-toggle">
-          <div class="card-title" style="margin:0">✏️ Quick Edit Balances</div>
-          <span id="qe-chevron" style="color:var(--text-secondary);font-size:0.8rem">▼</span>
-        </div>
-        <div id="qe-body" style="display:none;margin-top:12px">
-          ${bank.length ? `<div class="text-xs text-secondary mb-4" style="text-transform:uppercase;letter-spacing:.05em">Bank</div>${bankRows}` : ''}
-          ${vaults.length ? `<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Vaults</div>${vaultRows}` : ''}
-          ${cards.length ? `<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Cards (Available Credit)</div>${cardRows}` : ''}
-          <div class="text-xs text-secondary mt-10" style="text-align:right">
-            Changes save instantly and update all tabs.
-          </div>
-        </div>
-      </div>
-    `;
+      if (action === 'reminder-add') {
+        openReminderModal(null);
+        return;
+      }
+      if (action === 'reminder-edit') {
+        var state = App.getState();
+        var r = (state.reminders || []).find(function(x) { return x.id === id; });
+        if (r) openReminderModal(r);
+        return;
+      }
+      if (action === 'reminder-done') {
+        var ns = App.Storage.cloneState(App.getState());
+        var r  = (ns.reminders || []).find(function(x) { return x.id === id; });
+        if (r) {
+          if (r.repeat === 'monthly' && r.date) {
+            var d = new Date(r.date + 'T12:00:00'); d.setMonth(d.getMonth() + 1);
+            r.date = App.Storage.toISODate(d); r.done = false;
+          } else if (r.repeat === 'weekly' && r.date) {
+            var d = new Date(r.date + 'T12:00:00'); d.setDate(d.getDate() + 7);
+            r.date = App.Storage.toISODate(d); r.done = false;
+          } else {
+            r.done = true;
+          }
+        }
+        App.setState(ns);
+        App.showToast('Done ✓', 'success');
+        App.refreshCurrentTab();
+        return;
+      }
+      if (action === 'reminder-delete') {
+        var ns = App.Storage.cloneState(App.getState());
+        ns.reminders = (ns.reminders || []).filter(function(x) { return x.id !== id; });
+        App.setState(ns);
+        App.refreshCurrentTab();
+        return;
+      }
+      if (action === 'toggle-reminders') {
+        var body = document.getElementById('reminders-body');
+        if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        return;
+      }
+      if (action === 'reminders-show-done') {
+        e.preventDefault();
+        var state = App.getState();
+        var done  = (state.reminders || []).filter(function(r) { return r.done; });
+        var rows  = done.map(function(r) {
+          return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">' +
+            '<span class="text-sm text-secondary" style="text-decoration:line-through">' + esc(r.text) + '</span>' +
+            '<button class="btn btn--secondary btn--sm" data-restore-id="' + r.id + '">Restore</button>' +
+          '</div>';
+        }).join('');
+        App.showModal('<div style="padding:8px"><div class="card-title mb-12">Completed Notes</div>' + (rows || '<p class="text-secondary text-sm">None</p>') +
+          '<button class="btn btn--secondary btn--full mt-12" onclick="App.closeModal()">Close</button></div>');
+        setTimeout(function() {
+          document.querySelectorAll('[data-restore-id]').forEach(function(b) {
+            b.addEventListener('click', function() {
+              var ns = App.Storage.cloneState(App.getState());
+              var r = (ns.reminders || []).find(function(x) { return x.id === b.dataset.restoreId; });
+              if (r) r.done = false;
+              App.setState(ns);
+              App.closeModal();
+              App.refreshCurrentTab();
+            });
+          });
+        }, 50);
+        return;
+      }
+    });
   }
+
+
 
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
@@ -685,8 +813,8 @@
     const yearOptions = buildYearOptions(state);
 
     return `
-      <!-- Reminders alert banner -->
-      ${buildRemindersAlert(state)}
+      <!-- Notes & Reminders -->
+      ${buildRemindersSection(state)}
 
       <!-- Net worth hero card with liquidity tiers -->
       ${buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass)}
@@ -969,6 +1097,6 @@
     ).join('');
   }
 
-  App.Dashboard = { render };
+  App.Dashboard = { render, _openReminderModal: openReminderModal };
 
 })(window.App = window.App || {});

@@ -32,13 +32,7 @@
   function buildHtml(state) {
     const accts = state.accounts || { bank: [], vaults: [], cards: [] };
     return `
-      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-        <button class="btn btn--secondary" data-action="open-screenshot" style="display:flex;align-items:center;gap:6px;padding:8px 14px">
-          <span style="font-size:1.1rem">📸</span>
-          <span class="text-sm">Update from Screenshot</span>
-        </button>
-      </div>
-      ${renderSafetyBanner(state, accts)}
+${renderSafetyBanner(state, accts)}
       ${renderSubscriptions(state)}
       ${renderVaults(accts)}
       ${renderBank(accts)}
