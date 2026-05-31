@@ -300,6 +300,38 @@
     `;
   }
 
+
+  // ── Net Worth Target Progress ─────────────────────────────
+  function buildNetWorthTarget(state, netWorth) {
+    var target = (state.settings && state.settings.netWorthTarget) || 0;
+    if (!target) {
+      return '<div style="margin-top:6px">' +
+        '<button class="btn btn--secondary btn--sm" data-action="set-nw-target" ' +
+          'style="font-size:0.7rem;padding:3px 10px">+ Set a target</button>' +
+        '</div>';
+    }
+    var pct      = Math.min(100, (netWorth / target) * 100);
+    var needed   = Math.max(0, target - netWorth);
+    var barColor = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
+    return '<div style="margin-top:10px">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+          '<span class="text-xs text-secondary">Target: ' + fmt(target) + '</span>' +
+          '<span class="text-xs ' + (needed > 0 ? 'text-amber' : 'text-green') + '">' +
+            (needed > 0 ? fmt(needed) + ' to go' : '🎉 Goal reached!') +
+          '</span>' +
+        '</div>' +
+        '<div class="progress-bar" style="height:6px">' +
+          '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" ' +
+            'style="width:' + pct.toFixed(1) + '%;border-radius:3px"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
+          '<span class="text-xs text-secondary">' + pct.toFixed(0) + '% of goal</span>' +
+          '<button class="btn btn--secondary" data-action="set-nw-target" ' +
+            'style="font-size:0.65rem;padding:1px 7px;min-height:auto">edit</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   // ── Net Worth card with liquidity tiers (Step 8) ────────
   function buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass) {
     const { liquidCash, shortCash, holdingsValue } = calcNetWorthComponents(state);
@@ -781,6 +813,64 @@
   }
 
 
+
+
+  // ── Quick Edit Panel ─────────────────────────────────────
+  // Collapsible panel showing all account balances with inline
+  // edit buttons — no tab switching needed.
+  function buildQuickEdit(state) {
+    var accts  = state.accounts || {};
+    var bank   = accts.bank   || [];
+    var vaults = accts.vaults || [];
+    var cards  = accts.cards  || [];
+
+    var bankRows = bank.map(function(a) {
+      return '<div class="qe-row">' +
+        '<span class="qe-name text-sm">' + esc(a.name) + '</span>' +
+        '<span class="qe-val font-mono text-sm">' +
+          fmt(a.balance || 0) +
+          '<button class="qe-btn" data-action="qe-edit" data-id="' + a.id + '" data-type="bank" data-val="' + (a.balance || 0) + '" title="Edit">✏️</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    var vaultRows = vaults.map(function(v) {
+      var bal = v.items && v.items.length
+        ? v.items.reduce(function(s,i){return s+(Number(i.amount)||0);},0)
+        : (Number(v.balance)||0);
+      return '<div class="qe-row">' +
+        '<span class="qe-name text-sm">' + esc(v.name) + '</span>' +
+        '<span class="qe-val font-mono text-sm">' +
+          fmt(bal) +
+          '<button class="qe-btn" data-action="qe-edit" data-id="' + v.id + '" data-type="vault" data-val="' + bal + '" title="Edit">✏️</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    var cardRows = cards.map(function(c) {
+      var avail = Math.max(0, (c.limit || 0) - (c.balance || 0));
+      return '<div class="qe-row">' +
+        '<span class="qe-name text-sm">' + esc(c.name) + '</span>' +
+        '<span class="qe-val font-mono text-sm">' +
+          '<span class="text-secondary text-xs">avail </span>' + fmt(avail) +
+          '<button class="qe-btn" data-action="qe-edit-card" data-id="' + c.id + '" data-val="' + avail + '" data-limit="' + (c.limit||0) + '" title="Edit available credit">✏️</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="card" id="qe-panel" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-action="qe-toggle">' +
+        '<div class="card-title" style="margin:0">✏️ Quick Edit Balances</div>' +
+        '<span id="qe-chevron" style="color:var(--text-secondary);font-size:0.8rem">▼</span>' +
+      '</div>' +
+      '<div id="qe-body" style="display:none;margin-top:12px">' +
+        (bank.length ? '<div class="text-xs text-secondary mb-4" style="text-transform:uppercase;letter-spacing:.05em">Bank</div>' + bankRows : '') +
+        (vaults.length ? '<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Vaults</div>' + vaultRows : '') +
+        (cards.length ? '<div class="text-xs text-secondary mt-10 mb-4" style="text-transform:uppercase;letter-spacing:.05em">Cards (Available Credit)</div>' + cardRows : '') +
+        '<div class="text-xs text-secondary mt-10" style="text-align:right">Changes save instantly and update all tabs.</div>' +
+      '</div>' +
+    '</div>';
+  }
 
   // ── HTML ──────────────────────────────────────────────────
   function buildHtml(state) {
