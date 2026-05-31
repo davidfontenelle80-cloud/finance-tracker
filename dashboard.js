@@ -732,7 +732,7 @@
           '<div class="card-title" style="margin:0">📝 Notes & Reminders' +
             (reminders.length ? ' <span class="badge badge--cyan" style="font-size:0.65rem;margin-left:6px">' + reminders.length + '</span>' : '') +
           '</div>' +
-          '<button class="btn btn--primary btn--sm" data-action="reminder-add" style="font-size:0.75rem;padding:4px 10px" onclick="event.stopPropagation()">+ Add</button>' +
+          '<button class="btn btn--primary btn--sm" data-action="reminder-add" style="font-size:0.75rem;padding:4px 10px">+ Add</button>' +
         '</div>' +
         '<div id="reminders-body" style="margin-top:12px">' +
           (upcomingHtml ? '<div class="text-xs text-secondary font-bold" style="text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Next 7 Days</div>' + upcomingHtml : '') +
