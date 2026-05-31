@@ -594,6 +594,16 @@
       </div>
 
       <div class="card">
+        <div class="card-title mb-8">🔄 App Update</div>
+        <p class="text-secondary text-xs mb-12">
+          If labels show raw keys (like "xfr.payCards") or features look outdated,
+          the app has a stale cache. Tap below to force a full refresh.
+        </p>
+        <button class="btn btn--primary btn--full" data-action="force-update">🔄 Force Update Now</button>
+        <div class="text-xs text-secondary mt-8">Clears all caches, unregisters the service worker, and reloads fresh.</div>
+      </div>
+
+      <div class="card">
         <div class="card-title mb-8">🗑 Danger Zone</div>
         <button class="btn btn--danger btn--full" data-action="clear-all-data">Clear All Data</button>
         <div class="text-secondary text-xs mt-8">Permanently deletes all data. You will be asked to confirm twice.</div>
@@ -874,6 +884,25 @@
           S().exportJSON(App.getState());
           App.showToast('Backup downloaded ✓', 'success');
           break;
+
+        case 'force-update': {
+          App.showToast('Clearing cache and reloading…', 'info');
+          setTimeout(async function() {
+            // 1. Unregister all service workers
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map(r => r.unregister()));
+            }
+            // 2. Clear all caches
+            if ('caches' in window) {
+              const keys = await caches.keys();
+              await Promise.all(keys.map(k => caches.delete(k)));
+            }
+            // 3. Hard reload
+            window.location.reload(true);
+          }, 500);
+          break;
+        }
 
         case 'clear-all-data':
           if (!confirm('Delete ALL data? This cannot be undone.')) return;
