@@ -373,6 +373,10 @@
         const cardId = acctRef.replace('card-', '');
         const card = (ns.accounts.cards || []).find(c => c.id === cardId);
         if (card) card.balance = Math.max(0, Math.round((card.balance - amount) * 100) / 100);
+      } else if (acctRef.startsWith('vault-')) {
+        const vaultId = acctRef.replace('vault-', '');
+        const vault = (ns.accounts.vaults || []).find(v => v.id === vaultId);
+        if (vault) vault.balance = Math.round((vault.balance + amount) * 100) / 100;
       } else {
         const acct = (ns.accounts.bank   || []).find(a => a.id === acctRef) ||
                      (ns.accounts.vaults || []).find(v => v.id === acctRef);
