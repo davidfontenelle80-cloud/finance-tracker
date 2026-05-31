@@ -66,7 +66,7 @@
   function buildModeSelector() {
     const modes = [
       { id: 'paycheck',  icon: '💰', label: 'Paycheck Arrived' },
-      { id: 'paycards',  icon: '💳', label: t('xfr.payCards') },
+      { id: 'paycards',  icon: '💳', label: 'Pay Credit Cards' },
       { id: 'movemoney', icon: '🏦', label: 'Move Money'       },
       { id: 'fundvault', icon: '🎯', label: 'Fund a Vault'     },
       { id: 'withdraw',  icon: '📤', label: 'Withdraw / Spend' }
