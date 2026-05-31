@@ -67,6 +67,13 @@
       'nyp.totalIncome':      'Total Income',
       'nyp.totalAllocated':   'Total Allocated',
       'nyp.totalSurplus':     'Total Surplus',
+      'nyp.activate':          'Activate for',
+      'nyp.activateConfirm':   'This will update your current year categories with the amounts from this plan.',
+      'nyp.activateStep1':     'Updates weeklyBudget on matching categories',
+      'nyp.activateStep2':     'Your live Planner will use these new amounts immediately',
+      'nyp.activateStep3':     'Advances this planner to',
+      'nyp.activateConfirmBtn':'Activate Now',
+      'nyp.activateDone':      'Activated! Planner advanced to',
 
       // Common
       'cancel':  'Cancel',
@@ -532,6 +539,13 @@
       'nyp.totalIncome':      'Ingreso Total',
       'nyp.totalAllocated':   'Total Asignado',
       'nyp.totalSurplus':     'Sobrante Total',
+      'nyp.activate':          'Activar para',
+      'nyp.activateConfirm':   'Esto actualizará las categorías del año actual con los montos de este plan.',
+      'nyp.activateStep1':     'Actualiza el presupuesto semanal en categorías coincidentes',
+      'nyp.activateStep2':     'El Planificador usará estos nuevos montos de inmediato',
+      'nyp.activateStep3':     'Avanza este planificador a',
+      'nyp.activateConfirmBtn':'Activar Ahora',
+      'nyp.activateDone':      '¡Activado! Planificador avanzado a',
 
       // Common
       'cancel':  'Cancelar',

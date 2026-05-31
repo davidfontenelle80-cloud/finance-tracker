@@ -10,7 +10,7 @@
 
   var t = function (k) { return App.Lang ? App.Lang.t(k) : k; };
 
-  var NEXT_YEAR = 2027;
+  var BASE_NEXT_YEAR = 2027;
 
   // ── Helpers ───────────────────────────────────────────────
   function getPlan(state) {
@@ -35,7 +35,7 @@
       var perCheck = parseFloat(e.amount) / 2;
       return { id: e.id, name: e.name + ' (fixed)', amount: Math.round(perCheck * 100) / 100, color: '' };
     });
-    return { year: NEXT_YEAR, categories: cats.concat(fixed), customItems: {} };
+    return { year: BASE_NEXT_YEAR, categories: cats.concat(fixed), customItems: {} };
   }
 
   function fmt(n) {
@@ -45,6 +45,7 @@
   // ── Render ────────────────────────────────────────────────
   function render(state, container) {
     var plan       = getPlan(state);
+    var NEXT_YEAR  = plan.year || BASE_NEXT_YEAR;
     var cats       = plan.categories || [];
     var baseAmount = (state.income && state.income.defaultPaycheckAmount) || 3000;
     var paydates   = App.Storage.calculatePaydayDates(
@@ -64,6 +65,7 @@
     html += '<h2 class="section-title" style="margin:0">&#128203; ' + t('nyp.title') + ' ' + NEXT_YEAR + '</h2>';
     html += '<div style="display:flex;gap:8px">';
     html += '<button class="btn btn--ghost btn--sm" data-action="nyp-reset" style="font-size:0.75rem">' + t('nyp.resetFromCurrent') + '</button>';
+    html += '<button class="btn btn--primary btn--sm" data-action="nyp-activate" style="font-size:0.75rem">&#9654; ' + t('nyp.activate') + ' ' + NEXT_YEAR + '</button>';
     html += '</div></div>';
 
     // Paycheck amount input
@@ -216,6 +218,66 @@
         App.setState(s);
         render(App.getState(), container);
         App.showToast(App.Lang.t('nyp.resetDone'), 'success');
+      });
+    }
+
+    // Activate as Current Year
+    var activateBtn = container.querySelector('[data-action="nyp-activate"]');
+    if (activateBtn) {
+      activateBtn.addEventListener('click', function () {
+        var targetYear = plan.year || BASE_NEXT_YEAR;
+        App.showModal(
+          '<div style="padding:8px">' +
+          '<h3 style="margin-bottom:8px">&#9654; ' + App.Lang.t('nyp.activate') + ' ' + targetYear + '</h3>' +
+          '<p class="text-secondary" style="font-size:0.85rem;margin-bottom:12px">' + App.Lang.t('nyp.activateConfirm') + '</p>' +
+          '<ul style="font-size:0.82rem;margin-bottom:14px;padding-left:18px;color:var(--text-secondary)">' +
+          '<li>' + App.Lang.t('nyp.activateStep1') + '</li>' +
+          '<li>' + App.Lang.t('nyp.activateStep2') + '</li>' +
+          '<li>' + App.Lang.t('nyp.activateStep3') + ' ' + (targetYear + 1) + '</li>' +
+          '</ul>' +
+          '<div style="display:flex;gap:8px">' +
+          '<button class="btn btn--secondary" style="flex:1" onclick="App.closeModal()">' + App.Lang.t('cancel') + '</button>' +
+          '<button class="btn btn--primary" style="flex:1" id="nyp-activate-ok">&#9654; ' + App.Lang.t('nyp.activateConfirmBtn') + '</button>' +
+          '</div></div>'
+        );
+        var okBtn = document.getElementById('nyp-activate-ok');
+        if (okBtn) {
+          okBtn.addEventListener('click', function () {
+            var s     = App.Storage.cloneState(App.getState());
+            var p     = s.nextYearPlan || buildDefaultPlan(s);
+            var planCats = p.categories || [];
+
+            // Push amounts into yearlyCategories (match by name)
+            (s.yearlyCategories || []).forEach(function (cat) {
+              var match = planCats.find(function (pc) {
+                return pc.name.toLowerCase() === cat.name.toLowerCase() ||
+                       pc.name.toLowerCase().indexOf(cat.name.toLowerCase()) !== -1;
+              });
+              if (match) {
+                var perCheck = parseFloat(match.amount) || 0;
+                cat.weeklyBudget = Math.round((perCheck / 2) * 100) / 100;
+                if (perCheck > 0 && !cat.annualGoal) {
+                  cat.annualGoal = Math.round(perCheck * 26 * 100) / 100;
+                }
+              }
+            });
+
+            // Advance planner to next year, pre-loaded from just-activated amounts
+            var nextPlanYear = targetYear + 1;
+            s.nextYearPlan = {
+              year: nextPlanYear,
+              categories: planCats.map(function (c) {
+                return { id: c.id, name: c.name, amount: c.amount, color: c.color || '' };
+              }),
+              customItems: {}
+            };
+
+            App.setState(s);
+            App.closeModal();
+            render(App.getState(), container);
+            App.showToast(App.Lang.t('nyp.activateDone') + ' ' + nextPlanYear + '!', 'success');
+          });
+        }
       });
     }
   }
