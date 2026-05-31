@@ -178,25 +178,21 @@
         'Net worth tracker and 12-month charts.');
     },
     settings: () => {
-      // Settings = App Settings section + Setup (the brain) as a sub-section
+      // Settings tab = lightweight: theme, export/import, force update only
       const container = el('tab-settings');
       container.innerHTML = '';
-      // Render the global app settings (import/export/theme/clear)
       App.Setup.renderSettings(_state, container);
-      // Append Setup (categories, accounts, income) as a collapsible sub-section
-      const setupWrap = document.createElement('div');
-      setupWrap.id = 'settings-setup-section';
-      container.appendChild(setupWrap);
-      App.Setup.render(_state, setupWrap);
+    },
+    setup: () => {
+      // Setup tab = full configuration: categories, accounts, income, budget rules, weekly items
+      App.Setup.render(_state, el('tab-setup'));
     },
     'paycheck-tracker': () => {
       if (App.PaycheckTracker) App.PaycheckTracker.render(_state, el('tab-paycheck-tracker'));
       else renderStub('tab-paycheck-tracker', 'Paycheck Tracker', 'Loading...', '');
     },
-    'savings-plan': () => {
-      if (App.SavingsPlan) App.SavingsPlan.render(_state, el('tab-savings-plan'));
-      else renderStub('tab-savings-plan', 'Savings Plan', 'Loading...', '');
-    },
+    // savings-plan tab removed — challenges consolidated into Goals tab
+
     'next-year': () => {
       if (App.NextYearPlanner) App.NextYearPlanner.render(_state, el('tab-next-year'));
       else renderStub('tab-next-year', 'Next Year Planner', 'Loading...', '');

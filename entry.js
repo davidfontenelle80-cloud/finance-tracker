@@ -355,19 +355,19 @@
 
     // Reverse the balance change the transaction created
     const amount = Number(tx.amount) || 0;
-    if (tx.account) {
-      if (tx.account.startsWith('bank-')) {
-        const bankId = tx.account.replace('bank-', '');
+    const acctRef = tx.accountId || tx.account; // accountId is the correct field; tx.account is legacy
+    if (acctRef) {
+      if (acctRef.startsWith('bank-')) {
+        const bankId = acctRef.replace('bank-', '');
         const acct = (ns.accounts.bank || []).find(a => a.id === bankId);
         if (acct) acct.balance = Math.round((acct.balance + amount) * 100) / 100;
-      } else if (tx.account.startsWith('card-')) {
-        const cardId = tx.account.replace('card-', '');
+      } else if (acctRef.startsWith('card-')) {
+        const cardId = acctRef.replace('card-', '');
         const card = (ns.accounts.cards || []).find(c => c.id === cardId);
         if (card) card.balance = Math.max(0, Math.round((card.balance - amount) * 100) / 100);
       } else {
-        // Plain ID — check bank then vaults
-        const acct = (ns.accounts.bank   || []).find(a => a.id === tx.account) ||
-                     (ns.accounts.vaults || []).find(v => v.id === tx.account);
+        const acct = (ns.accounts.bank   || []).find(a => a.id === acctRef) ||
+                     (ns.accounts.vaults || []).find(v => v.id === acctRef);
         if (acct) acct.balance = Math.round((acct.balance + amount) * 100) / 100;
       }
     }
@@ -378,8 +378,8 @@
       id:          App.Storage.generateId(),
       timestamp:   new Date().toISOString(),
       type:        'manual_edit',
-      description: 'Deleted transaction: ' + (tx.note || tx.category || id),
-      movements:   tx.account ? [{ account: tx.account, change: +amount }] : [],
+      description: 'Deleted transaction: ' + (tx.note || tx.categoryName || tx.category || id),
+      movements:   acctRef ? [{ account: acctRef, change: +amount }] : [],
       relatedTxIds: [id],
       canReverse:  false
     });

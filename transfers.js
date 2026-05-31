@@ -117,6 +117,7 @@
         '<div class="form-group"><label class="form-label">' + t('xfr.depositTo') + '</label>' +
           '<select id="pc-account" class="form-control">' + bankOptions + '</select></div>' +
         '<div class="alloc-section">' +
+          '<div id="pc-alloc-header"></div>' +
           '<div class="alloc-header"><span></span><span>Category</span><span>Amount</span></div>' +
           '<div id="pc-alloc-list" class="allocation-list"></div>' +
         '</div>' +
@@ -132,8 +133,15 @@
     const allocList = container.querySelector('#pc-alloc-list');
 
     function buildAllocRows() {
-      const available = parseFloat(amtInput.value) || 0;
-      const allocs = getSuggestedAllocations(state, available);
+      const available  = parseFloat(amtInput.value) || 0;
+      const periodKey  = container.querySelector('#pc-period') ? container.querySelector('#pc-period').value : '';
+      const planAllocs = getPlannedAllocations(state, periodKey);
+      const allocs     = planAllocs || getSuggestedAllocations(state, available);
+      const planBadge  = planAllocs
+        ? '<div style="font-size:0.75rem;color:var(--neon-cyan);margin-bottom:6px;padding:4px 8px;background:rgba(0,240,255,.08);border-radius:6px;display:inline-block">&#128203; Pre-filled from your Planner — adjust as needed</div>'
+        : '';
+      const allocHeader = container.querySelector('#pc-alloc-header');
+      if (allocHeader) allocHeader.innerHTML = planBadge;
       allocList.innerHTML = allocs.map(function(a, i) {
         const completeBadge = a.complete ? ' <span class="badge badge--green" style="font-size:0.65rem">✓ Done</span>' : '';
         return '<div class="alloc-row' + (a.complete ? ' alloc-complete' : '') + '" data-idx="' + i + '">' +
@@ -175,6 +183,8 @@
     }
 
     amtInput.addEventListener('input', buildAllocRows);
+    const periodSel = container.querySelector('#pc-period');
+    if (periodSel) periodSel.addEventListener('change', buildAllocRows);
     buildAllocRows();
 
     // Smart Balance: scale checked amounts proportionally to fit available
@@ -243,8 +253,13 @@
         txIds.push(txId);
         s.transactions.unshift({
           id: txId, date: date,
-          category: name, amount: amt,
-          account: acctId, note: 'Paycheck allocation'
+          categoryId:   null,
+          categoryName: name,
+          amount:       amt,
+          accountId:    'bank-' + acctId,
+          accountName:  destAcct ? destAcct.name : '',
+          note:         'Paycheck allocation',
+          recurring:    false
         });
       });
 
@@ -330,6 +345,47 @@
     }
 
     return results;
+  }
+
+  // Pull saved planner allocations for a given period key (YYYY-MM-N).
+  // Returns array of { id, name, amount, complete } matching getSuggestedAllocations shape,
+  // or null if no plan saved for that period.
+  function getPlannedAllocations(state, periodKey) {
+    if (!periodKey) return null;
+    // periodKey = YYYY-MM-N  e.g. 2026-05-1
+    var parts = periodKey.split('-');
+    if (parts.length < 4) {
+      // format may be YYYY-MM-N where year is 4 chars
+      // re-split: "2026-05-1" → ['2026','05','1']
+    }
+    var monthKey = parts[0] + '-' + parts[1];
+    var checkNum = parseInt(parts[2], 10) || 1;
+    var saved    = state.paychecks && state.paychecks[monthKey] && state.paychecks[monthKey][checkNum];
+    if (!saved) return null;
+
+    var results = [];
+
+    // Categories from plan
+    (saved.categories || []).forEach(function(c) {
+      results.push({ id: c.categoryId, name: c.name, amount: Number(c.amount) || 0, complete: false, fromPlan: true });
+    });
+
+    // Fixed expenses from plan
+    (saved.fixed || []).forEach(function(f) {
+      results.push({ id: 'fx-' + f.fixedId, name: f.name + ' (fixed)', amount: Number(f.amount) || 0, complete: false, fromPlan: true, isFixed: true });
+    });
+
+    // Budget rules from plan
+    (saved.budgetRules || []).forEach(function(r) {
+      results.push({ id: 'br-' + r.ruleId, name: r.name + ' (rule)', amount: Number(r.amount) || 0, complete: false, fromPlan: true, isRule: true });
+    });
+
+    // Weekly items from plan
+    (saved.weeklyItems || []).forEach(function(w) {
+      results.push({ id: 'wi-' + w.wiId, name: w.name + ' (weekly)', amount: Number(w.amount) || 0, complete: false, fromPlan: true, isWeekly: true });
+    });
+
+    return results.length ? results : null;
   }
 
   // Calculate how far ahead of pace a vault/category is.
@@ -610,8 +666,13 @@
         txIds.push(txId);
         s.transactions.unshift({
           id: txId, date: App.Storage.toISODate(new Date()),
-          category: 'Credit Card Payment', amount: amt,
-          account: fromId, note: 'Payment to ' + card.name
+          categoryId:   null,
+          categoryName: 'Credit Card Payment',
+          amount:       amt,
+          accountId:    'bank-' + fromId,
+          accountName:  '',
+          note:         'Payment to ' + card.name,
+          recurring:    false
         });
       });
 
