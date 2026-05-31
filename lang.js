@@ -389,6 +389,20 @@
       'ui.markPaid':        'Mark Paid',
       'xfr.executePayments':'Execute Payments',
 
+      // xfr field labels
+      'xfr.payPeriod':        'Pay Period',
+      'xfr.amtReceived':      'Amount Received',
+      'xfr.dateDeposited':    'Date Deposited',
+      'xfr.depositTo':        'Deposit To',
+      'xfr.paymentAmount':    'Payment Amount',
+      'xfr.extraAdj':         'Extra / Adjustment ($)',
+      'xfr.fromBank':         'From (Bank Account)',
+      'xfr.vault':            'Vault',
+      'xfr.pullFrom':         'Pull From',
+      'xfr.recordWithdrawal': 'Record Withdrawal',
+      'xfr.noteOpt':          'Note (optional)',
+      'xfr.withdrawCash':     'Withdraw / Spend Cash',
+
     es: {
 
       // UI Labels
@@ -708,6 +722,27 @@
       'xfr.execute':        'Ejecutar',
       'xfr.executePayments':'Ejecutar Pagos',
       'xfr.withdraw':       'Retirar',
+
+      // xfr keys — ES
+      'xfr.paycheckArrived':  'Llegó el Cheque',
+      'xfr.moveMoney':        'Mover Dinero',
+      'xfr.fundVault':        'Depositar en Bóveda',
+      'xfr.payFrom':          'Pagar Desde',
+      'xfr.totalPayment':     'Total a Pagar',
+      'xfr.accountAfter':     'Cuenta después',
+      'xfr.sofiDist':         '↺ Auto-Distribución SoFi',
+      'xfr.payPeriod':        'Periodo de Pago',
+      'xfr.amtReceived':      'Cantidad Recibida',
+      'xfr.dateDeposited':    'Fecha de Depósito',
+      'xfr.depositTo':        'Depositar En',
+      'xfr.paymentAmount':    'Monto de Pago',
+      'xfr.extraAdj':         'Extra / Ajuste ($)',
+      'xfr.fromBank':         'De (Cuenta Bancaria)',
+      'xfr.vault':            'Bóveda',
+      'xfr.pullFrom':         'Retirar De',
+      'xfr.recordWithdrawal': 'Registrar Retiro',
+      'xfr.noteOpt':          'Nota (opcional)',
+      'xfr.withdrawCash':     'Retirar / Gastar Efectivo',
 
     }
   

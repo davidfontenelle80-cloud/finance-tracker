@@ -65,11 +65,11 @@
   // ── Mode selector ─────────────────────────────────────────
   function buildModeSelector() {
     const modes = [
-      { id: 'paycheck',  icon: '💰', label: 'Paycheck Arrived' },
-      { id: 'paycards',  icon: '💳', label: 'Pay Credit Cards' },
-      { id: 'movemoney', icon: '🏦', label: 'Move Money'       },
-      { id: 'fundvault', icon: '🎯', label: 'Fund a Vault'     },
-      { id: 'withdraw',  icon: '📤', label: 'Withdraw / Spend' }
+      { id: 'paycheck',  icon: '💰', label: t('xfr.paycheckArrived') },
+      { id: 'paycards',  icon: '💳', label: t('xfr.payCards') },
+      { id: 'movemoney', icon: '🏦', label: t('xfr.moveMoney')       },
+      { id: 'fundvault', icon: '🎯', label: t('xfr.fundVault')     },
+      { id: 'withdraw',  icon: '📤', label: t('xfr.withdraw') }
     ];
     return '<div class="mode-selector">' +
       modes.map(function(m) {
@@ -107,14 +107,14 @@
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3>💰 Paycheck Arrived</h3>' +
-        '<div class="form-group"><label class="form-label">Pay Period</label>' +
+        '<h3>💰 ' + t('xfr.paycheckArrived') + '</h3>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.payPeriod') + '</label>' +
           '<select id="pc-period" class="form-control">' + periodOptions + '</select></div>' +
-        '<div class="form-group"><label class="form-label">Amount Received</label>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.amtReceived') + '</label>' +
           '<input id="pc-amount" type="number" class="form-control" value="' + defaultAmt + '" min="0" step="0.01" inputmode="decimal" /></div>' +
-        '<div class="form-group"><label class="form-label">Date Deposited</label>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.dateDeposited') + '</label>' +
           '<input id="pc-date" type="date" class="form-control" value="' + today + '" /></div>' +
-        '<div class="form-group"><label class="form-label">Deposit To</label>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.depositTo') + '</label>' +
           '<select id="pc-account" class="form-control">' + bankOptions + '</select></div>' +
         '<div class="alloc-section">' +
           '<div class="alloc-header"><span></span><span>Category</span><span>Amount</span></div>' +
@@ -484,8 +484,8 @@
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3>💳 Pay Credit Cards</h3>' +
-        '<div class="form-group"><label class="form-label">Pay From</label>' +
+        '<h3>💳 ' + t('xfr.payCards') + '</h3>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.payFrom') + '</label>' +
           '<select id="cp-from" class="form-control">' + bankOptions + '</select>' +
           '<span id="cp-from-bal" class="field-hint">Balance: ' + fmt(transferAcct.balance) + '</span></div>' +
         '<div id="cp-card-rows">' + cardRows + '</div>' +
@@ -523,11 +523,11 @@
         '<button class="pay-mode-btn" data-pmode="custom">Custom</button>' +
       '</div>' +
       '<div class="card-pay-amount-row">' +
-        '<label>Payment Amount</label>' +
+        '<label>' + t('xfr.paymentAmount') + '</label>' +
         '<input type="number" class="cp-amount" value="' + card.balance.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" />' +
       '</div>' +
       '<div class="card-pay-amount-row" style="margin-top:6px">' +
-        '<label style="color:var(--text-dim)">Extra / Adjustment ($)</label>' +
+        '<label style="color:var(--text-dim)">' + t('xfr.extraAdj') + '</label>' +
         '<input type="number" class="cp-adjust" value="0" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />' +
       '</div>' +
       '<div class="cp-after-row text-xs" style="text-align:right;margin-top:4px;color:var(--text-dim)">' +
@@ -660,16 +660,16 @@
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3>🏦 Move Money</h3>' +
-        '<div class="form-group"><label class="form-label">From</label>' +
+        '<h3>🏦 ' + t('xfr.moveMoney') + '</h3>' +
+        '<div class="form-group"><label class="form-label">' + t('trans.from') + '</label>' +
           '<select id="mm-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="mm-from-bal" class="field-hint"></span></div>' +
-        '<div class="form-group"><label class="form-label">Amount</label>' +
+        '<div class="form-group"><label class="form-label">' + t('common.amount') + '</label>' +
           '<input id="mm-amount" type="number" class="form-control" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /></div>' +
-        '<div class="form-group"><label class="form-label">To</label>' +
+        '<div class="form-group"><label class="form-label">' + t('trans.to') + '</label>' +
           '<select id="mm-to" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="mm-to-bal" class="field-hint"></span></div>' +
-        '<div class="form-group"><label class="form-label">Note (optional)</label>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.noteOpt') + '</label>' +
           '<input id="mm-note" type="text" class="form-control" placeholder="e.g. Moving to cover rent" /></div>' +
         '<div id="mm-preview" class="transfer-preview hidden"></div>' +
         '<div class="workflow-actions">' +
@@ -756,11 +756,11 @@
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3>🎯 Fund a Vault</h3>' +
-        '<div class="form-group"><label class="form-label">From (Bank Account)</label>' +
+        '<h3>🎯 ' + t('xfr.fundVault') + '</h3>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.fromBank') + '</label>' +
           '<select id="fv-from" class="form-control">' + srcOptions + '</select>' +
           '<span id="fv-from-bal" class="field-hint"></span></div>' +
-        '<div class="form-group"><label class="form-label">Vault</label>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.vault') + '</label>' +
           '<select id="fv-vault" class="form-control">' + vaultOptions + '</select></div>' +
         '<div id="fv-info" class="vault-info-card hidden"></div>' +
         '<div class="form-group"><label class="form-label">Amount</label>' +
@@ -864,21 +864,21 @@
 
     container.innerHTML =
       '<div class="workflow-card">' +
-        '<h3>📤 Withdraw / Spend Cash</h3>' +
-        '<div class="form-group"><label class="form-label">Pull From</label>' +
+        '<h3>📤 ' + t('xfr.withdrawCash') + '</h3>' +
+        '<div class="form-group"><label class="form-label">' + t('xfr.pullFrom') + '</label>' +
           '<select id="wd-from" class="form-control">' + buildAccountOptions(allAccounts) + '</select>' +
           '<span id="wd-from-bal" class="field-hint"></span></div>' +
         '<div class="form-group"><label class="form-label">Amount</label>' +
           '<input id="wd-amount" type="number" class="form-control" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /></div>' +
-        '<div class="form-group"><label class="form-label">Category</label>' +
+        '<div class="form-group"><label class="form-label">' + t('entry.category') + '</label>' +
           '<select id="wd-category" class="form-control">' + catOptions + '</select></div>' +
-        '<div class="form-group"><label class="form-label">Date</label>' +
+        '<div class="form-group"><label class="form-label">' + t('common.date') + '</label>' +
           '<input id="wd-date" type="date" class="form-control" value="' + today + '" /></div>' +
         '<div class="form-group"><label class="form-label">Note (optional)</label>' +
           '<input id="wd-note" type="text" class="form-control" placeholder="What was this for?" /></div>' +
         '<div id="wd-preview" class="transfer-preview hidden"></div>' +
         '<div class="workflow-actions">' +
-          '<button id="wd-execute" class="btn-execute">Record Withdrawal</button>' +
+          '<button id="wd-execute" class="btn-execute">' + t('xfr.recordWithdrawal') + '</button>' +
         '</div>' +
       '</div>';
 
