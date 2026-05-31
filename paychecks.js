@@ -265,9 +265,10 @@
       }
       // Dynamic allocation: (goal - vault balance) / paydays remaining
       // Uses target date countdown if set, otherwise remaining paychecks in year
-      var vault = (state.accounts && state.accounts.vaults || []).find(function(v) {
-        return v.name.toLowerCase() === cat.name.toLowerCase();
-      });
+      var vaults_ = (state.accounts && state.accounts.vaults) || [];
+      var vault = (cat.vaultId
+        ? vaults_.find(function(v) { return v.id === cat.vaultId; })
+        : null) || vaults_.find(function(v) { return v.name.toLowerCase() === cat.name.toLowerCase(); });
       var vaultBal = vault ? (Number(vault.balance) || 0) : 0;
 
       var amount;

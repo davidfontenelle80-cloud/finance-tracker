@@ -156,18 +156,18 @@
       // User adds/removes/edits in Setup → cascades everywhere.
       // Aligned to House_Budgetper.xlsx Savings Plan sheet (May 2026 actuals).
       yearlyCategories: [
-        { id: generateId(), name: 'Gasoline',          annualGoal: 2400,  weeklyBudget: 50,  weeklyDay: 'saturday', targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Food / Groceries',  annualGoal: 7200,  weeklyBudget: 150, weeklyDay: 'sunday',   targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Car Maintenance',   annualGoal: 4000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Asamblea',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Emergencia',        annualGoal: 10000 , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Car Savings',       annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Vacation Fund',     annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Roth IRA — David',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Roth IRA — Yamel',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Amica Insurance',   annualGoal: 1500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Clothing',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null },
-        { id: generateId(), name: 'Fun Money',         annualGoal: 2000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null }
+        { id: generateId(), name: 'Gasoline',          annualGoal: 2400,  weeklyBudget: 50,  weeklyDay: 'saturday', targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Food / Groceries',  annualGoal: 7200,  weeklyBudget: 150, weeklyDay: 'sunday',   targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Car Maintenance',   annualGoal: 4000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Asamblea',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Emergencia',        annualGoal: 10000 , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Car Savings',       annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Vacation Fund',     annualGoal: 5000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Roth IRA — David',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Roth IRA — Yamel',  annualGoal: 7500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Amica Insurance',   annualGoal: 1500  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Clothing',          annualGoal: 1200  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null },
+        { id: generateId(), name: 'Fun Money',         annualGoal: 2000  , weeklyBudget: null, weeklyDay: null, targetDate: null, targetAmount: null, vaultId: null }
       ],
 
       // ── Fixed monthly expenses ─────────────────────────
@@ -446,6 +446,8 @@
     // Backfill fiveWeekBonus on existing categories
     (state.yearlyCategories || []).forEach(function(c) {
       if (c.fiveWeekBonus === undefined) c.fiveWeekBonus = false;
+      if (c.vaultId === undefined) c.vaultId = null;
+    if (state.lastSaveDate === undefined) state.lastSaveDate = null;
     });
     // Backfill new reminder fields
     (state.reminders || []).forEach(function(r) {
@@ -540,7 +542,7 @@
   // saveState: persists to localStorage. Called by App.setState().
   function saveState(data) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      data.lastSaveDate = new Date().toISOString().slice(0,7); localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (err) {
       console.error('[Storage] Save failed:', err);
       // Surface error to user — could be quota exceeded

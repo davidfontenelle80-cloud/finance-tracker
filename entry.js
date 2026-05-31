@@ -66,6 +66,9 @@
             <optgroup label="Credit Cards">
               ${accounts.cards}
             </optgroup>
+            <optgroup label="Vaults">
+              ${accounts.vaults}
+            </optgroup>
           </select>
         </div>
 
@@ -317,6 +320,10 @@
         const id  = acctVal.replace('card-', '');
         const idx = (ns.accounts.cards || []).findIndex(c => c.id === id);
         if (idx !== -1) ns.accounts.cards[idx].balance += amount; // cards: balance goes up when you spend
+      } else if (acctVal.startsWith('vault-')) {
+        const id  = acctVal.replace('vault-', '');
+        const idx = (ns.accounts.vaults || []).findIndex(v => v.id === id);
+        if (idx !== -1) ns.accounts.vaults[idx].balance = Math.round((ns.accounts.vaults[idx].balance - amount) * 100) / 100;
       }
     }
 
@@ -342,7 +349,8 @@
         acctOptGroup.innerHTML =
           `<option value="">${t('entry.selectAcct')}</option>` +
           `<optgroup label="Bank Accounts">${bankOpts.bank}</optgroup>` +
-          `<optgroup label="Credit Cards">${bankOpts.cards}</optgroup>`;
+          `<optgroup label="Credit Cards">${bankOpts.cards}</optgroup>` +
+          `<optgroup label="Vaults">${bankOpts.vaults}</optgroup>`;
       }
     }
   }
@@ -414,6 +422,10 @@
     if (accountId.startsWith('card-')) {
       const id = accountId.replace('card-', '');
       return (accts.cards || []).find(c => c.id === id)?.name || null;
+    }
+    if (accountId.startsWith('vault-')) {
+      const id = accountId.replace('vault-', '');
+      return (accts.vaults || []).find(v => v.id === id)?.name || null;
     }
     return null;
   }

@@ -144,7 +144,7 @@
       if (allocHeader) allocHeader.innerHTML = planBadge;
       allocList.innerHTML = allocs.map(function(a, i) {
         const completeBadge = a.complete ? ' <span class="badge badge--green" style="font-size:0.65rem">✓ Done</span>' : '';
-        return '<div class="alloc-row' + (a.complete ? ' alloc-complete' : '') + '" data-idx="' + i + '">' +
+        return '<div class="alloc-row' + (a.complete ? ' alloc-complete' : '') + '" data-idx="' + i + '" data-cat-id="' + (a.id || '') + '">' +
           '<input type="checkbox" class="alloc-check"' + (a.complete ? '' : ' checked') + ' />' +
           '<span class="alloc-name">' + a.name + completeBadge + '</span>' +
           '<input type="number" class="alloc-amount" value="' + a.amount.toFixed(2) + '" min="0" step="0.01" inputmode="decimal" />' +
@@ -236,10 +236,18 @@
         if (amt <= 0) return;
         const name   = row.querySelector('.alloc-name').textContent;
 
-        // Find vault matching this category name and fund it
-        const vault = (s.accounts.vaults || []).find(function(v) {
-          return v.name.toLowerCase() === name.toLowerCase();
-        });
+        // Find vault: prefer explicit vaultId link on the category, fall back to name match
+        const catId = row.dataset.catId || '';
+        const catObj = catId ? (s.yearlyCategories || []).find(function(c) { return c.id === catId; }) : null;
+        let vault;
+        if (catObj && catObj.vaultId) {
+          vault = (s.accounts.vaults || []).find(function(v) { return v.id === catObj.vaultId; });
+        }
+        if (!vault) {
+          vault = (s.accounts.vaults || []).find(function(v) {
+            return v.name.toLowerCase() === name.toLowerCase();
+          });
+        }
         const vaultId = vault ? vault.id : null;
         if (vault) {
           vault.balance = Math.round((vault.balance + amt) * 100) / 100;
@@ -263,12 +271,29 @@
         });
       });
 
-      // Mark period as deposited
+      // Mark period as deposited + sync actuals back to Planner state
       if (periodKey) {
-        if (!s.paychecks[periodKey]) s.paychecks[periodKey] = {};
-        s.paychecks[periodKey].deposited = true;
-        s.paychecks[periodKey].depositedAmount = available;
-        s.paychecks[periodKey].depositDate = date;
+        // periodKey = YYYY-MM-N (e.g. "2026-05-1")
+        var pkParts  = periodKey.split('-');
+        var monthKey = pkParts[0] + '-' + pkParts[1];
+        var checkNum = parseInt(pkParts[2], 10) || 1;
+        if (!s.paychecks) s.paychecks = {};
+        if (!s.paychecks[monthKey]) s.paychecks[monthKey] = {};
+        if (!s.paychecks[monthKey][checkNum]) s.paychecks[monthKey][checkNum] = {};
+        s.paychecks[monthKey][checkNum].deposited = true;
+        s.paychecks[monthKey][checkNum].depositedAmount = available;
+        s.paychecks[monthKey][checkNum].depositDate = date;
+        // Write actuals back so Planner reflects what was actually distributed
+        var actuals = [];
+        rows.forEach(function(row) {
+          if (!row.querySelector('.alloc-check').checked) return;
+          var amt = parseFloat(row.querySelector('.alloc-amount').value) || 0;
+          if (amt <= 0) return;
+          var cName = row.querySelector('.alloc-name').textContent.replace(/\s*✓.*$/, '').trim();
+          var cId   = row.dataset.catId || null;
+          actuals.push({ categoryId: cId, name: cName, amount: amt });
+        });
+        if (actuals.length) s.paychecks[monthKey][checkNum].categories = actuals;
       }
 
       s.journal.push({
@@ -302,9 +327,10 @@
       const normalAmount = Math.round((c.annualGoal / perYear) * 100) / 100;
 
       // Check if this vault is fully funded for the year
-      const vault = vaults.find(function(v) {
-        return v.name.toLowerCase() === c.name.toLowerCase();
-      });
+      // Prefer explicit vaultId link, fall back to name match
+      const vault = (c.vaultId
+        ? vaults.find(function(v) { return v.id === c.vaultId; })
+        : null) || vaults.find(function(v) { return v.name.toLowerCase() === c.name.toLowerCase(); });
       const isComplete = vault && vault.balance >= c.annualGoal;
 
       if (isComplete) {

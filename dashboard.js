@@ -319,26 +319,30 @@
     const cashOnHand  = (liquidAccts.length ? liquidAccts : bank)
       .reduce((s, a) => s + (Number(a.balance) || 0), 0);
 
-    // Upcoming fixed bills due in next 14 days
-    // Uses effectiveDate if present, otherwise treats as always-due
+    // Fixed bills remaining this month (not yet passed)
     const fixed = state.fixedMonthlyExpenses || [];
+    const todayDate = today.getDate();
     const upcomingFixed = fixed.reduce((s, f) => {
-      if (!f.effectiveDate) return s + (Number(f.amount) || 0);
-      const eff = new Date(f.effectiveDate + 'T12:00:00');
-      const diff = (eff - today) / 86400000;
-      if (diff >= 0 && diff <= 14) return s + (Number(f.amount) || 0);
+      // Include if due day >= today (or no effectiveDate — always include)
+      const dueDay = f.paycheckAssign === 2 ? 15 : 1; // rough proxy: check1 = around 1st, check2 = around 15th
+      if (dueDay >= todayDate) return s + (Number(f.amount) || 0);
       return s;
     }, 0);
 
-    // Total vault balances = money already allocated to goals
-    // Vault balances live in SoFi Savings — a SEPARATE account from checking.
-    // Do not deduct them from liquid checking balance (that would double-count).
-    // Safe to Spend = what's actually in your liquid checking accounts minus bills due.
-    const discretionary = cashOnHand - upcomingFixed;
+    // Unpaid subscriptions this month
+    const subs = state.subscriptions || [];
+    const unpaidSubs = subs.reduce((s, sub) => {
+      if (!sub.paid) return s + (Number(sub.amount) || 0);
+      return s;
+    }, 0);
+
+    // Safe to Spend = liquid cash − remaining fixed bills − unpaid subscriptions
+    const discretionary = cashOnHand - upcomingFixed - unpaidSubs;
 
     return {
       cashOnHand,
       upcomingFixed,
+      unpaidSubs,
       vaultTotal: 0,
       discretionary
     };
@@ -348,7 +352,7 @@
 
   // ── Safe to Spend card HTML ───────────────────────────────
   function buildSafeToSpendCard(state) {
-    const { cashOnHand, upcomingFixed, vaultTotal, discretionary } = calcSafeToSpend(state);
+    const { cashOnHand, upcomingFixed, unpaidSubs, vaultTotal, discretionary } = calcSafeToSpend(state);
     const cls    = discretionary >= 0 ? 'sts-positive' : 'sts-negative';
     const arrow  = discretionary >= 0 ? '✓' : '⚠';
     return `
@@ -361,12 +365,12 @@
             <span class="sts-val">${fmt(cashOnHand)}</span>
           </div>
           <div class="sts-row sts-minus">
-            <span>📋 Upcoming fixed bills</span>
+            <span>📋 Remaining fixed bills</span>
             <span class="sts-val">− ${fmt(upcomingFixed)}</span>
           </div>
           <div class="sts-row sts-minus">
-            <span>🏺 Allocated to vaults</span>
-            <span class="sts-val">− ${fmt(vaultTotal)}</span>
+            <span>🔄 Unpaid subscriptions</span>
+            <span class="sts-val">− ${fmt(unpaidSubs)}</span>
           </div>
           <div class="sts-row sts-result">
             <span>${arrow} Discretionary</span>
@@ -382,29 +386,33 @@
   function buildNetWorthTarget(state, netWorth) {
     var target = (state.settings && state.settings.netWorthTarget) || 0;
     if (!target) {
-      return '<div style="margin-top:6px">' +
+      return '<div style="margin-top:10px;text-align:center">' +
         '<button class="btn btn--secondary btn--sm" data-action="set-nw-target" ' +
-          'style="font-size:0.7rem;padding:3px 10px">+ Set a target</button>' +
+          'style="font-size:0.75rem;padding:5px 14px">🎯 Set a retirement target</button>' +
         '</div>';
     }
     var pct      = Math.min(100, (netWorth / target) * 100);
     var needed   = Math.max(0, target - netWorth);
     var barColor = pct >= 75 ? 'green' : pct >= 40 ? 'cyan' : 'amber';
-    return '<div style="margin-top:10px">' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
-          '<span class="text-xs text-secondary">Target: ' + fmt(target) + '</span>' +
-          '<span class="text-xs ' + (needed > 0 ? 'text-amber' : 'text-green') + '">' +
+    var barGlow  = pct >= 75 ? 'var(--neon-green)' : pct >= 40 ? 'var(--neon-cyan)' : 'var(--neon-amber)';
+    return '<div style="margin-top:14px;padding:12px 14px;background:rgba(0,0,0,0.25);border-radius:10px;border:1px solid rgba(255,255,255,0.07)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
+          '<span style="font-size:0.7rem;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase">Retirement Goal</span>' +
+          '<span style="font-size:0.7rem;color:var(--text-secondary)">' + fmt(target) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+          '<span style="font-size:1.6rem;font-weight:700;color:' + barGlow + ';line-height:1">' + pct.toFixed(0) + '%</span>' +
+          '<span style="font-size:0.85rem;color:' + (needed > 0 ? 'var(--neon-amber)' : 'var(--neon-green)') + '">' +
             (needed > 0 ? fmt(needed) + ' to go' : '🎉 Goal reached!') +
           '</span>' +
         '</div>' +
-        '<div class="progress-bar" style="height:6px">' +
-          '<div class="progress-bar__fill progress-bar__fill--' + barColor + '" ' +
-            'style="width:' + pct.toFixed(1) + '%;border-radius:3px"></div>' +
+        '<div class="progress-bar" style="height:10px;border-radius:5px;background:rgba(255,255,255,0.08)">' +
+          '<div style="width:' + pct.toFixed(1) + '%;height:100%;border-radius:5px;background:' + barGlow + ';' +
+            'box-shadow:0 0 8px ' + barGlow + ';transition:width 0.6s ease"></div>' +
         '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:2px">' +
-          '<span class="text-xs text-secondary">' + pct.toFixed(0) + '% of goal</span>' +
+        '<div style="text-align:right;margin-top:4px">' +
           '<button class="btn btn--secondary" data-action="set-nw-target" ' +
-            'style="font-size:0.65rem;padding:1px 7px;min-height:auto">edit</button>' +
+            'style="font-size:0.65rem;padding:1px 8px;min-height:auto;opacity:0.6">edit target</button>' +
         '</div>' +
       '</div>';
   }

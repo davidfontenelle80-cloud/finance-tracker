@@ -1081,6 +1081,13 @@
         <label for="m-cat-goal">Annual Goal ($)</label>
         <input type="number" id="m-cat-goal" value="${cat.annualGoal}" min="0" step="0.01" inputmode="decimal" />
       </div>
+      <div class="form-group">
+        <label for="m-cat-vault">Linked Vault <span class="text-dim" style="font-weight:400;font-size:0.78rem">(optional — for auto-funding)</span></label>
+        <select id="m-cat-vault">
+          <option value="">— None (match by name) —</option>
+          ${(App.getState().accounts && App.getState().accounts.vaults || []).map(v => `<option value="${v.id}" ${cat.vaultId === v.id ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}
+        </select>
+      </div>
       <div style="border-top:1px solid var(--border);margin:14px 0 12px;padding-top:12px">
         <div class="text-sm font-bold" style="margin-bottom:4px">📅 Weekly Budget <span class="text-dim" style="font-weight:400;font-size:0.78rem">(optional — for Food & Gas)</span></div>
         <div class="text-xs text-secondary" style="margin-bottom:10px">If set, the Planner multiplies this by how many matching days fall in the month — auto-adjusts for 5-week months.</div>
@@ -1112,6 +1119,7 @@
       const goal      = parseFloat(content.querySelector('#m-cat-goal').value) || 0;
       const weekly    = content.querySelector('#m-cat-weekly').value.trim();
       const weeklyDay = content.querySelector('#m-cat-weekday').value;
+      const vaultLink = content.querySelector('#m-cat-vault') ? content.querySelector('#m-cat-vault').value : '';
       if (!name) { App.showToast('Name required.', 'error'); return; }
       const fresh = App.getState();
       const idx   = fresh.yearlyCategories.findIndex(c => c.id === cat.id);
@@ -1121,6 +1129,7 @@
         fresh.yearlyCategories[idx].weeklyBudget  = weekly !== '' ? (parseFloat(weekly) || 0) : null;
         fresh.yearlyCategories[idx].weeklyDay     = weeklyDay || null;
         fresh.yearlyCategories[idx].fiveWeekBonus = !!content.querySelector('#m-cat-5week').checked;
+        fresh.yearlyCategories[idx].vaultId       = vaultLink || null;
       }
       App.setState(fresh);
       closeModal();

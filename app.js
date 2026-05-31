@@ -326,6 +326,17 @@
     // 1. Load state
     _state = App.Storage.loadState();
 
+    // 1c. Auto-reset subscription paid flags on new month
+    (function() {
+      var thisMonth = new Date().toISOString().slice(0,7);
+      var lastSave  = _state.lastSaveDate || null;
+      if (lastSave && lastSave !== thisMonth && _state.subscriptions) {
+        _state.subscriptions.forEach(function(s) { s.paid = false; });
+        App.Storage.saveState(_state);
+        console.log('[App] New month — subscription paid flags reset.');
+      }
+    })();
+
     // 1b. Init language engine
     if (App.Lang) {
       var savedLang = (_state.settings && _state.settings.lang) || 'en';
@@ -340,7 +351,7 @@
 
     // 3. Subscribe to state:changed — refresh any visible reactive tab
     //    Tabs that need live updates list themselves here.
-    const REACTIVE_TABS = ['accounts', 'dashboard', 'tracker', 'planner'];
+    const REACTIVE_TABS = ['accounts', 'dashboard', 'planner'];
     App.events.on('state:changed', function() {
       REACTIVE_TABS.forEach(refreshTabIfVisible);
     });
