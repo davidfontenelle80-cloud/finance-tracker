@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   TRANSFERS.JS — Operational command center
+   TRANSFERS.JS — v38 — Operational command center
    Handles: Paycheck allocation, credit card payments,
    money moves, vault funding, and withdrawals.
 
