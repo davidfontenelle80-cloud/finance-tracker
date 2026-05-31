@@ -392,7 +392,13 @@
       },
 
       // ── Next Year Planner ────────────────────────────
-      nextYearPlan: { year: 2027, categories: [], customItems: {} }
+      nextYearPlan: { year: 2027, categories: [], customItems: {} },
+
+      // ── Weekly Budget Items ────────────────────────────────
+      // User-defined recurring per-paycheck line items (e.g. Car Insurance, Disability).
+      // Each: { id, name, amount, weeklyDay, paycheck }
+      // amount = $ per check, weeklyDay = display hint (optional), paycheck = '1'|'2'|'both'
+      weeklyItems: []
     };
   }
 
@@ -505,6 +511,10 @@
       state.nextYearPlan = { year: 2027, categories: [], customItems: {} };
     }
     state.version = '1.9';
+
+    // v1.9 -> v2.0: weekly budget items
+    if (!state.weeklyItems) state.weeklyItems = [];
+    state.version = '2.0';
     return state;
   }
 

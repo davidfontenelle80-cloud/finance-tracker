@@ -340,12 +340,23 @@
       .filter(function(e) { return e.applied && e.month === monthKey && (e.paycheckNum || 1) === checkNum; })
       .map(function(e) { return { id: e.id, name: e.payee, amount: e.amount }; });
 
+    // Weekly Budget Items
+    var weeklyItemLines = (state.weeklyItems || [])
+      .filter(function(w) {
+        var pc = String(w.paycheck || '1');
+        return pc === 'both' || pc === String(checkNum);
+      })
+      .map(function(w) {
+        return { wiId: w.id, name: w.name, amount: Number(w.amount) || 0, weeklyDay: w.weeklyDay || '', isWeeklyItem: true };
+      });
+
     return {
       amount:      state.income.defaultPaycheckAmount || 0,
       categories,
       fixed,
       budgetRules: budgetRuleItems,
-      customItems: appliedExp
+      customItems: appliedExp,
+      weeklyItems: weeklyItemLines
     };
   }
 
@@ -458,6 +469,24 @@
       '</tr>';
     }).join('');
 
+    // Weekly Budget Item rows
+    var weeklyItemData = check.weeklyItems || (state.weeklyItems || [])
+      .filter(function(w) { var pc=String(w.paycheck||'1'); return pc==='both'||pc===String(num); })
+      .map(function(w) { return {wiId:w.id,name:w.name,amount:Number(w.amount)||0,weeklyDay:w.weeklyDay||''}; });
+
+    var weeklyItemRows = weeklyItemData.map(function(w) {
+      var dayNote = w.weeklyDay
+        ? ' <span class="text-xs text-secondary">(' + w.weeklyDay + ')</span>'
+        : '';
+      return '<tr>' +
+        '<td class="text-sm">' + esc(w.name) + dayNote +
+          ' <span class="badge" style="font-size:0.58rem;background:rgba(100,220,100,.12);color:#6ddc6d;border-radius:3px;padding:1px 5px">' + t('wi.badge') + '</span>' +
+        '</td>' +
+        '<td class="font-mono text-sm" style="color:#6ddc6d">' + fmt(w.amount) + '</td>' +
+        '<td style="text-align:center;color:var(--text-dim)">&#128274;</td>' +
+      '</tr>';
+    }).join('');
+
     const customRows = custom.map(function(item, idx) {
       return '<tr>' +
         '<td class="text-sm">' + esc(item.name) + ' <span class="badge badge--magenta" style="font-size:0.58rem">custom</span></td>' +
@@ -516,7 +545,7 @@
             '<th>Amount</th>' +
             '<th style="width:44px;text-align:center" title="Lock amount for this month">Lock</th>' +
           '</tr></thead>' +
-          '<tbody>' + catRows + fixedRows + ruleRows + customRows + '</tbody>' +
+          '<tbody>' + catRows + fixedRows + ruleRows + weeklyItemRows + customRows + '</tbody>' +
           '<tfoot>' +
             '<tr style="border-top:1px solid var(--border)">' +
               '<td class="text-xs text-secondary font-bold">ALLOCATED</td>' +
@@ -943,11 +972,12 @@
 
   // ── Helpers ───────────────────────────────────────────────
   function sumExpenses(check) {
-    var cats   = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
-    var fixed  = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
-    var custom = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
-    var rules  = (check.budgetRules || []).reduce(function(s, r) { return s + (Number(r.amount) || 0); }, 0);
-    return cats + fixed + custom + rules;
+    var cats    = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
+    var fixed   = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
+    var custom  = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
+    var rules   = (check.budgetRules || []).reduce(function(s, r) { return s + (Number(r.amount) || 0); }, 0);
+    var weekly  = (check.weeklyItems || []).reduce(function(s, w) { return s + (Number(w.amount) || 0); }, 0);
+    return cats + fixed + custom + rules + weekly;
   }
 
   function mkKey(y, m)  { return y + '-' + String(m).padStart(2, '0'); }

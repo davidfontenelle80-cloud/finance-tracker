@@ -589,6 +589,10 @@
         <div class="text-xs text-secondary mt-8">Key is stored locally on your device only.</div>
       </div>
 
+      <div class="card" id="weekly-items-card">
+        <!-- Weekly Budget Items section rendered by App.WeeklyItems.render() -->
+      </div>
+
       <div class="card" id="budget-rules-card">
         <!-- Budget Rules section rendered by App.BudgetRules.render() -->
       </div>
@@ -617,6 +621,8 @@
     wireSettingsEvents(container, state);
     // Render Budget Rules section
     var brCard = container.querySelector('#budget-rules-card');
+    var wiCard = container.querySelector('#weekly-items-card');
+    if (wiCard && App.WeeklyItems) App.WeeklyItems.render(state, wiCard);
     if (brCard && App.BudgetRules) App.BudgetRules.render(state, brCard);
   }
 
@@ -1560,6 +1566,169 @@
       }
       _App.setState(ns);
       _App.showToast((editId ? 'Rule updated' : 'Rule added') + ' ✓', 'success');
+      _App.refreshCurrentTab();
+    });
+  }
+
+})(window.App = window.App || {});
+
+/* ── WEEKLY BUDGET ITEMS (appended module) ───────────────────────
+   User-defined recurring per-paycheck line items.
+   Renders inside Settings tab. Displayed in Planner tab.
+   { id, name, amount, weeklyDay, paycheck: '1'|'2'|'both' }
+────────────────────────────────────────────────────────────────── */
+(function(_App) {
+
+  var WI = _App.WeeklyItems = {};
+  var t   = function(k) { return _App.Lang ? _App.Lang.t(k) : k; };
+  var fmt = function(n) { return _App.Storage.formatCurrency(n); };
+  var esc = function(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  var DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+
+  WI.render = function(state, container) {
+    var items = state.weeklyItems || [];
+
+    var rows = items.map(function(w) {
+      var pchLabel = w.paycheck === '1' ? 'Check 1' : w.paycheck === '2' ? 'Check 2' : 'Both';
+      var dayLabel = w.weeklyDay ? (w.weeklyDay.charAt(0).toUpperCase() + w.weeklyDay.slice(1)) : '';
+      var detail = '<span class="text-xs text-secondary">' + pchLabel + (dayLabel ? ' · ' + dayLabel + 's' : '') + '</span>';
+      return '<div class="br-row" data-id="' + esc(w.id) + '">' +
+        '<div class="br-row__left">' +
+          '<span class="br-row__name text-sm font-bold">' + esc(w.name) + '</span>' +
+          detail +
+        '</div>' +
+        '<div class="br-row__right">' +
+          '<span class="br-row__amt text-cyan font-mono">' + fmt(w.amount) + '/check</span>' +
+          '<button class="btn btn--secondary btn--sm" data-wi-action="edit" data-id="' + esc(w.id) + '">✏️</button>' +
+          '<button class="btn btn--danger btn--sm" data-wi-action="delete" data-id="' + esc(w.id) + '">✕</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var dayOptions = DAYS.map(function(d) {
+      return '<option value="' + d + '">' + d.charAt(0).toUpperCase() + d.slice(1) + 's</option>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="section-title mb-8">📅 ' + t('wi.title') + '</div>' +
+      '<p class="text-xs text-secondary mb-12">' + t('wi.subtitle') + '</p>' +
+      (items.length
+        ? '<div id="wi-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">' + rows + '</div>'
+        : '<div class="text-secondary text-sm mb-12">' + t('wi.noItems') + '</div>') +
+
+      '<div class="card" style="border:1px solid rgba(100,220,100,.18)">' +
+        '<div class="card-title mb-12" id="wi-form-title">' + t('wi.addTitle') + '</div>' +
+        '<input type="hidden" id="wi-edit-id" value="">' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">' + t('wi.name') + '</label>' +
+          '<input id="wi-name" type="text" class="form-control" placeholder="e.g. Car Insurance" />' +
+        '</div>' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">' + t('wi.amount') + '</label>' +
+          '<input id="wi-amount" type="number" min="0" step="0.01" class="form-control" placeholder="0.00" inputmode="decimal" />' +
+        '</div>' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">' + t('wi.dayLabel') + '</label>' +
+          '<select id="wi-day" class="form-control">' +
+            '<option value="">' + t('wi.dayNone') + '</option>' +
+            dayOptions +
+          '</select>' +
+        '</div>' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">' + t('wi.paycheck') + '</label>' +
+          '<select id="wi-paycheck" class="form-control">' +
+            '<option value="1">Paycheck 1 (1st of month)</option>' +
+            '<option value="2">Paycheck 2 (2nd of month)</option>' +
+            '<option value="both">Both paychecks</option>' +
+          '</select>' +
+        '</div>' +
+
+        '<div style="display:flex;gap:8px;margin-top:4px">' +
+          '<button class="btn btn--secondary" id="wi-cancel-btn" style="flex:1;display:none">' + t('wi.cancelBtn') + '</button>' +
+          '<button class="btn btn--primary" id="wi-save-btn" style="flex:1;background:rgba(100,220,100,.2);border-color:#6ddc6d;color:#6ddc6d">' + t('wi.saveBtn') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    wireWeeklyItems(container);
+  };
+
+  function wireWeeklyItems(container) {
+    function resetForm() {
+      container.querySelector('#wi-edit-id').value   = '';
+      container.querySelector('#wi-name').value      = '';
+      container.querySelector('#wi-amount').value    = '';
+      container.querySelector('#wi-day').value       = '';
+      container.querySelector('#wi-paycheck').value  = '1';
+      container.querySelector('#wi-form-title').textContent = t('wi.addTitle');
+      container.querySelector('#wi-cancel-btn').style.display = 'none';
+    }
+
+    function loadItem(id) {
+      var item = ((_App.getState() || {}).weeklyItems || []).find(function(w) { return w.id === id; });
+      if (!item) return;
+      container.querySelector('#wi-edit-id').value  = item.id;
+      container.querySelector('#wi-name').value     = item.name    || '';
+      container.querySelector('#wi-amount').value   = item.amount  || '';
+      container.querySelector('#wi-day').value      = item.weeklyDay || '';
+      container.querySelector('#wi-paycheck').value = item.paycheck || '1';
+      container.querySelector('#wi-form-title').textContent = t('wi.editTitle');
+      container.querySelector('#wi-cancel-btn').style.display = '';
+    }
+
+    container.addEventListener('click', function(e) {
+      var action = (e.target.closest('[data-wi-action]') || {}).dataset;
+      if (!action || !action.wiAction) return;
+
+      if (action.wiAction === 'edit') { loadItem(action.id); return; }
+
+      if (action.wiAction === 'delete') {
+        if (!confirm(t('wi.confirmDel'))) return;
+        var ns = _App.Storage.cloneState(_App.getState());
+        ns.weeklyItems = (ns.weeklyItems || []).filter(function(w) { return w.id !== action.id; });
+        _App.setState(ns);
+        _App.showToast(t('wi.removedOk'), 'success');
+        _App.refreshCurrentTab();
+        return;
+      }
+    });
+
+    container.querySelector('#wi-cancel-btn').addEventListener('click', resetForm);
+
+    container.querySelector('#wi-save-btn').addEventListener('click', function() {
+      var name   = (container.querySelector('#wi-name').value || '').trim();
+      var amount = parseFloat(container.querySelector('#wi-amount').value) || 0;
+      if (!name)   { _App.showToast(t('wi.name') + ' required', 'error'); return; }
+      if (!amount) { _App.showToast(t('wi.amount') + ' required', 'error'); return; }
+
+      var editId = container.querySelector('#wi-edit-id').value;
+      var item = {
+        id:        editId || _App.Storage.generateId(),
+        name:      name,
+        amount:    amount,
+        weeklyDay: container.querySelector('#wi-day').value || '',
+        paycheck:  container.querySelector('#wi-paycheck').value || '1'
+      };
+
+      var ns = _App.Storage.cloneState(_App.getState());
+      if (!ns.weeklyItems) ns.weeklyItems = [];
+      if (editId) {
+        var idx = ns.weeklyItems.findIndex(function(w) { return w.id === editId; });
+        if (idx !== -1) ns.weeklyItems[idx] = item;
+        else ns.weeklyItems.push(item);
+      } else {
+        ns.weeklyItems.push(item);
+      }
+      _App.setState(ns);
+      _App.showToast(t('wi.savedOk'), 'success');
       _App.refreshCurrentTab();
     });
   }
