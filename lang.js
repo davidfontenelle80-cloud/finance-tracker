@@ -315,7 +315,6 @@
       'set.saveExpense':     'Save Expense',
       'set.partnerIncome':   'Partner Income',
       'set.partnerEnabled':  'Enable partner income',
-    },
 
 
       // UI labels — section titles
@@ -478,6 +477,7 @@
       'xfr.noteOpt':          'Note (optional)',
       'xfr.withdrawCash':     'Withdraw / Spend Cash',
 
+    },
     es: {
 
       // UI Labels
