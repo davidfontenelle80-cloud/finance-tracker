@@ -18,6 +18,16 @@
     return '$' + (parseFloat(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
+  // ── Translation helper ────────────────────────────────────
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
+
+  // ── HTML escape helper ────────────────────────────────────
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
   // ── Main render ───────────────────────────────────────────
   function render(state, container) {
     container.innerHTML = '';
