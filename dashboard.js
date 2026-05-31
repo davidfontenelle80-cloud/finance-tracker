@@ -25,22 +25,26 @@
 
     container.innerHTML = buildHtml(state);
 
-    // Wire Quick Edit panel
-    wireQuickEdit(container);
-
-    // Wire reminders
-    wireReminders(container);
+    // Wire all dashboard actions (single listener, guarded against duplicate registration)
+    wireDashboard(container);
 
     // Charts need Chart.js — load from CDN then draw
     loadChartJs(() => drawCharts(state));
   }
 
-  function wireQuickEdit(container) {
-    container.addEventListener('click', function(e) {
-      const btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.dataset.action;
+  // ── Combined dashboard action handler ────────────────────
+  // Single delegated listener — guards against duplicate registration on re-render.
+  function wireDashboard(container) {
+    if (container._dashWired) return;
+    container._dashWired = true;
 
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.dataset.action;
+      var id     = btn.dataset.id;
+
+      // ── Quick Edit ────────────────────────────────────────
       if (action === 'set-nw-target') {
         var cur = (App.getState().settings && App.getState().settings.netWorthTarget) || 0;
         App.showModal(
@@ -58,9 +62,9 @@
         );
         setTimeout(function() {
           var inp = document.getElementById('nw-target-input');
-          var btn = document.getElementById('nw-target-save');
+          var saveBtn = document.getElementById('nw-target-save');
           if (inp) inp.focus();
-          if (btn) btn.addEventListener('click', function() {
+          if (saveBtn) saveBtn.addEventListener('click', function() {
             var val = parseFloat(inp.value) || 0;
             var ns  = App.Storage.cloneState(App.getState());
             if (!ns.settings) ns.settings = {};
@@ -75,30 +79,103 @@
       }
 
       if (action === 'qe-toggle') {
-        const body    = document.getElementById('qe-body');
-        const chevron = document.getElementById('qe-chevron');
+        var body    = document.getElementById('qe-body');
+        var chevron = document.getElementById('qe-chevron');
         if (!body) return;
-        const open = body.style.display === 'block';
-        body.style.display    = open ? 'none' : 'block';
+        var open = body.style.display === 'block';
+        body.style.display = open ? 'none' : 'block';
         if (chevron) chevron.textContent = open ? '▼' : '▲';
         return;
       }
 
       if (action === 'qe-edit') {
-        const id  = btn.dataset.id;
-        const type = btn.dataset.type; // 'bank' or 'vault'
-        const cur  = parseFloat(btn.dataset.val) || 0;
-        const name = btn.closest('.qe-row').querySelector('.qe-name').textContent.trim();
-        openQuickEditModal(id, type, name, cur);
+        var qeId   = btn.dataset.id;
+        var type   = btn.dataset.type;
+        var cur    = parseFloat(btn.dataset.val) || 0;
+        var row    = btn.closest('.qe-row');
+        var nameEl = row ? row.querySelector('.qe-name') : null;
+        var name   = nameEl ? nameEl.textContent.trim() : '';
+        openQuickEditModal(qeId, type, name, cur);
         return;
       }
 
       if (action === 'qe-edit-card') {
-        const id    = btn.dataset.id;
-        const cur   = parseFloat(btn.dataset.val) || 0;
-        const limit = parseFloat(btn.dataset.limit) || 0;
-        const name  = btn.closest('.qe-row').querySelector('.qe-name').textContent.trim();
-        openQuickEditCardModal(id, name, cur, limit);
+        var qeId   = btn.dataset.id;
+        var cur    = parseFloat(btn.dataset.val) || 0;
+        var limit  = parseFloat(btn.dataset.limit) || 0;
+        var row    = btn.closest('.qe-row');
+        var nameEl = row ? row.querySelector('.qe-name') : null;
+        var name   = nameEl ? nameEl.textContent.trim() : '';
+        openQuickEditCardModal(qeId, name, cur, limit);
+        return;
+      }
+
+      // ── Notes & Reminders ─────────────────────────────────
+      if (action === 'reminder-add') {
+        openReminderModal(null);
+        return;
+      }
+      if (action === 'reminder-edit') {
+        var state = App.getState();
+        var r = (state.reminders || []).find(function(x) { return x.id === id; });
+        if (r) openReminderModal(r);
+        return;
+      }
+      if (action === 'reminder-done') {
+        var ns = App.Storage.cloneState(App.getState());
+        var r  = (ns.reminders || []).find(function(x) { return x.id === id; });
+        if (r) {
+          if (r.repeat === 'monthly' && r.date) {
+            var d = new Date(r.date + 'T12:00:00'); d.setMonth(d.getMonth() + 1);
+            r.date = App.Storage.toISODate(d); r.done = false;
+          } else if (r.repeat === 'weekly' && r.date) {
+            var d = new Date(r.date + 'T12:00:00'); d.setDate(d.getDate() + 7);
+            r.date = App.Storage.toISODate(d); r.done = false;
+          } else {
+            r.done = true;
+          }
+        }
+        App.setState(ns);
+        App.showToast('Done ✓', 'success');
+        App.refreshCurrentTab();
+        return;
+      }
+      if (action === 'reminder-delete') {
+        var ns = App.Storage.cloneState(App.getState());
+        ns.reminders = (ns.reminders || []).filter(function(x) { return x.id !== id; });
+        App.setState(ns);
+        App.refreshCurrentTab();
+        return;
+      }
+      if (action === 'toggle-reminders') {
+        var body = document.getElementById('reminders-body');
+        if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        return;
+      }
+      if (action === 'reminders-show-done') {
+        e.preventDefault();
+        var state = App.getState();
+        var done  = (state.reminders || []).filter(function(r) { return r.done; });
+        var rows  = done.map(function(r) {
+          return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">' +
+            '<span class="text-sm text-secondary" style="text-decoration:line-through">' + esc(r.text) + '</span>' +
+            '<button class="btn btn--secondary btn--sm" data-restore-id="' + r.id + '">Restore</button>' +
+          '</div>';
+        }).join('');
+        App.showModal('<div style="padding:8px"><div class="card-title mb-12">Completed Notes</div>' + (rows || '<p class="text-secondary text-sm">None</p>') +
+          '<button class="btn btn--secondary btn--full mt-12" onclick="App.closeModal()">Close</button></div>');
+        setTimeout(function() {
+          document.querySelectorAll('[data-restore-id]').forEach(function(b) {
+            b.addEventListener('click', function() {
+              var ns = App.Storage.cloneState(App.getState());
+              var r = (ns.reminders || []).find(function(x) { return x.id === b.dataset.restoreId; });
+              if (r) r.done = false;
+              App.setState(ns);
+              App.closeModal();
+              App.refreshCurrentTab();
+            });
+          });
+        }, 50);
         return;
       }
     });
@@ -734,86 +811,6 @@
       });
     }, 50);
   }
-
-  function wireReminders(container) {
-    container.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      var action = btn.dataset.action;
-      var id     = btn.dataset.id;
-
-      if (action === 'reminder-add') {
-        openReminderModal(null);
-        return;
-      }
-      if (action === 'reminder-edit') {
-        var state = App.getState();
-        var r = (state.reminders || []).find(function(x) { return x.id === id; });
-        if (r) openReminderModal(r);
-        return;
-      }
-      if (action === 'reminder-done') {
-        var ns = App.Storage.cloneState(App.getState());
-        var r  = (ns.reminders || []).find(function(x) { return x.id === id; });
-        if (r) {
-          if (r.repeat === 'monthly' && r.date) {
-            var d = new Date(r.date + 'T12:00:00'); d.setMonth(d.getMonth() + 1);
-            r.date = App.Storage.toISODate(d); r.done = false;
-          } else if (r.repeat === 'weekly' && r.date) {
-            var d = new Date(r.date + 'T12:00:00'); d.setDate(d.getDate() + 7);
-            r.date = App.Storage.toISODate(d); r.done = false;
-          } else {
-            r.done = true;
-          }
-        }
-        App.setState(ns);
-        App.showToast('Done ✓', 'success');
-        App.refreshCurrentTab();
-        return;
-      }
-      if (action === 'reminder-delete') {
-        var ns = App.Storage.cloneState(App.getState());
-        ns.reminders = (ns.reminders || []).filter(function(x) { return x.id !== id; });
-        App.setState(ns);
-        App.refreshCurrentTab();
-        return;
-      }
-      if (action === 'toggle-reminders') {
-        var body = document.getElementById('reminders-body');
-        if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
-        return;
-      }
-      if (action === 'reminders-show-done') {
-        e.preventDefault();
-        var state = App.getState();
-        var done  = (state.reminders || []).filter(function(r) { return r.done; });
-        var rows  = done.map(function(r) {
-          return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">' +
-            '<span class="text-sm text-secondary" style="text-decoration:line-through">' + esc(r.text) + '</span>' +
-            '<button class="btn btn--secondary btn--sm" data-restore-id="' + r.id + '">Restore</button>' +
-          '</div>';
-        }).join('');
-        App.showModal('<div style="padding:8px"><div class="card-title mb-12">Completed Notes</div>' + (rows || '<p class="text-secondary text-sm">None</p>') +
-          '<button class="btn btn--secondary btn--full mt-12" onclick="App.closeModal()">Close</button></div>');
-        setTimeout(function() {
-          document.querySelectorAll('[data-restore-id]').forEach(function(b) {
-            b.addEventListener('click', function() {
-              var ns = App.Storage.cloneState(App.getState());
-              var r = (ns.reminders || []).find(function(x) { return x.id === b.dataset.restoreId; });
-              if (r) r.done = false;
-              App.setState(ns);
-              App.closeModal();
-              App.refreshCurrentTab();
-            });
-          });
-        }, 50);
-        return;
-      }
-    });
-  }
-
-
-
 
   // ── Quick Edit Panel ─────────────────────────────────────
   // Collapsible panel showing all account balances with inline
