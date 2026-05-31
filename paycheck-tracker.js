@@ -53,9 +53,13 @@
     });
 
     var html = '<div class="section-card" style="padding:12px">';
+    var periodsForWire = periods;
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
     html += '<h2 class="section-title" style="margin:0">&#128197; ' + t('pct.title') + '</h2>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="btn btn--secondary btn--sm" data-action="pct-autofill">&#128260; ' + t('pct.autoFill') + '</button>';
     html += '<button class="btn btn--secondary btn--sm" data-action="pct-add-col">+ ' + t('pct.addCol') + '</button>';
+    html += '</div>';
     html += '</div>';
 
     html += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
@@ -116,10 +120,52 @@
     html += '</table></div></div>';
 
     container.innerHTML = html;
-    wireEvents(container, cols);
+    wireEvents(container, cols, periodsForWire || periods);
   }
 
-  function wireEvents(container, cols) {
+
+  function autoPopulate(state, cols, periods) {
+    var txns = state.transactions || [];
+    var dates = (state.income && state.income.paydayDates) || [];
+    var year  = new Date().getFullYear();
+    var yearDates = dates.filter(function(d) { return d.startsWith(String(year)); });
+    if (!yearDates.length) yearDates = dates.slice(0, 26);
+
+    var newRows = {};
+    periods.slice(0, 26).forEach(function(paydate, pi) {
+      var rowKey = String(pi + 1);
+      // Date range: day after previous payday (or Jan 1) through this payday
+      var startStr;
+      if (pi === 0) {
+        startStr = String(year) + '-01-01';
+      } else {
+        var prevDate = new Date(yearDates[pi - 1] + 'T00:00:00');
+        prevDate.setDate(prevDate.getDate() + 1);
+        startStr = prevDate.toISOString().slice(0, 10);
+      }
+      var endStr = paydate;
+      var rowData = {};
+      cols.forEach(function(col) {
+        var colLower = col.toLowerCase();
+        var sum = 0;
+        txns.forEach(function(tx) {
+          var txDate = (tx.date || '').slice(0, 10);
+          if (txDate >= startStr && txDate <= endStr) {
+            var accMatch = (tx.accountName || '').toLowerCase() === colLower;
+            var catMatch = (tx.categoryName || '').toLowerCase() === colLower;
+            if (accMatch || catMatch) {
+              sum += parseFloat(tx.amount) || 0;
+            }
+          }
+        });
+        rowData[col] = Math.round(sum * 100) / 100;
+      });
+      newRows[rowKey] = rowData;
+    });
+    return newRows;
+  }
+
+  function wireEvents(container, cols, periods) {
     container.querySelectorAll('.pct-cell').forEach(function (inp) {
       inp.addEventListener('focus', function () { inp.style.border = '1px solid var(--neon-cyan)'; });
       inp.addEventListener('blur', function () {
@@ -143,6 +189,26 @@
         }
       });
     });
+
+    var autoFillBtn = container.querySelector('[data-action="pct-autofill"]');
+    if (autoFillBtn) {
+      autoFillBtn.addEventListener('click', function () {
+        var s = App.Storage.cloneState(App.getState());
+        if (!s.paycheckTrackerData) s.paycheckTrackerData = { columns: DEFAULT_COLS.slice(), rows: {} };
+        var newRows = autoPopulate(s, cols, periods || []);
+        // Merge: overwrite only cells with computed > 0, preserve existing manual entries for others
+        Object.keys(newRows).forEach(function(rk) {
+          if (!s.paycheckTrackerData.rows[rk]) s.paycheckTrackerData.rows[rk] = {};
+          Object.keys(newRows[rk]).forEach(function(col) {
+            if (newRows[rk][col] > 0) {
+              s.paycheckTrackerData.rows[rk][col] = newRows[rk][col];
+            }
+          });
+        });
+        App.setState(s);
+        render(App.getState(), container.parentElement || container);
+      });
+    }
 
     var addBtn = container.querySelector('[data-action="pct-add-col"]');
     if (addBtn) {

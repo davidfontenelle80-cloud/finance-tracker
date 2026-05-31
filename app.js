@@ -351,7 +351,7 @@
 
     // 3. Subscribe to state:changed — refresh any visible reactive tab
     //    Tabs that need live updates list themselves here.
-    const REACTIVE_TABS = ['accounts', 'dashboard', 'planner'];
+    const REACTIVE_TABS = ['accounts', 'dashboard', 'planner', 'tracker'];
     App.events.on('state:changed', function() {
       REACTIVE_TABS.forEach(refreshTabIfVisible);
     });

@@ -35,6 +35,7 @@
       'pct.cols':        'Columns',
       'pct.grandTotal':  'Grand Total',
       'pct.pace':        'Pace',
+      'pct.autoFill':    'Auto-fill',
 
       // Savings Plan
       'splan.week52':         '52-Week Savings Challenge',
@@ -524,6 +525,7 @@
       'pct.cols':        'Columnas',
       'pct.grandTotal':  'Total General',
       'pct.pace':        'Ritmo',
+      'pct.autoFill':    'Auto-llenar',
 
       // Savings Plan
       'splan.week52':         'Desafío de Ahorro 52 Semanas',
