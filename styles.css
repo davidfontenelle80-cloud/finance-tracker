@@ -1502,3 +1502,20 @@ input[type="checkbox"] {
 .ch-cell--done .ch-period { color: var(--neon-cyan); }
 .ch-period { font-size: 0.65rem; color: var(--text-secondary); font-weight: 700; }
 .ch-amt    { font-size: 0.6rem;  color: var(--text-dim); font-family: var(--font-mono, monospace); }
+
+/* ── Budget Rules ────────────────────────────────────────────── */
+.br-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,240,255,.12);
+  background: var(--surface-1);
+  gap: 8px;
+}
+.br-row__left  { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.br-row__name  { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.br-row__right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.br-row__amt   { font-size: 0.85rem; min-width: 80px; text-align: right; }
+.br-row__tag   { white-space: nowrap; }

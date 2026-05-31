@@ -315,6 +315,13 @@
       // applied=true pulls it into that month's paycheck as a custom item.
       upcomingExpenses: [],
 
+      // ── Budget Rules ───────────────────────────────────
+      // Flexible per-paycheck line items. Two types:
+      //   fixed:  amount pulled every paycheck
+      //   goal:   (targetAmount - vaultBalance) / paychecksToDate = auto per-paycheck
+      // paycheck: '1' | '2' | 'both'
+      budgetRules: [],
+
       // ── Net worth history ──────────────────────────────
       // Logged once per month (on first open of that month).
       // { date: "YYYY-MM-DD", netWorth, investments, cash, debt }
@@ -468,7 +475,9 @@
     if (!state.trackerEntries) state.trackerEntries = {};
     if (!state.calendarEvents) state.calendarEvents = [];
     if (!state.otHours)        state.otHours        = [];
-    state.version = '1.7';
+    // v1.7 -> v1.8: budget rules
+    if (!state.budgetRules) state.budgetRules = [];
+    state.version = '1.8';
     return state;
   }
 

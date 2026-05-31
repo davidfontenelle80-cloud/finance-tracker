@@ -308,6 +308,32 @@
       .filter(function(fx) { return (fx.paycheckAssign || 1) === checkNum; })
       .map(function(fx) { return { fixedId: fx.id, name: fx.name, amount: fx.amount }; });
 
+    // Budget Rules: inject goal-based and fixed line items
+    var budgetRuleItems = (state.budgetRules || [])
+      .filter(function(r) {
+        if (!r.active) return false;
+        var pc = String(r.paycheck || '1');
+        return pc === 'both' || pc === String(checkNum);
+      })
+      .map(function(r) {
+        var perCheck;
+        if (r.type === 'fixed') {
+          perCheck = Number(r.amount) || 0;
+        } else {
+          var vault = ((state.accounts||{}).vaults||[]).find(function(v){return v.id===r.vaultId;});
+          var bal   = vault ? (Number(vault.balance)||0) : 0;
+          var need  = Math.max(0, (Number(r.targetAmount)||0) - bal);
+          var pDates = (state.income||{}).paydayDates || [];
+          var today  = new Date(); today.setHours(0,0,0,0);
+          var end    = r.targetDate ? new Date(r.targetDate+'T12:00:00') : null;
+          var left   = end ? pDates.filter(function(d){
+            var pd=new Date(d+'T12:00:00'); return pd>=today && pd<=end;
+          }).length : 1;
+          perCheck = left ? Math.round((need/Math.max(1,left))*100)/100 : need;
+        }
+        return { ruleId: r.id, name: r.name, amount: perCheck, isRule: true };
+      });
+
     // Pull applied upcoming expenses for this month into this check
     const monthKey   = mkKey(_year, _month);
     const appliedExp = (state.upcomingExpenses || [])
@@ -318,6 +344,7 @@
       amount:      state.income.defaultPaycheckAmount || 0,
       categories,
       fixed,
+      budgetRules: budgetRuleItems,
       customItems: appliedExp
     };
   }
@@ -402,6 +429,35 @@
       '</tr>';
     }).join('');
 
+    const ruleItems = check.budgetRules || (state.budgetRules || [])
+      .filter(function(r) { if (!r.active) return false; var pc=String(r.paycheck||'1'); return pc==='both'||pc===String(num); })
+      .map(function(r) {
+        var perCheck;
+        if (r.type === 'fixed') { perCheck = Number(r.amount)||0; }
+        else {
+          var vault=((state.accounts||{}).vaults||[]).find(function(v){return v.id===r.vaultId;});
+          var bal=vault?(Number(vault.balance)||0):0;
+          var need=Math.max(0,(Number(r.targetAmount)||0)-bal);
+          var pDates=(state.income||{}).paydayDates||[];
+          var today=new Date();today.setHours(0,0,0,0);
+          var end=r.targetDate?new Date(r.targetDate+'T12:00:00'):null;
+          var left=end?pDates.filter(function(d){var pd=new Date(d+'T12:00:00');return pd>=today&&pd<=end;}).length:1;
+          perCheck=left?Math.round((need/Math.max(1,left))*100)/100:need;
+        }
+        return {ruleId:r.id,name:r.name,amount:perCheck,targetDate:r.targetDate,type:r.type};
+      });
+
+    const ruleRows = ruleItems.map(function(r) {
+      var goalNote = r.type==='goal' && r.targetDate
+        ? ' <span class="text-xs" style="color:var(--neon-amber)">&#127919; ' + r.targetDate + '</span>'
+        : '';
+      return '<tr>' +
+        '<td class="text-sm">' + esc(r.name) + ' <span class="badge badge--amber" style="font-size:0.58rem">' + (r.type==='goal'?'goal':'rule') + '</span>' + goalNote + '</td>' +
+        '<td class="font-mono text-sm" style="color:var(--neon-amber)">' + fmt(r.amount) + '</td>' +
+        '<td style="text-align:center;color:var(--text-dim)">&#128274;</td>' +
+      '</tr>';
+    }).join('');
+
     const customRows = custom.map(function(item, idx) {
       return '<tr>' +
         '<td class="text-sm">' + esc(item.name) + ' <span class="badge badge--magenta" style="font-size:0.58rem">custom</span></td>' +
@@ -460,7 +516,7 @@
             '<th>Amount</th>' +
             '<th style="width:44px;text-align:center" title="Lock amount for this month">Lock</th>' +
           '</tr></thead>' +
-          '<tbody>' + catRows + fixedRows + customRows + '</tbody>' +
+          '<tbody>' + catRows + fixedRows + ruleRows + customRows + '</tbody>' +
           '<tfoot>' +
             '<tr style="border-top:1px solid var(--border)">' +
               '<td class="text-xs text-secondary font-bold">ALLOCATED</td>' +
@@ -890,7 +946,8 @@
     var cats   = (check.categories  || []).reduce(function(s, c) { return s + (Number(c.amount) || 0); }, 0);
     var fixed  = (check.fixed       || []).reduce(function(s, f) { return s + (Number(f.amount) || 0); }, 0);
     var custom = (check.customItems || []).reduce(function(s, i) { return s + (Number(i.amount) || 0); }, 0);
-    return cats + fixed + custom;
+    var rules  = (check.budgetRules || []).reduce(function(s, r) { return s + (Number(r.amount) || 0); }, 0);
+    return cats + fixed + custom + rules;
   }
 
   function mkKey(y, m)  { return y + '-' + String(m).padStart(2, '0'); }

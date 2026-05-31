@@ -589,6 +589,10 @@
         <div class="text-xs text-secondary mt-8">Key is stored locally on your device only.</div>
       </div>
 
+      <div class="card" id="budget-rules-card">
+        <!-- Budget Rules section rendered by App.BudgetRules.render() -->
+      </div>
+
       <div class="card">
         <div class="card-title mb-8">🗑 Danger Zone</div>
         <button class="btn btn--danger btn--full" data-action="clear-all-data">Clear All Data</button>
@@ -601,6 +605,9 @@
     `;
 
     wireSettingsEvents(container, state);
+    // Render Budget Rules section
+    var brCard = container.querySelector('#budget-rules-card');
+    if (brCard && App.BudgetRules) App.BudgetRules.render(state, brCard);
   }
 
   // ── Event Wiring — Setup Tab ──────────────────────────────
@@ -1275,5 +1282,257 @@
 
   // ── Public API ────────────────────────────────────────────
   App.Setup = { render, renderSettings, applyTheme };
+
+})(window.App = window.App || {});
+
+/* ── BUDGET RULES (appended module) ─────────────────────────────
+   Renders inside Settings tab. Wired by wireSettingsEvents().
+   Two rule types:
+     fixed → flat $ per paycheck
+     goal  → (targetAmount - vaultBalance) / paychecksLeft
+   paycheck assignment: '1' | '2' | 'both'
+──────────────────────────────────────────────────────────────── */
+(function(_App) {
+
+  var BR = _App.BudgetRules = {};
+
+  function t(k) { return _App.Lang ? _App.Lang.t(k) : k; }
+  var fmt = function(n) { return _App.Storage.formatCurrency(n); };
+  var esc = function(s) { return String(s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  function paychecksLeft(targetDate, paydayDates) {
+    if (!targetDate || !paydayDates) return 0;
+    var today = new Date(); today.setHours(0,0,0,0);
+    var end   = new Date(targetDate + 'T12:00:00');
+    return (paydayDates || []).filter(function(d) {
+      var pd = new Date(d + 'T12:00:00');
+      return pd >= today && pd <= end;
+    }).length;
+  }
+
+  function calcPerPaycheck(rule, state) {
+    if (rule.type === 'fixed') return Number(rule.amount) || 0;
+    var vault = ((state.accounts||{}).vaults||[]).find(function(v) { return v.id === rule.vaultId; });
+    var bal   = vault ? (Number(vault.balance)||0) : 0;
+    var need  = Math.max(0, (Number(rule.targetAmount)||0) - bal);
+    var left  = paychecksLeft(rule.targetDate, (state.income||{}).paydayDates);
+    if (!left) return need;
+    return Math.round((need / left) * 100) / 100;
+  }
+
+  BR.render = function(state, container) {
+    var rules  = state.budgetRules || [];
+    var vaults = ((state.accounts||{}).vaults||[]);
+
+    var rows = rules.map(function(r) {
+      var perCheck = calcPerPaycheck(r, state);
+      var vault    = vaults.find(function(v){return v.id===r.vaultId;});
+      var bal      = vault ? (Number(vault.balance)||0) : 0;
+      var left     = r.type==='goal' ? paychecksLeft(r.targetDate, (state.income||{}).paydayDates) : null;
+      var pchLabel = r.paycheck==='1' ? 'Check 1' : r.paycheck==='2' ? 'Check 2' : 'Both';
+      var detail   = r.type==='goal'
+        ? '<span class="text-xs text-secondary">Goal: ' + fmt(r.targetAmount||0) + ' · Bal: ' + fmt(bal) + ' · ' + (left||0) + ' checks left</span>'
+        : '<span class="text-xs text-secondary">Fixed · ' + pchLabel + '</span>';
+      return '<div class="br-row" data-id="' + esc(r.id) + '">' +
+        '<div class="br-row__left">' +
+          '<span class="br-row__name text-sm font-bold">' + esc(r.name) + '</span>' +
+          detail +
+        '</div>' +
+        '<div class="br-row__right">' +
+          '<span class="br-row__amt text-cyan font-mono">' + fmt(perCheck) + '/check</span>' +
+          '<span class="br-row__tag text-xs" style="background:rgba(0,240,255,.1);color:var(--neon-cyan);border-radius:4px;padding:2px 6px;">' + pchLabel + '</span>' +
+          '<button class="btn btn--secondary btn--sm" data-br-action="edit" data-id="' + esc(r.id) + '">✏️</button>' +
+          '<button class="btn btn--danger btn--sm" data-br-action="delete" data-id="' + esc(r.id) + '">✕</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var vaultOptions = vaults.map(function(v) {
+      return '<option value="' + esc(v.id) + '">' + esc(v.name) + ' (' + fmt(v.balance) + ')</option>';
+    }).join('');
+
+    container.innerHTML =
+      '<div class="section-title mb-8">📋 Budget Rules</div>' +
+      '<p class="text-xs text-secondary mb-12">Line items pulled from every paycheck. Fixed = flat amount. Goal = auto-calculated from vault balance and target date.</p>' +
+      (rules.length ? '<div id="br-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">' + rows + '</div>'
+                    : '<div class="text-secondary text-sm mb-12">No rules yet. Add one below.</div>') +
+
+      '<div class="card" style="border:1px solid rgba(0,240,255,.15)">' +
+        '<div class="card-title mb-12" id="br-form-title">➕ Add Budget Rule</div>' +
+        '<input type="hidden" id="br-edit-id" value="">' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Name (e.g. Car Insurance, Slush Fund)</label>' +
+          '<input id="br-name" type="text" class="form-control" placeholder="Rule name" />' +
+        '</div>' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Type</label>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="btn btn--primary br-type-btn" data-type="fixed" id="br-type-fixed" style="flex:1">💵 Fixed Amount</button>' +
+            '<button class="btn btn--secondary br-type-btn" data-type="goal" id="br-type-goal" style="flex:1">🎯 Goal by Date</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div id="br-fixed-fields">' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Amount per Paycheck ($)</label>' +
+            '<input id="br-amount" type="number" min="0" step="0.01" class="form-control" placeholder="0.00" inputmode="decimal" />' +
+          '</div>' +
+        '</div>' +
+
+        '<div id="br-goal-fields" style="display:none">' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Linked Vault (to read current balance)</label>' +
+            '<select id="br-vault" class="form-control"><option value="">— No vault —</option>' + vaultOptions + '</select>' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Target Amount ($)</label>' +
+            '<input id="br-target" type="number" min="0" step="0.01" class="form-control" placeholder="0.00" inputmode="decimal" />' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="text-xs text-secondary">Target Date</label>' +
+            '<input id="br-date" type="date" class="form-control" />' +
+          '</div>' +
+          '<div id="br-calc-preview" class="text-xs" style="color:var(--neon-cyan);padding:6px 0;min-height:20px"></div>' +
+        '</div>' +
+
+        '<div class="form-group">' +
+          '<label class="text-xs text-secondary">Apply to which paycheck?</label>' +
+          '<select id="br-paycheck" class="form-control">' +
+            '<option value="1">Paycheck 1 (1st of month)</option>' +
+            '<option value="2">Paycheck 2 (2nd of month)</option>' +
+            '<option value="both">Both paychecks</option>' +
+          '</select>' +
+        '</div>' +
+
+        '<div style="display:flex;gap:8px;margin-top:4px">' +
+          '<button class="btn btn--secondary" id="br-cancel-btn" style="flex:1;display:none">Cancel</button>' +
+          '<button class="btn btn--primary" id="br-save-btn" style="flex:1">Save Rule</button>' +
+        '</div>' +
+      '</div>';
+
+    wireBudgetRules(container, state);
+  };
+
+  function wireBudgetRules(container, state) {
+    var _type = 'fixed';
+
+    function setType(t) {
+      _type = t;
+      container.querySelector('#br-fixed-fields').style.display = t==='fixed' ? '' : 'none';
+      container.querySelector('#br-goal-fields').style.display  = t==='goal'  ? '' : 'none';
+      container.querySelector('#br-type-fixed').className = 'btn ' + (t==='fixed' ? 'btn--primary' : 'btn--secondary') + ' br-type-btn';
+      container.querySelector('#br-type-goal').className  = 'btn ' + (t==='goal'  ? 'btn--primary' : 'btn--secondary') + ' br-type-btn';
+    }
+
+    function updateCalcPreview() {
+      var prev = container.querySelector('#br-calc-preview');
+      if (!prev) return;
+      var vault    = ((state.accounts||{}).vaults||[]).find(function(v){return v.id===container.querySelector('#br-vault').value;});
+      var bal      = vault ? (Number(vault.balance)||0) : 0;
+      var target   = parseFloat(container.querySelector('#br-target').value) || 0;
+      var dateVal  = container.querySelector('#br-date').value;
+      var left     = dateVal ? paychecksLeft(dateVal, (state.income||{}).paydayDates) : 0;
+      var need     = Math.max(0, target - bal);
+      var perCheck = left ? Math.round((need/left)*100)/100 : need;
+      prev.textContent = dateVal
+        ? 'Vault balance: ' + fmt(bal) + ' · Need: ' + fmt(need) + ' · ' + left + ' paychecks left → ' + fmt(perCheck) + '/check'
+        : 'Enter a target date to calculate.';
+    }
+
+    function resetForm() {
+      container.querySelector('#br-edit-id').value = '';
+      container.querySelector('#br-name').value    = '';
+      container.querySelector('#br-amount').value  = '';
+      container.querySelector('#br-target').value  = '';
+      container.querySelector('#br-date').value    = '';
+      container.querySelector('#br-vault').value   = '';
+      container.querySelector('#br-paycheck').value= '1';
+      container.querySelector('#br-form-title').textContent = '➕ Add Budget Rule';
+      container.querySelector('#br-cancel-btn').style.display = 'none';
+      setType('fixed');
+    }
+
+    function loadRule(id) {
+      var rule = ((_App.getState()||{}).budgetRules||[]).find(function(r){return r.id===id;});
+      if (!rule) return;
+      container.querySelector('#br-edit-id').value  = rule.id;
+      container.querySelector('#br-name').value     = rule.name || '';
+      container.querySelector('#br-amount').value   = rule.amount || '';
+      container.querySelector('#br-target').value   = rule.targetAmount || '';
+      container.querySelector('#br-date').value     = rule.targetDate   || '';
+      container.querySelector('#br-vault').value    = rule.vaultId      || '';
+      container.querySelector('#br-paycheck').value = rule.paycheck     || '1';
+      container.querySelector('#br-form-title').textContent = '✏️ Edit Rule';
+      container.querySelector('#br-cancel-btn').style.display = '';
+      setType(rule.type || 'fixed');
+      if (rule.type==='goal') updateCalcPreview();
+    }
+
+    // Type toggle buttons
+    container.addEventListener('click', function(e) {
+      var tb = e.target.closest('.br-type-btn');
+      if (tb) { setType(tb.dataset.type); return; }
+
+      var action = (e.target.closest('[data-br-action]')||{}).dataset;
+      if (!action || !action.brAction) return;
+      if (action.brAction === 'edit')   { loadRule(action.id); return; }
+      if (action.brAction === 'delete') {
+        if (!confirm('Remove this budget rule?')) return;
+        var ns = _App.Storage.cloneState(_App.getState());
+        ns.budgetRules = (ns.budgetRules||[]).filter(function(r){return r.id!==action.id;});
+        _App.setState(ns);
+        _App.showToast('Rule removed', 'success');
+        _App.refreshCurrentTab();
+        return;
+      }
+    });
+
+    // Live preview for goal fields
+    ['br-target','br-date','br-vault'].forEach(function(id) {
+      var el = container.querySelector('#'+id);
+      if (el) el.addEventListener('input', updateCalcPreview);
+    });
+
+    // Cancel button
+    container.querySelector('#br-cancel-btn').addEventListener('click', resetForm);
+
+    // Save button
+    container.querySelector('#br-save-btn').addEventListener('click', function() {
+      var name = (container.querySelector('#br-name').value||'').trim();
+      if (!name) { _App.showToast('Enter a rule name', 'error'); return; }
+
+      var editId = container.querySelector('#br-edit-id').value;
+      var rule = {
+        id:           editId || _App.Storage.generateId(),
+        name:         name,
+        type:         _type,
+        paycheck:     container.querySelector('#br-paycheck').value || '1',
+        amount:       parseFloat(container.querySelector('#br-amount').value) || 0,
+        targetAmount: parseFloat(container.querySelector('#br-target').value) || 0,
+        targetDate:   container.querySelector('#br-date').value || '',
+        vaultId:      container.querySelector('#br-vault').value || '',
+        active:       true
+      };
+
+      if (_type==='goal' && !rule.targetDate) { _App.showToast('Enter a target date', 'error'); return; }
+      if (_type==='goal' && !rule.targetAmount) { _App.showToast('Enter a target amount', 'error'); return; }
+      if (_type==='fixed' && !rule.amount) { _App.showToast('Enter an amount', 'error'); return; }
+
+      var ns = _App.Storage.cloneState(_App.getState());
+      if (!ns.budgetRules) ns.budgetRules = [];
+      if (editId) {
+        var idx = ns.budgetRules.findIndex(function(r){return r.id===editId;});
+        if (idx !== -1) ns.budgetRules[idx] = rule;
+        else ns.budgetRules.push(rule);
+      } else {
+        ns.budgetRules.push(rule);
+      }
+      _App.setState(ns);
+      _App.showToast((editId ? 'Rule updated' : 'Rule added') + ' ✓', 'success');
+      _App.refreshCurrentTab();
+    });
+  }
 
 })(window.App = window.App || {});
