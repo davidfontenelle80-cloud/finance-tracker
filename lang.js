@@ -660,6 +660,12 @@
 
   var _lang = 'en';
 
+
+  function updateToggleBtn() {
+    var btn = document.getElementById('lang-toggle');
+    if (btn) btn.textContent = '🌐 ' + (_lang === 'es' ? 'ES' : 'EN');
+  }
+
   function t(key) {
     var dict = STRINGS[_lang] || STRINGS['en'];
     return dict[key] !== undefined ? dict[key] : (STRINGS['en'][key] || key);
@@ -680,6 +686,7 @@
     } catch(e) {}
     // Re-render current tab
     if (App.refreshCurrentTab) App.refreshCurrentTab();
+    updateToggleBtn();
     // Update nav labels
     updateNavLabels();
     // Update html lang attribute
@@ -693,6 +700,7 @@
     try {
       var saved = localStorage.getItem('financeApp_lang');
       if (saved === 'en' || saved === 'es') _lang = saved;
+      updateToggleBtn();
     } catch(e) {}
     updateNavLabels();
     document.documentElement.lang = _lang;

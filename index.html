@@ -16,8 +16,11 @@
   <div id="app-header" class="app-header">
     <span class="app-header__title">Finance Tracker</span>
     <div class="lang-selector" id="lang-selector">
-    <button class="lang-opt active" id="lang-en" onclick="App.Lang.setLang('en')">English/Inglés</button>
-    <button class="lang-opt" id="lang-es" onclick="App.Lang.setLang('es')">Spanish/Español</button>
+    <button id="lang-toggle" onclick="App.Lang.setLang(App.Lang.getLang()==='en'?'es':'en')"
+      style="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:20px;
+             padding:4px 12px;color:inherit;cursor:pointer;font-size:0.78rem;letter-spacing:.03em">
+      🌐 EN
+    </button>
   </div>
   </div>
 
