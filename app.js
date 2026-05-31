@@ -188,6 +188,18 @@
       setupWrap.id = 'settings-setup-section';
       container.appendChild(setupWrap);
       App.Setup.render(_state, setupWrap);
+    },
+    'paycheck-tracker': () => {
+      if (App.PaycheckTracker) App.PaycheckTracker.render(_state, el('tab-paycheck-tracker'));
+      else renderStub('tab-paycheck-tracker', 'Paycheck Tracker', 'Loading...', '');
+    },
+    'savings-plan': () => {
+      if (App.SavingsPlan) App.SavingsPlan.render(_state, el('tab-savings-plan'));
+      else renderStub('tab-savings-plan', 'Savings Plan', 'Loading...', '');
+    },
+    'next-year': () => {
+      if (App.NextYearPlanner) App.NextYearPlanner.render(_state, el('tab-next-year'));
+      else renderStub('tab-next-year', 'Next Year Planner', 'Loading...', '');
     }
   };
 

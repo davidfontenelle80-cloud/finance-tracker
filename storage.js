@@ -380,7 +380,19 @@
       // ── OT Hours log ───────────────────────────────────
       // Two periods (period 1 and 2). Flag when total >= 30.
       // { id, date, hours, period: 1|2 }
-      otHours: []
+      otHours: [],
+
+      // ── Paycheck Tracker ──────────────────────────────
+      paycheckTrackerData: { columns: ['Asamblea','Ropa','Mantenimiento','Emergency','Car Savings','Insurance','Slush','Vacation','Roth D','Roth Y'], rows: {} },
+
+      // ── Savings Plan ─────────────────────────────────
+      savingsPlans: {
+        week52:     { seed: 2,  checked: [] },
+        biweekly26: { seed: 50, checked: [] }
+      },
+
+      // ── Next Year Planner ────────────────────────────
+      nextYearPlan: { year: 2027, categories: [], customItems: {} }
     };
   }
 
@@ -478,6 +490,21 @@
     // v1.7 -> v1.8: budget rules
     if (!state.budgetRules) state.budgetRules = [];
     state.version = '1.8';
+
+    // v1.8 -> v1.9: paycheck tracker, savings plan, next year planner
+    if (!state.paycheckTrackerData) {
+      state.paycheckTrackerData = { columns: ['Asamblea','Ropa','Mantenimiento','Emergency','Car Savings','Insurance','Slush','Vacation','Roth D','Roth Y'], rows: {} };
+    }
+    if (!state.savingsPlans) {
+      state.savingsPlans = {
+        week52:     { seed: 2,  checked: [] },
+        biweekly26: { seed: 50, checked: [] }
+      };
+    }
+    if (!state.nextYearPlan) {
+      state.nextYearPlan = { year: 2027, categories: [], customItems: {} };
+    }
+    state.version = '1.9';
     return state;
   }
 

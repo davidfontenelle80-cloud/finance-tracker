@@ -50,6 +50,15 @@
     <button class="tab-btn"        data-tab="settings"    aria-selected="false" role="tab">
       <span class="tab-icon">&#9881;&#65039;</span><span class="tab-label">Settings</span>
     </button>
+    <button class="tab-btn"        data-tab="paycheck-tracker" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128200;</span><span class="tab-label">Pck Tracker</span>
+    </button>
+    <button class="tab-btn"        data-tab="savings-plan" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128181;</span><span class="tab-label">Savings Plan</span>
+    </button>
+    <button class="tab-btn"        data-tab="next-year"    aria-selected="false" role="tab">
+      <span class="tab-icon">&#128340;</span><span class="tab-label">Next Year</span>
+    </button>
   </nav>
 
   <!-- Tab Content Panes -->
@@ -66,6 +75,9 @@
     <section id="tab-calendar"    class="tab-pane"        role="tabpanel" aria-label="Calendar"></section>
     <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Tracker"></section>
     <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Entry"></section>
+    <section id="tab-paycheck-tracker" class="tab-pane"    role="tabpanel" aria-label="Paycheck Tracker"></section>
+    <section id="tab-savings-plan"  class="tab-pane"       role="tabpanel" aria-label="Savings Plan"></section>
+    <section id="tab-next-year"     class="tab-pane"       role="tabpanel" aria-label="Next Year Planner"></section>
   </main>
 
   <!-- Toast / snackbar -->
@@ -79,19 +91,22 @@
   </div>
 
   <!-- JS load order: storage first, lang second, modules, app last -->
-  <script src="storage.js?v=44"></script>
-  <script src="lang.js?v=44"></script>
-  <script src="setup.js?v=44"></script>
-  <script src="paychecks.js?v=44"></script>
-  <script src="entry.js?v=44"></script>
-  <script src="transfers.js?v=44"></script>
-  <script src="tracker.js?v=44"></script>
-  <script src="accounts.js?v=44"></script>
-  <script src="investments.js?v=44"></script>
-  <script src="dashboard.js?v=44"></script>
-  <script src="goals.js?v=44"></script>
-  <script src="calendar.js?v=44"></script>
-  <script src="app.js?v=44"></script>
+  <script src="storage.js?v=48"></script>
+  <script src="lang.js?v=48"></script>
+  <script src="setup.js?v=48"></script>
+  <script src="paychecks.js?v=48"></script>
+  <script src="entry.js?v=48"></script>
+  <script src="transfers.js?v=48"></script>
+  <script src="tracker.js?v=48"></script>
+  <script src="accounts.js?v=48"></script>
+  <script src="investments.js?v=48"></script>
+  <script src="dashboard.js?v=48"></script>
+  <script src="goals.js?v=48"></script>
+  <script src="calendar.js?v=48"></script>
+  <script src="paycheck-tracker.js?v=48"></script>
+  <script src="savings-plan.js?v=48"></script>
+  <script src="next-year-planner.js?v=48"></script>
+  <script src="app.js?v=48"></script>
 
 </body>
 </html>

@@ -20,6 +20,57 @@
       'nav.entry':       'Entry',
       'nav.goals':       'Goals',
       'nav.calendar':    'Calendar',
+      'nav.paycheck-tracker': 'Pck Tracker',
+      'nav.savings-plan':     'Savings Plan',
+      'nav.next-year':        'Next Year',
+
+      // Paycheck Tracker
+      'pct.title':       'Paycheck Tracker',
+      'pct.addCol':      'Add Column',
+      'pct.colName':     'Column name',
+      'pct.removeCol':   'Remove column',
+      'pct.period':      'Period',
+      'pct.total':       'Total',
+      'pct.totals':      'Totals',
+      'pct.cols':        'Columns',
+      'pct.grandTotal':  'Grand Total',
+      'pct.pace':        'Pace',
+
+      // Savings Plan
+      'splan.week52':         '52-Week Savings Challenge',
+      'splan.biweekly26':     '26 Bi-Weekly Savings Challenge',
+      'splan.startAt':        'Start at $',
+      'splan.week':           'Week',
+      'splan.period':         'Period',
+      'splan.saveThisWeek':   'Save This Week',
+      'splan.saveThisPeriod': 'Save This Period',
+      'splan.totalSaved':     'Total Saved',
+      'splan.yearEnd':        'Year-End Total',
+      'splan.completed':      'completed',
+      'splan.saved':          'saved so far',
+
+      // Next Year Planner
+      'nyp.title':            'Planner',
+      'nyp.resetFromCurrent': 'Reset from Current Year',
+      'nyp.paycheckAmt':      'Paycheck Amount ($)',
+      'nyp.allocated':        'Allocated',
+      'nyp.surplus':          'Surplus',
+      'nyp.paychecks':        'Paychecks',
+      'nyp.lineItems':        'Line Items — Per Paycheck',
+      'nyp.category':         'Category',
+      'nyp.perCheck':         '/ Check',
+      'nyp.annual':           'Annual',
+      'nyp.newLineName':      'New line item name',
+      'nyp.nameRequired':     'Name is required',
+      'nyp.resetDone':        'Reset from current year categories',
+      'nyp.annualSummary':    'Annual Summary',
+      'nyp.totalIncome':      'Total Income',
+      'nyp.totalAllocated':   'Total Allocated',
+      'nyp.totalSurplus':     'Total Surplus',
+
+      // Common
+      'cancel':  'Cancel',
+      'add':     'Add',
 
       // Common actions / labels
       'common.save':       'Save',
@@ -434,6 +485,57 @@
       'nav.entry':       'Entrada',
       'nav.goals':       'Metas',
       'nav.calendar':    'Calendario',
+      'nav.paycheck-tracker': 'Reg. Pagos',
+      'nav.savings-plan':     'Plan Ahorro',
+      'nav.next-year':        'Prox. Año',
+
+      // Paycheck Tracker
+      'pct.title':       'Registro de Pagos',
+      'pct.addCol':      'Agregar Columna',
+      'pct.colName':     'Nombre de columna',
+      'pct.removeCol':   'Eliminar columna',
+      'pct.period':      'Periodo',
+      'pct.total':       'Total',
+      'pct.totals':      'Totales',
+      'pct.cols':        'Columnas',
+      'pct.grandTotal':  'Total General',
+      'pct.pace':        'Ritmo',
+
+      // Savings Plan
+      'splan.week52':         'Desafío de Ahorro 52 Semanas',
+      'splan.biweekly26':     'Desafío de Ahorro 26 Periodos',
+      'splan.startAt':        'Empezar en $',
+      'splan.week':           'Semana',
+      'splan.period':         'Periodo',
+      'splan.saveThisWeek':   'Ahorrar Esta Semana',
+      'splan.saveThisPeriod': 'Ahorrar Este Periodo',
+      'splan.totalSaved':     'Total Ahorrado',
+      'splan.yearEnd':        'Total Fin de Año',
+      'splan.completed':      'completados',
+      'splan.saved':          'ahorrado hasta ahora',
+
+      // Next Year Planner
+      'nyp.title':            'Planificador',
+      'nyp.resetFromCurrent': 'Resetear del Año Actual',
+      'nyp.paycheckAmt':      'Monto del Cheque ($)',
+      'nyp.allocated':        'Asignado',
+      'nyp.surplus':          'Sobrante',
+      'nyp.paychecks':        'Cheques',
+      'nyp.lineItems':        'Partidas — Por Cheque',
+      'nyp.category':         'Categoría',
+      'nyp.perCheck':         '/ Cheque',
+      'nyp.annual':           'Anual',
+      'nyp.newLineName':      'Nueva partida',
+      'nyp.nameRequired':     'El nombre es requerido',
+      'nyp.resetDone':        'Categorías del año actual cargadas',
+      'nyp.annualSummary':    'Resumen Anual',
+      'nyp.totalIncome':      'Ingreso Total',
+      'nyp.totalAllocated':   'Total Asignado',
+      'nyp.totalSurplus':     'Sobrante Total',
+
+      // Common
+      'cancel':  'Cancelar',
+      'add':     'Agregar',
 
       // Comun
       'common.save':       'Guardar',
@@ -805,7 +907,10 @@
       'investments': 'nav.invest',
       'settings':    'nav.settings',
       'goals':       'nav.goals',
-      'calendar':    'nav.calendar'
+      'calendar':    'nav.calendar',
+      'paycheck-tracker': 'nav.paycheck-tracker',
+      'savings-plan':     'nav.savings-plan',
+      'next-year':        'nav.next-year'
     };
     document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn) {
       var key = map[btn.dataset.tab];
