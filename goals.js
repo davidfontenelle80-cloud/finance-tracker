@@ -9,6 +9,7 @@
 
 (function (App) {
   'use strict';
+  var t = function(k) { return App.Lang ? App.Lang.t(k) : k; };
 
   var fmt  = function(n) { return App.Storage.formatCurrency(n); };
   var fmt0 = function(n) { return App.Storage.formatCurrency(n, false); };

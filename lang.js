@@ -368,6 +368,27 @@
       'setup.income':         'Income Setup',
       'setup.paycheck':       'Paycheck Amount ($)',
 
+      // ── Added missing EN keys ────────────────────────────
+      'cal.addEventBtn':    'Add Event',
+      'cal.logOT':          'Log OT',
+      'common.onTrack':     'On Track',
+      'entry.selectAcct':   '— Select Account —',
+      'entry.selectCat':    '— Select Category —',
+      'goal.spendGoals':    'Spending Goals',
+      'goal.vaultGoals':    'Vault Goals',
+      'inv.actualPct':      'Actual %',
+      'inv.targetPct':      'Target %',
+      'plan.saveWeekly':    'Save note',
+      'track.aheadOfPace':  'Ahead of pace',
+      'track.annualGoal':   'Annual Goal',
+      'track.behindPace':   'Behind pace',
+      'track.covered':      'Covered',
+      'track.matchGoals':   'Match Goals',
+      'track.paceLabel':    'Pace',
+      'track.ytdSpent':     'YTD Spent',
+      'ui.markPaid':        'Mark Paid',
+      'xfr.executePayments':'Execute Payments',
+
     es: {
 
       // UI Labels
@@ -654,6 +675,40 @@
       'track.paceLabel': 'Ritmo',
       'xfr.executePayments': 'Ejecutar Pagos',
       'xfr.payCards': 'Pagar Tarjetas',
+      // ── Added missing ES keys ────────────────────────────
+      'acct.covered':       'Cubierto',
+      'acct.safety':        'Fondo de emergencia',
+      'cal.asamblea':       'Asamblea',
+      'cal.hours':          'Horas',
+      'cal.other':          'Otro',
+      'cal.period':         'Periodo',
+      'cal.vacation':       'Vacaciones',
+      'common.onTrack':     'Al día',
+      'entry.account':      'Cuenta',
+      'goal.overall':       'General',
+      'goal.summary':       'Resumen',
+      'inv.action':         'Acción',
+      'inv.portfolio':      'Portafolio',
+      'inv.price':          'Precio',
+      'plan.saveWeekly':    'Guardar nota',
+      'setup.accounts2':    'Cuentas',
+      'setup.categories':   'Categorías',
+      'setup.income':       'Ingresos',
+      'setup.paycheck':     'Nómina',
+      'setup.saturdays':    'Sábados',
+      'setup.sundays':      'Domingos',
+      'track.aheadOfPace':  'Por delante',
+      'track.annualGoal':   'Meta Anual',
+      'track.behindPace':   'Por detrás',
+      'track.covered':      'Cubierto',
+      'track.forecast':     'Proyección',
+      'track.matchGoals':   'Igualar metas',
+      'track.ytdSpent':     'Gastado YTD',
+      'ui.markPaid':        'Marcar Pagado',
+      'xfr.execute':        'Ejecutar',
+      'xfr.executePayments':'Ejecutar Pagos',
+      'xfr.withdraw':       'Retirar',
+
     }
   
     };
