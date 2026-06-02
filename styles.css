@@ -37,7 +37,7 @@
   --glow-red:     0 0 10px rgba(255, 56, 96, 0.35);
 
   /* Layout */
-  --tab-nav-height: 62px;
+  --tab-nav-height: 66px;
   --page-pad:       16px;
   --card-radius:    10px;
   --btn-radius:     8px;
@@ -101,7 +101,7 @@ body {
   z-index: 100;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border);
-  height: var(--tab-nav-height);
+  height: calc(var(--tab-nav-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -139,7 +139,7 @@ body {
 }
 
 .tab-label {
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -769,6 +769,21 @@ input[type="checkbox"] {
   .tab-label {
     font-size: 0.65rem;
   }
+}
+
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --tab-nav-height: 72px; }
+  .tab-btn {
+    width: calc(100% / 8);
+    max-width: none;
+    flex: 1;
+    padding: 8px 4px 6px;
+    gap: 4px;
+  }
+  .tab-icon { font-size: 1.35rem; }
+  .tab-label { font-size: 0.65rem; letter-spacing: 0.03em; }
+  .tab-pane { max-width: 720px; }
 }
 
 @media (min-width: 1024px) {
