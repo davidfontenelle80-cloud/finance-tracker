@@ -474,6 +474,50 @@
     }).join('');
     return `<div class="card-alert"><div class="ca-title">Credit Card Alerts</div>${rows}</div>`;
   }
+  // ── Transfer Account vs Card Debt ─────────────────────────
+  function buildTransferAccountStatus(state) {
+    const bank  = (state.accounts && state.accounts.bank)  || [];
+    const cards = (state.accounts && state.accounts.cards) || [];
+
+    const transferAcct = bank.find(function(a) { return a.isTransferAccount; });
+    if (!transferAcct) return '';
+
+    const transferBal = Number(transferAcct.balance) || 0;
+    const totalDebt   = cards.reduce(function(s, c) { return s + (Number(c.balance) || 0); }, 0);
+    const diff        = transferBal - totalDebt;
+    const isOver      = diff >= 0;
+    const color       = isOver ? 'var(--neon-green)' : 'var(--neon-red, #ff4d6d)';
+    const label       = isOver ? '✓ Over by' : '⚠ Short by';
+
+    return `
+      <div class="card" style="border:1px solid ${color};box-shadow:0 0 8px ${color}33">
+        <div class="card-title mb-4" style="font-size:0.7rem;letter-spacing:0.08em">💳 CARD PAYOFF STATUS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="stat-block">
+            <div class="stat-block__label" style="font-size:0.65rem">Transfer Account</div>
+            <div class="stat-block__value stat-block__value--cyan" style="font-size:1rem">${fmt(transferBal)}</div>
+            <div style="font-size:0.62rem;color:var(--text-secondary);margin-top:2px">${escDash(transferAcct.name)}</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-block__label" style="font-size:0.65rem">Total Card Debt</div>
+            <div class="stat-block__value text-red" style="font-size:1rem">${fmt(totalDebt)}</div>
+            <div style="font-size:0.62rem;color:var(--text-secondary);margin-top:2px">${cards.length} card${cards.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:8px 0;border-top:1px solid rgba(255,255,255,0.08)">
+          <span style="font-size:0.75rem;color:var(--text-secondary)">${label}&nbsp;</span>
+          <span style="font-size:1.05rem;font-weight:700;color:${color}">${fmt(Math.abs(diff))}</span>
+        </div>
+      </div>`;
+  }
+
+  function escDash(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+
 
   // ── Savings Goals progress dashboard (Phase 3) ──────────
   function buildSavingsGoals(state) {
@@ -914,6 +958,9 @@
       <!-- Net worth hero card with liquidity tiers -->
       ${buildNetWorthCard(state, investments, cash, debt, netWorth, nwClass)}
 
+
+      <!-- Transfer account vs card debt -->
+      ${buildTransferAccountStatus(state)}
 
       <!-- Safe to Spend card -->
       ${buildSafeToSpendCard(state)}

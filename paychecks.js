@@ -433,11 +433,16 @@
       '</tr>';
     }).join('');
 
-    const fixedRows = fixed.map(function(f) {
+    const fixedRows = fixed.map(function(f, fi) {
       return '<tr>' +
         '<td class="text-sm">' + esc(f.name) + ' <span class="badge badge--cyan" style="font-size:0.58rem">fixed</span></td>' +
         '<td class="font-mono text-sm">' + fmt(f.amount) + '</td>' +
-        '<td style="text-align:center;color:var(--text-dim)">&#128274;</td>' +
+        '<td style="text-align:center">' +
+          '<input type="checkbox" class="lock-chk lock-chk--fixed" ' +
+            'data-check="' + num + '" data-fixedidx="' + fi + '" ' +
+            (f.locked ? 'checked' : '') + ' ' +
+            'title="' + (f.locked ? 'Locked for this month' : 'Click to lock') + '" />' +
+        '</td>' +
       '</tr>';
     }).join('');
 
@@ -855,7 +860,12 @@
       });
     });
 
-    ns.paychecks[key][num] = Object.assign({}, existing, { amount: amount, categories: categories });
+    const fixedItems = (existing.fixed || []).map(function(f, fi) {
+      const flEl = container.querySelector('.lock-chk--fixed[data-check="' + num + '"][data-fixedidx="' + fi + '"]');
+      return Object.assign({}, f, { locked: flEl ? flEl.checked : (f.locked || false) });
+    });
+
+    ns.paychecks[key][num] = Object.assign({}, existing, { amount: amount, categories: categories, fixed: fixedItems });
     App.setState(ns);
     App.showToast('Paycheck ' + num + ' saved ✓', 'success');
     App.refreshCurrentTab();

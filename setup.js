@@ -543,16 +543,16 @@
         <div style="display:flex;gap:10px">
           <button class="btn ${(state.settings && state.settings.lang) === 'es' ? 'btn--secondary' : 'btn--primary'}" 
             data-action="set-lang" data-lang="en" style="flex:1">
-            🇺🇸 ${t('set.english')}
+            ${t('set.english')}
           </button>
           <button class="btn ${(state.settings && state.settings.lang) === 'es' ? 'btn--primary' : 'btn--secondary'}" 
             data-action="set-lang" data-lang="es" style="flex:1">
-            🇵🇷 ${t('set.spanish')}
+            ${t('set.spanish')}
           </button>
         </div>
         <div class="text-xs text-secondary mt-8">
           ${(state.settings && state.settings.lang) === 'es' 
-            ? 'Idioma actual: <strong>Espanol</strong>' 
+            ? 'Idioma actual: <strong>Español</strong>' 
             : 'Current language: <strong>English</strong>'}
         </div>
       </div>
