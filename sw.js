@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v59-shortcut-refresh';
+const CACHE_VERSION = 'finance-tracker-v60-style-refresh';
 
 /**
  * All URLs that make up the app shell.
