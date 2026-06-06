@@ -1,12 +1,12 @@
 /**
  * sw.js — KHub Boilerplate
- * Version: v2
+ * Version: network-first shortcut refresh
  *
  * Responsibilities:
  *  1. Precache the app shell on install
- *  2. Serve from cache (cache-first), fall back to network
+ *  2. Serve app-shell files network-first, with cache as offline fallback
  *  3. Purge old caches on activate
- *  4. Respond to SKIP_WAITING message (user clicked Refresh)
+ *  4. skipWaiting on install so shortcuts refresh quickly
  *  5. Broadcast RELOAD_READY to all clients after activation
  *
  * Update-check timing (12-hour interval) is owned by the page (app.js)
@@ -15,10 +15,10 @@
  * if content changed, new SW installs → page receives 'updatefound' →
  * shows banner or quietly reloads depending on "safe" state.
  *
- * BUMP THIS VERSION STRING on every deploy so the cache key changes.
+ * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v58-network-first';
+const CACHE_VERSION = 'finance-tracker-v59-shortcut-refresh';
 
 /**
  * All URLs that make up the app shell.
