@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy so the cache key changes.
  */
 
-const CACHE_VERSION = 'finance-tracker-v57';
+const CACHE_VERSION = 'finance-tracker-v58-network-first';
 
 /**
  * All URLs that make up the app shell.
@@ -66,9 +66,8 @@ self.addEventListener('install', event => {
     caches.open(CACHE_VERSION)
       .then(cache => cache.addAll(PRECACHE_URLS))
       .then(() => {
-        // Don't skipWaiting here — let the page decide when to swap.
-        // skipWaiting is sent via message after the user acknowledges.
-        console.log('[KHub SW] Installed — waiting for activation signal.');
+        self.skipWaiting();
+        console.log('[KHub SW] Installed — skipping wait, activating immediately.');
       })
       .catch(err => console.error('[KHub SW] Install failed:', err))
   );
@@ -98,40 +97,31 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Fetch ────────────────────────────────────────────────────
-// Strategy: cache-first for app shell, network-only for everything else.
-// This keeps the app fast offline while letting API calls go through.
+// Strategy: network-first for app shell, network-only for everything else.
+// This keeps visual fixes fresh while preserving offline fallback.
 self.addEventListener('fetch', event => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Only handle same-origin requests (skip cross-origin APIs/CDNs)
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
+  const isAppShell = PRECACHE_URLS.some(path => new URL(path, self.location.href).pathname === url.pathname);
+  if (!isAppShell) return;
 
-      // Not in cache — fetch from network and cache the response
-      return fetch(event.request)
-        .then(response => {
-          // Only cache valid responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
+  // Network-first for app-shell files so style/script fixes appear quickly.
+  // Cached files remain the offline fallback.
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
           const cloned = response.clone();
           caches.open(CACHE_VERSION).then(cache => cache.put(event.request, cloned));
-          return response;
-        })
-        .catch(() => {
-          // Network failed and not in cache — nothing we can do
-          console.warn('[KHub SW] Fetch failed (offline?) for:', event.request.url);
-        });
-    })
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
-
 // ── Messages ─────────────────────────────────────────────────
 // SKIP_WAITING: sent by app.js when user clicks "Refresh" on the update banner.
 // SW skips the waiting phase and activates immediately.
