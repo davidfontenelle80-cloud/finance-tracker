@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v73-google-redirect-fallback';
+const CACHE_VERSION = 'finance-tracker-v74-email-cloud-auth';
 
 /**
  * All URLs that make up the app shell.

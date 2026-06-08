@@ -128,7 +128,7 @@
     if (code.indexOf('auth/invalid-email') !== -1) return 'Enter a valid email address.';
     if (code.indexOf('auth/configuration-not-found') !== -1) return 'Cloud sign-in is not enabled yet. In Firebase Authentication, enable Email/Password sign-in.';
     if (code.indexOf('auth/network-request-failed') !== -1) return 'Cloud sign-in could not reach Firebase. Check your connection and try again.';
-    if (code.indexOf('auth/popup-blocked') !== -1 || code.indexOf('auth/popup-closed-by-user') !== -1) return 'Google sign-in was closed or blocked. Try again, or use email and password.';
+    if (code.indexOf('requests-from-referer') !== -1 || code.indexOf('API_KEY_HTTP_REFERRER_BLOCKED') !== -1) return 'Cloud sign-in is blocked by the Google API key website restriction. Add this app URL to the API key restrictions.';
     if (code.indexOf('auth/too-many-requests') !== -1) return 'Firebase temporarily blocked sign-in attempts. Wait a few minutes, then try again.';
     if (code.indexOf('auth-timeout') !== -1) return 'Cloud sign-in is taking too long. Check your connection and tap Sign in again.';
     if (code.indexOf('permission-denied') !== -1 || code.indexOf('Missing or insufficient permissions') !== -1) return 'Cloud backup is blocked by Firestore rules. Update rules to allow backups/{appId}/users/{yourUserId}.';
@@ -147,8 +147,7 @@
       overlay.innerHTML =
         '<div style="width:min(420px,100%);background:#fff;color:#111827;border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);">' +
           '<h3 id="khubCloudAuthTitle" style="margin:0 0 8px;font-size:18px;color:#111827;">Cloud account</h3>' +
-          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">Sign in with the same Google account or email/password on every device. Each person needs their own account.</p>' +
-          '<button id="khubCloudGoogle" type="button" style="box-sizing:border-box;width:100%;padding:11px 12px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;font-weight:700;margin-bottom:12px;">Sign in with Google</button>' +
+          '<p style="margin:0 0 12px;color:#4b5563;font-size:13px;line-height:1.4;">Sign in with the same email and password on every device. Each person needs their own account.</p>' +
           '<label style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Email</label>' +
           '<input id="khubCloudEmail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" style="box-sizing:border-box;width:100%;padding:11px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#111827;">' +
           '<label id="khubCloudPasswordLabel" style="display:block;font-size:13px;font-weight:700;margin:10px 0 6px;color:#374151;">Password</label>' +
@@ -172,7 +171,7 @@
       }, 100);
       var close = function () { overlay.remove(); };
       var busy = function (on) {
-        ['khubCloudGoogle', 'khubCloudSignIn', 'khubCloudCreate', 'khubCloudReset'].forEach(function (id) {
+        ['khubCloudSignIn', 'khubCloudCreate', 'khubCloudReset'].forEach(function (id) {
           var b = document.getElementById(id);
           if (b) b.disabled = on;
         });
@@ -207,9 +206,6 @@
       };
       document.getElementById('khubCloudCancel').onclick = function () { close(); resolve(null); };
 
-      document.getElementById('khubCloudGoogle').onclick = function () {
-        run(function () { return window.KHub.CloudAuth.signInWithGoogle(); }, 'signed-in', 'Opening Google sign-in...');
-      };
       document.getElementById('khubCloudSignIn').onclick = function () {
         run(function () { return window.KHub.CloudAuth.signIn(emailEl.value, passEl.value); }, 'signed-in', 'Signing in...');
       };
@@ -242,22 +238,6 @@
       var notReady = ensureReady(false);
       if (notReady) return notReady;
       return auth().createUserWithEmailAndPassword(String(email || '').trim(), password);
-    },
-    signInWithGoogle: function () {
-      var notReady = ensureReady(false);
-      if (notReady) return notReady;
-      if (!window.firebase || !firebase.auth || !firebase.auth.GoogleAuthProvider) {
-        return Promise.reject(new Error('Google sign-in is not ready.'));
-      }
-      var provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      return auth().signInWithPopup(provider).catch(function (e) {
-        var code = e && (e.code || e.message) || '';
-        if (code.indexOf('auth/popup-blocked') !== -1 || code.indexOf('auth/popup-closed-by-user') !== -1) {
-          return auth().signInWithRedirect(provider);
-        }
-        throw e;
-      });
     },
     signOut: function () {
       var a = auth();
