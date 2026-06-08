@@ -1,1 +1,297 @@
-!function(e){"use strict";const a="financeApp_v1";function t(){return Date.now().toString(36)+"-"+Math.random().toString(36).substr(2,6)}function n(e,a,t){if(!e)return[];const n=t||(new Date).getFullYear(),i=[],r=e.split("-").map(Number);let o=new Date(r[0],r[1]-1,r[2],12,0,0);if("biweekly"===a){for(;o.getFullYear()<n;)o.setDate(o.getDate()+14);for(;o.getFullYear()>n;)o.setDate(o.getDate()-14);for(;o.getFullYear()===n;)i.push(l(o)),o.setDate(o.getDate()+14)}else if("weekly"===a){for(;o.getFullYear()<n;)o.setDate(o.getDate()+7);for(;o.getFullYear()===n;)i.push(l(o)),o.setDate(o.getDate()+7)}else if("semimonthly"===a)for(let e=0;e<12;e++)i.push(l(new Date(n,e,1,12))),i.push(l(new Date(n,e,15,12)));else if("monthly"===a){const e=o.getDate();for(let a=0;a<12;a++)i.push(l(new Date(n,a,e,12)))}return i}function l(e){return`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`}function i(e,a,t){const n=`${a}-${String(t).padStart(2,"0")}`;return e.filter(e=>e.startsWith(n))}function r(){const e="2026-01-09",a="biweekly";return{version:"1.7",user:{name:"David",partnerName:"Yamel"},income:{frequency:a,defaultPaycheckAmount:3e3,firstPaydayOfYear:e,paychecksPerYear:26,paydayDates:n(e,a,2026),partnerEnabled:!1,partnerFrequency:"biweekly",partnerPaycheckAmount:0,partnerFirstPayday:""},monthOverrides:{},yearlyCategories:[{id:t(),name:"Gasoline",annualGoal:2400,weeklyBudget:50,weeklyDay:"saturday",targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Food / Groceries",annualGoal:7200,weeklyBudget:150,weeklyDay:"sunday",targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Car Maintenance",annualGoal:4e3,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Asamblea",annualGoal:1200,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Emergencia",annualGoal:1e4,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Car Savings",annualGoal:5e3,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Vacation Fund",annualGoal:5e3,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Roth IRA — David",annualGoal:7500,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Roth IRA — Yamel",annualGoal:7500,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Amica Insurance",annualGoal:1500,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Clothing",annualGoal:1200,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null},{id:t(),name:"Fun Money",annualGoal:2e3,weeklyBudget:null,weeklyDay:null,targetDate:null,targetAmount:null,vaultId:null}],fixedMonthlyExpenses:[{id:t(),name:"Rent",amount:1697.75,effectiveDate:"2026-06-01",paycheckAssign:1},{id:t(),name:"Cell",amount:50,effectiveDate:"2026-01-01",paycheckAssign:2},{id:t(),name:"Netflix",amount:10,effectiveDate:"2026-01-01",paycheckAssign:2}],accounts:{bank:[{id:t(),name:"SoFi Checking",balance:0,isTransferAccount:!1,liquidityTier:"immediate"},{id:t(),name:"SoFi Checking (Joint)",balance:0,isTransferAccount:!0,liquidityTier:"immediate"},{id:t(),name:"American Eagle Checking",balance:67.01,isTransferAccount:!1,liquidityTier:"immediate"},{id:t(),name:"American Eagle Savings",balance:1,isTransferAccount:!1,liquidityTier:"short"},{id:t(),name:"Emergency Fidelity Cash",balance:11062.73,isTransferAccount:!1,liquidityTier:"short"},{id:t(),name:"Car Savings (Fidelity SGOV)",balance:0,isTransferAccount:!1,liquidityTier:"locked"}],vaults:[{id:t(),name:"Gasoline",balance:250,targetAmount:null,items:[]},{id:t(),name:"Asamblea",balance:872.21,targetAmount:null,items:[]},{id:t(),name:"Rent",balance:586.77,targetAmount:null,items:[]},{id:t(),name:"Entertainment",balance:300,targetAmount:null,items:[]},{id:t(),name:"Food",balance:750,targetAmount:null,items:[]},{id:t(),name:"Car Maintenance",balance:247.99,targetAmount:null,items:[]},{id:t(),name:"Eversource",balance:274.71,targetAmount:null,items:[]},{id:t(),name:"CNG",balance:102.63,targetAmount:null,items:[]},{id:t(),name:"Car Taxes",balance:268.69,targetAmount:null,items:[]},{id:t(),name:"Hold Account",balance:183.99,targetAmount:null,items:[{id:t(),name:"Viki",amount:6.99},{id:t(),name:"YouTube",amount:22.99},{id:t(),name:"Netflix",amount:10},{id:t(),name:"ChatGPT",amount:22},{id:t(),name:"Claude",amount:22},{id:t(),name:"Apple",amount:3.99},{id:t(),name:"Cox",amount:30},{id:t(),name:"Visible",amount:25},{id:t(),name:"Microsoft",amount:9.99},{id:t(),name:"Costco",amount:31.03}]},{id:t(),name:"Slush Fund",balance:32,targetAmount:null,items:[]},{id:t(),name:"Amica Insurance",balance:.72,targetAmount:null,items:[]},{id:t(),name:"Vacation Fund",balance:0,targetAmount:null,items:[]},{id:t(),name:"Yamel Personal",balance:0,targetAmount:null,items:[]},{id:t(),name:"David Personal",balance:0,targetAmount:null,items:[]},{id:t(),name:"Investing",balance:0,targetAmount:null,items:[]},{id:t(),name:"Clothing",balance:0,targetAmount:null,items:[]},{id:t(),name:"Taxes",balance:17.3,targetAmount:null,items:[]},{id:t(),name:"Emergency",balance:0,targetAmount:null,items:[]},{id:t(),name:"Misc",balance:0,targetAmount:null,items:[]}],cards:[{id:t(),name:"Apple Card",limit:16e3,balance:0},{id:t(),name:"Bank of America",limit:12e3,balance:0},{id:t(),name:"Wells Fargo",limit:1e4,balance:0},{id:t(),name:"Capital One",limit:5e3,balance:0},{id:t(),name:"Chase Flex David",limit:14800,balance:607.1},{id:t(),name:"Chase Freedom",limit:13500,balance:0},{id:t(),name:"Chase Yamel",limit:12600,balance:0},{id:t(),name:"Citi Double Cash",limit:15e3,balance:1975.42},{id:t(),name:"Costco (Citi)",limit:12200,balance:730.47},{id:t(),name:"Discover",limit:17e3,balance:0}]},subscriptions:[{id:t(),name:"Viki",amount:6.99,dueDay:1,paid:!1,addToPaycheck:!1},{id:t(),name:"YouTube TV",amount:22.99,dueDay:2,paid:!1,addToPaycheck:!1},{id:t(),name:"Netflix",amount:10,dueDay:6,paid:!1,addToPaycheck:!1},{id:t(),name:"ChatGPT",amount:9,dueDay:7,paid:!1,addToPaycheck:!1},{id:t(),name:"Claude",amount:22,dueDay:7,paid:!1,addToPaycheck:!1},{id:t(),name:"Apple",amount:1,dueDay:16,paid:!1,addToPaycheck:!1},{id:t(),name:"Cox",amount:41,dueDay:22,paid:!1,addToPaycheck:!1},{id:t(),name:"Visible",amount:50,dueDay:22,paid:!1,addToPaycheck:!1},{id:t(),name:"Microsoft",amount:6,dueDay:22,paid:!1,addToPaycheck:!1},{id:t(),name:"Costco",amount:93.17,dueDay:0,paid:!1,addToPaycheck:!1}],investments:{accounts:[{id:t(),name:"David's Roth (Fidelity)",holdings:[{id:t(),ticker:"VOO",shares:0,price:0,targetPct:45},{id:t(),ticker:"SCHD",shares:0,price:0,targetPct:25},{id:t(),ticker:"SCHG",shares:0,price:0,targetPct:20},{id:t(),ticker:"IBIT",shares:0,price:0,targetPct:5},{id:t(),ticker:"VXUS",shares:0,price:0,targetPct:5}],ytdContribution:0,annualGoal:7e3,contributionLog:[]},{id:t(),name:"Yamel's Roth (Fidelity)",holdings:[],ytdContribution:0,annualGoal:7e3,contributionLog:[]}]},paychecks:{},journal:[],transactions:[],upcomingExpenses:[],budgetRules:[],netWorthHistory:[],paycheckNotes:{},trackerEntries:{},settings:{theme:"dark-neon",currency:"USD",lang:"en",excludeTransferFromDeficit:!1,claudeApiKey:""},reminders:[],challenges:[{id:"challenge-52w",type:"52week",name:"52-Week Challenge",startAmount:3,checkedPeriods:[],startDate:null},{id:"challenge-26bw",type:"26biweekly",name:"26 Bi-Weekly Challenge",startAmount:50,checkedPeriods:[],startDate:null}],calendarEvents:[],otHours:[],paycheckTrackerData:{columns:["Asamblea","Ropa","Mantenimiento","Emergency","Car Savings","Insurance","Slush","Vacation","Roth D","Roth Y"],rows:{}},savingsPlans:{week52:{seed:2,checked:[]},biweekly26:{seed:50,checked:[]}},nextYearPlan:{year:2027,categories:[],customItems:{}},weeklyItems:[]}}function o(e){return e.journal||(e.journal=[]),e.accounts&&e.accounts.bank&&e.accounts.bank.forEach(function(e){e.liquidityTier||(e.isTransferAccount||/checking/i.test(e.name)?e.liquidityTier="immediate":/roth|ira|retirement/i.test(e.name)?e.liquidityTier="locked":e.liquidityTier="short")}),e.settings&&!e.settings.lang&&(e.settings.lang="en"),e.reminders||(e.reminders=[]),e.settings&&!e.settings.theme&&(e.settings.theme="dark-neon"),e.accounts&&e.accounts.vaults&&e.accounts.vaults.forEach(function(e){e.items||(e.items=[]),void 0===e.targetAmount&&(e.targetAmount=null)}),e.settings&&void 0===e.settings.excludeTransferFromDeficit&&(e.settings.excludeTransferFromDeficit=!1,void 0===e.settings.claudeApiKey&&(e.settings.claudeApiKey=""),void 0===e.settings.netWorthTarget&&(e.settings.netWorthTarget=0),(e.yearlyCategories||[]).forEach(function(a){void 0===a.fiveWeekBonus&&(a.fiveWeekBonus=!1),void 0===a.vaultId&&(a.vaultId=null),void 0===e.lastSaveDate&&(e.lastSaveDate=null)}),(e.reminders||[]).forEach(function(e){void 0===e.action&&(e.action="note"),void 0===e.done&&(e.done=!1),void 0===e.repeat&&(e.repeat="none")}),e.challenges||(e.challenges=[{id:"challenge-52w",type:"52week",name:"52-Week Challenge",startAmount:3,checkedPeriods:[],startDate:null},{id:"challenge-26bw",type:"26biweekly",name:"26 Bi-Weekly Challenge",startAmount:50,checkedPeriods:[],startDate:null}])),e.yearlyCategories&&e.yearlyCategories.forEach(function(e){void 0===e.weeklyBudget&&(e.weeklyBudget=null),void 0===e.weeklyDay&&(e.weeklyDay=null),void 0===e.targetDate&&(e.targetDate=null),void 0===e.targetAmount&&(e.targetAmount=null),e.weeklyDay||!/gasoline/i.test(e.name)||e.weeklyBudget||(e.weeklyBudget=50,e.weeklyDay="saturday"),e.weeklyDay||!/food/i.test(e.name)||e.weeklyBudget||(e.weeklyBudget=150,e.weeklyDay="sunday")}),e.investments&&e.investments.accounts&&e.investments.accounts.forEach(function(e){e.contributionLog||(e.contributionLog=[])}),e.subscriptions||(e.subscriptions=[]),(e.subscriptions||[]).forEach(function(e){void 0===e.paid&&(e.paid=!1),void 0===e.addToPaycheck&&(e.addToPaycheck=!1),void 0===e.dueDay&&(e.dueDay=0)}),e.upcomingExpenses||(e.upcomingExpenses=[]),e.paycheckNotes||(e.paycheckNotes={}),e.trackerEntries||(e.trackerEntries={}),e.calendarEvents||(e.calendarEvents=[]),e.otHours||(e.otHours=[]),e.budgetRules||(e.budgetRules=[]),e.version="1.8",e.paycheckTrackerData||(e.paycheckTrackerData={columns:["Asamblea","Ropa","Mantenimiento","Emergency","Car Savings","Insurance","Slush","Vacation","Roth D","Roth Y"],rows:{}}),e.savingsPlans||(e.savingsPlans={week52:{seed:2,checked:[]},biweekly26:{seed:50,checked:[]}}),e.nextYearPlan||(e.nextYearPlan={year:2027,categories:[],customItems:{}}),e.version="1.9",e.weeklyItems||(e.weeklyItems=[]),e.version="2.0",e}e.Storage={generateId:t,toISODate:l,calculatePaydayDates:n,getPaydaysInMonth:i,getMonthPaycheckCounts:function(e,a,t){const n=[];for(let l=1;l<=12;l++){const r=`${t}-${String(l).padStart(2,"0")}`,o=i(e,t,l).length,u=a&&a[r];n.push({month:l,year:t,count:u?u.paycheckCount:o,autoCount:o,isOverride:!!u})}return n},createDefaultState:r,migrate:o,loadState:function(){try{const e=localStorage.getItem(a);if(!e)return console.log("[Storage] No saved data — loading defaults."),r();const t=o(JSON.parse(e));return console.log("[Storage] Loaded saved state, version",t.version),t}catch(e){return console.warn("[Storage] Load failed, falling back to defaults:",e),r()}},saveState:function(t){try{t.lastSaveDate=(new Date).toISOString().slice(0,7),localStorage.setItem(a,JSON.stringify(t))}catch(a){console.error("[Storage] Save failed:",a),"function"==typeof e.showToast?e.showToast("Save failed — storage may be full.","error"):alert("Save failed — check browser storage quota.")}},exportJSON:function(e){const a=JSON.stringify(e,null,2),t=new Blob([a],{type:"application/json"}),n=URL.createObjectURL(t),i=document.createElement("a"),r=l(new Date);i.href=n,i.download=`finance-backup-${r}.json`,document.body.appendChild(i),i.click(),document.body.removeChild(i),URL.revokeObjectURL(n)},importJSON:function(e){return new Promise((a,t)=>{if(!e||!e.name.endsWith(".json"))return void t(new Error("Please select a .json file."));const n=new FileReader;n.onload=e=>{try{const t=JSON.parse(e.target.result);if(!t.version)throw new Error("Invalid backup file — missing version field.");if(!t.user)throw new Error("Invalid backup file — missing user data.");a(t)}catch(e){t(new Error("Could not read file: "+e.message))}},n.onerror=()=>t(new Error("File read error.")),n.readAsText(e)})},formatCurrency:function(e,a=!0){return(Number(e)||0).toLocaleString("en-US",{style:"currency",currency:"USD",minimumFractionDigits:a?2:0,maximumFractionDigits:a?2:0})},cloneState:function(e){try{return JSON.parse(JSON.stringify(e))}catch(a){return Object.assign({},e)}}}}(window.App=window.App||{});
+(function (window) {
+  "use strict";
+
+  const App = (window.App = window.App || {});
+  const STORAGE_KEY = "financeDashboard_v1";
+  const LEGACY_KEY = "financeApp_v1";
+
+  function id() {
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function money(value) {
+    return Number(value) || 0;
+  }
+
+  function round(value) {
+    return Math.round(money(value) * 100) / 100;
+  }
+
+  function cleanText(value) {
+    return String(value || "").trim();
+  }
+
+  function defaultState() {
+    return {
+      version: "dashboard-1.0",
+      updatedAt: new Date().toISOString(),
+      workbook: {
+        name: "House Budgetper.xlsx",
+        sourcePath: "C:\\Users\\david\\OneDrive\\Accounting\\House Budgetper.xlsx",
+        lastSnapshot: null,
+      },
+      settings: {
+        theme: "dark",
+        paycheckAmount: 3000,
+        nextPayday: "",
+        paychecksPerYear: 26,
+      },
+      accounts: [
+        { id: id(), name: "SoFi Transfer Account", type: "bank", balance: 0, role: "transfer" },
+        { id: id(), name: "SoFi Checking", type: "bank", balance: 0, role: "checking" },
+        { id: id(), name: "Savings Account", type: "bank", balance: 0, role: "savings" },
+      ],
+      vaults: [
+        { id: id(), name: "Hold Account", balance: 0, target: 0 },
+        { id: id(), name: "Car Savings", balance: 0, target: 35000 },
+        { id: id(), name: "Emergency Account", balance: 0, target: 39600 },
+        { id: id(), name: "Asamblea", balance: 0, target: 1200 },
+        { id: id(), name: "Clothing", balance: 0, target: 1200 },
+      ],
+      creditCards: [],
+      paycheckPlan: [
+        { id: id(), name: "Transfer Account", amount: 0, destination: "SoFi Transfer Account" },
+        { id: id(), name: "Hold / subscriptions", amount: 0, destination: "Hold Account" },
+        { id: id(), name: "Car Savings", amount: 0, destination: "Car Savings" },
+        { id: id(), name: "Emergency", amount: 0, destination: "Emergency Account" },
+      ],
+      notes: [
+        {
+          id: id(),
+          date: todayISO(),
+          text: "Use this dashboard as the quick input layer for House Budgetper.xlsx.",
+          status: "open",
+          source: "app",
+        },
+      ],
+      transactions: [],
+      pendingChanges: [],
+    };
+  }
+
+  function normalizeState(raw) {
+    const base = defaultState();
+    const source = raw && typeof raw === "object" ? raw : {};
+
+    if (source.version && String(source.version).startsWith("dashboard-")) {
+      return {
+        ...base,
+        ...source,
+        workbook: { ...base.workbook, ...(source.workbook || {}) },
+        settings: { ...base.settings, ...(source.settings || {}) },
+        accounts: Array.isArray(source.accounts) ? source.accounts : base.accounts,
+        vaults: Array.isArray(source.vaults) ? source.vaults : base.vaults,
+        creditCards: Array.isArray(source.creditCards) ? source.creditCards : base.creditCards,
+        paycheckPlan: Array.isArray(source.paycheckPlan) ? source.paycheckPlan : base.paycheckPlan,
+        notes: Array.isArray(source.notes) ? source.notes : base.notes,
+        transactions: Array.isArray(source.transactions) ? source.transactions : [],
+        pendingChanges: Array.isArray(source.pendingChanges) ? source.pendingChanges : [],
+      };
+    }
+
+    return fromLegacyFinanceState(source, base);
+  }
+
+  function fromLegacyFinanceState(legacy, base) {
+    const accounts = ((legacy.accounts && legacy.accounts.bank) || []).map((item) => ({
+      id: item.id || id(),
+      name: item.name || "Account",
+      type: "bank",
+      balance: round(item.balance),
+      role: item.isTransferAccount ? "transfer" : item.liquidityTier || "bank",
+    }));
+
+    const vaults = ((legacy.accounts && legacy.accounts.vaults) || []).map((item) => ({
+      id: item.id || id(),
+      name: item.name || "Vault",
+      balance: round(
+        item.items && item.items.length
+          ? item.items.reduce((sum, sub) => sum + money(sub.amount), 0)
+          : item.balance
+      ),
+      target: round(item.targetAmount),
+      items: item.items || [],
+    }));
+
+    const creditCards = ((legacy.accounts && legacy.accounts.cards) || []).map((card) => ({
+      id: card.id || id(),
+      name: card.name || "Credit Card",
+      limit: round(card.limit),
+      balance: round(card.balance),
+      available: round((money(card.limit) || 0) - (money(card.balance) || 0)),
+    }));
+
+    const categories = legacy.yearlyCategories || [];
+    const paycheckPlan = categories
+      .filter((cat) => money(cat.annualGoal) > 0 || money(cat.weeklyBudget) > 0)
+      .slice(0, 18)
+      .map((cat) => ({
+        id: cat.id || id(),
+        name: cat.name,
+        amount: round(cat.weeklyBudget ? cat.weeklyBudget : money(cat.annualGoal) / 26),
+        destination: cat.name,
+      }));
+
+    const notes = []
+      .concat(
+        (legacy.reminders || []).map((note) => ({
+          id: note.id || id(),
+          date: note.date || todayISO(),
+          text: note.text || "",
+          status: note.done ? "done" : "open",
+          amount: round(note.amount),
+          source: "legacy reminder",
+        }))
+      )
+      .concat(
+        Object.entries(legacy.paycheckNotes || {}).map(([key, text]) => ({
+          id: id(),
+          date: todayISO(),
+          text: `${key}: ${text}`,
+          status: "open",
+          source: "paycheck note",
+        }))
+      );
+
+    return {
+      ...base,
+      version: "dashboard-1.0",
+      updatedAt: new Date().toISOString(),
+      settings: {
+        ...base.settings,
+        paycheckAmount: money(legacy.income && legacy.income.defaultPaycheckAmount) || 3000,
+        nextPayday: nextPayday((legacy.income && legacy.income.paydayDates) || ""),
+        paychecksPerYear: money(legacy.income && legacy.income.paychecksPerYear) || 26,
+      },
+      accounts: accounts.length ? accounts : base.accounts,
+      vaults: vaults.length ? vaults : base.vaults,
+      creditCards,
+      paycheckPlan: paycheckPlan.length ? paycheckPlan : base.paycheckPlan,
+      notes: notes.length ? notes : base.notes,
+      transactions: legacy.transactions || [],
+      pendingChanges: [],
+    };
+  }
+
+  function nextPayday(paydays) {
+    if (!Array.isArray(paydays)) return "";
+    const today = todayISO();
+    return paydays.find((date) => date >= today) || paydays[paydays.length - 1] || "";
+  }
+
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return normalizeState(JSON.parse(saved));
+
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) return normalizeState(JSON.parse(legacy));
+    } catch (err) {
+      console.warn("[Finance Dashboard] load failed:", err);
+    }
+    return defaultState();
+  }
+
+  function saveState(state) {
+    const next = normalizeState(state);
+    next.updatedAt = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  }
+
+  function addChange(state, change) {
+    const next = clone(state);
+    next.pendingChanges.unshift({
+      id: id(),
+      date: todayISO(),
+      createdAt: new Date().toISOString(),
+      ...change,
+    });
+    return next;
+  }
+
+  function exportJSON(state, kind) {
+    const payload =
+      kind === "changes"
+        ? {
+            version: "finance-dashboard-changes-1.0",
+            exportedAt: new Date().toISOString(),
+            workbook: state.workbook,
+            changes: state.pendingChanges || [],
+          }
+        : normalizeState(state);
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download =
+      kind === "changes"
+        ? `finance-dashboard-pending-changes-${todayISO()}.json`
+        : `finance-dashboard-snapshot-${todayISO()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function importJSON(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.name.toLowerCase().endsWith(".json")) {
+        reject(new Error("Choose a JSON file."));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          resolve(JSON.parse(reader.result));
+        } catch (err) {
+          reject(new Error("That JSON file could not be read."));
+        }
+      };
+      reader.onerror = () => reject(new Error("File read failed."));
+      reader.readAsText(file);
+    });
+  }
+
+  function mergeImportedState(current, imported) {
+    if (imported && imported.version === "finance-dashboard-changes-1.0") {
+      const next = clone(current);
+      next.pendingChanges = (imported.changes || []).concat(next.pendingChanges || []);
+      return next;
+    }
+    return normalizeState(imported);
+  }
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function formatCurrency(value, cents) {
+    return money(value).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: cents === false ? 0 : 2,
+      maximumFractionDigits: cents === false ? 0 : 2,
+    });
+  }
+
+  App.Storage = {
+    id,
+    todayISO,
+    round,
+    clone,
+    defaultState,
+    normalizeState,
+    loadState,
+    saveState,
+    addChange,
+    exportJSON,
+    importJSON,
+    mergeImportedState,
+    formatCurrency,
+  };
+})(window);

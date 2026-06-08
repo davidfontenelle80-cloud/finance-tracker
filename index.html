@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -10,153 +10,76 @@
   <meta name="apple-mobile-web-app-title" content="Finance">
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Finance Tracker</title>
+  <title>Finance Dashboard</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="css/dark-mode.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="stylesheet" href="styles.css?v=70" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=70" />
+  <link rel="stylesheet" href="css/components.css?v=70" />
+  <link rel="stylesheet" href="css/responsive.css?v=70" />
 </head>
 <body>
-  <!-- KHub: Skip link (WCAG 2.2) -->
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <!-- KHub: Update notice -->
-  <div id="update-notice"
-       class="update-notice"
-       role="status"
-       aria-live="polite"
-       aria-atomic="true"
-       hidden>
-    Update available — <button class="btn btn-sm btn-secondary"
-            onclick="KHub.SW.applyUpdate()">Refresh</button>
+  <div id="update-notice" class="update-notice" role="status" aria-live="polite" hidden>
+    Update available <button class="btn btn--sm btn--secondary" onclick="location.reload()">Refresh</button>
   </div>
 
-  <!-- KHub: Error boundary -->
-  <div id="error-boundary"
-       class="error-boundary"
-       role="alert"
-       aria-live="assertive"
-       aria-atomic="true"
-       tabindex="-1"
-       hidden>
+  <div id="error-boundary" class="error-boundary" role="alert" aria-live="assertive" tabindex="-1" hidden>
     <strong>Something went wrong</strong>
     <p id="error-message"></p>
-    <button class="btn btn-sm btn-danger"
-            onclick="KHub.ErrorBoundary.dismiss()">Dismiss</button>
+    <button class="btn btn--sm btn--danger" onclick="this.closest('#error-boundary').hidden=true">Dismiss</button>
   </div>
 
-  <!-- Language toggle + app header strip -->
-  <div id="app-header" class="app-header">
-    <span class="app-header__title">Finance Tracker</span>
-    <div class="lang-selector" id="lang-selector">
-    <button id="lang-toggle" onclick="App.Lang.setLang(App.Lang.getLang()==='en'?'es':'en')"
-      style="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:20px;
-             padding:4px 12px;color:inherit;cursor:pointer;font-size:0.78rem;letter-spacing:.03em">
-      🌐 EN
-    </button>
-  </div>
-  </div>
+  <header id="app-header" class="app-header">
+    <span class="app-header__title">Finance Dashboard</span>
+    <span class="app-header__subtitle">Workbook control panel</span>
+  </header>
 
-  <!-- Bottom Navigation -->
-  <nav class="tab-nav" role="navigation" aria-label="Main navigation">
-    <button class="tab-btn active" data-tab="dashboard"        aria-selected="true"  role="tab">
+  <nav class="tab-nav" role="navigation" aria-label="Finance dashboard navigation">
+    <button class="tab-btn active" data-tab="dashboard" aria-selected="true" role="tab">
       <span class="tab-icon">&#128202;</span><span class="tab-label">Dashboard</span>
     </button>
-    <button class="tab-btn"        data-tab="entry"            aria-selected="false" role="tab">
-      <span class="tab-icon">&#43;</span><span class="tab-label">Log</span>
+    <button class="tab-btn" data-tab="paycheck" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128184;</span><span class="tab-label">Paycheck</span>
     </button>
-    <button class="tab-btn"        data-tab="transfers"        aria-selected="false" role="tab">
-      <span class="tab-icon">&#128184;</span><span class="tab-label">Transfers</span>
+    <button class="tab-btn" data-tab="accounts" aria-selected="false" role="tab">
+      <span class="tab-icon">&#127974;</span><span class="tab-label">Accounts</span>
     </button>
-    <button class="tab-btn"        data-tab="planner"          aria-selected="false" role="tab">
-      <span class="tab-icon">&#128197;</span><span class="tab-label">Planner</span>
+    <button class="tab-btn" data-tab="changes" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128221;</span><span class="tab-label">Changes</span>
     </button>
-    <button class="tab-btn"        data-tab="accounts"         aria-selected="false" role="tab">
-      <span class="tab-icon">&#127982;</span><span class="tab-label">Accounts</span>
+    <button class="tab-btn" data-tab="sync" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128260;</span><span class="tab-label">Sync</span>
     </button>
-    <button class="tab-btn"        data-tab="investments"      aria-selected="false" role="tab">
-      <span class="tab-icon">&#128200;</span><span class="tab-label">Invest</span>
-    </button>
-    <button class="tab-btn"        data-tab="goals"            aria-selected="false" role="tab">
-      <span class="tab-icon">&#127919;</span><span class="tab-label">Goals</span>
-    </button>
-    <button class="tab-btn"        data-tab="calendar"         aria-selected="false" role="tab">
-      <span class="tab-icon">&#128197;</span><span class="tab-label">Calendar</span>
-    </button>
-    <button class="tab-btn"        data-tab="paycheck-tracker" aria-selected="false" role="tab">
-      <span class="tab-icon">&#128200;</span><span class="tab-label">Pay Tracker</span>
-    </button>
-    <button class="tab-btn"        data-tab="tracker"          aria-selected="false" role="tab">
-      <span class="tab-icon">&#128200;</span>
-      <span class="tab-label">Savings</span>
-    </button>
-    <button class="tab-btn"        data-tab="next-year"        aria-selected="false" role="tab">
-      <span class="tab-icon">&#128340;</span><span class="tab-label">Next Year</span>
-    </button>
-    <button class="tab-btn"        data-tab="setup"            aria-selected="false" role="tab">
-      <span class="tab-icon">&#9965;</span><span class="tab-label">Setup</span>
-    </button>
-    <button class="tab-btn"        data-tab="settings"         aria-selected="false" role="tab">
-      <span class="tab-icon">&#9881;&#65039;</span><span class="tab-label">Settings</span>
+    <button class="tab-btn" data-tab="settings" aria-selected="false" role="tab">
+      <span class="tab-icon">&#9881;</span><span class="tab-label">Settings</span>
     </button>
   </nav>
 
-  <!-- Tab Content Panes -->
   <main class="tab-content" id="main-content">
-    <section id="tab-dashboard"   class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
-    <section id="tab-accounts"    class="tab-pane"        role="tabpanel" aria-label="Accounts"></section>
-    <section id="tab-transfers"   class="tab-pane"        role="tabpanel" aria-label="Transfers"></section>
-    <section id="tab-planner"     class="tab-pane"        role="tabpanel" aria-label="Paycheck Planner"></section>
-    <section id="tab-investments" class="tab-pane"        role="tabpanel" aria-label="Investments"></section>
-    <section id="tab-settings"    class="tab-pane"        role="tabpanel" aria-label="Settings"></section>
-    <!-- Legacy panes kept for JS module compat -->
-    <section id="tab-setup"       class="tab-pane"        role="tabpanel" aria-label="Setup"></section>
-    <section id="tab-goals"       class="tab-pane"        role="tabpanel" aria-label="Goals"></section>
-    <section id="tab-calendar"    class="tab-pane"        role="tabpanel" aria-label="Calendar"></section>
-    <section id="tab-tracker"     class="tab-pane"        role="tabpanel" aria-label="Tracker"></section>
-    <section id="tab-entry"       class="tab-pane"        role="tabpanel" aria-label="Entry"></section>
-    <section id="tab-paycheck-tracker" class="tab-pane"    role="tabpanel" aria-label="Paycheck Tracker"></section>
-    <section id="tab-next-year"     class="tab-pane"       role="tabpanel" aria-label="Next Year Planner"></section>
+    <section id="tab-dashboard" class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
+    <section id="tab-paycheck" class="tab-pane" role="tabpanel" aria-label="Next Paycheck"></section>
+    <section id="tab-accounts" class="tab-pane" role="tabpanel" aria-label="Accounts"></section>
+    <section id="tab-changes" class="tab-pane" role="tabpanel" aria-label="Changes"></section>
+    <section id="tab-sync" class="tab-pane" role="tabpanel" aria-label="Workbook Sync"></section>
+    <section id="tab-settings" class="tab-pane" role="tabpanel" aria-label="Settings"></section>
   </main>
 
-  <!-- Toast / snackbar -->
+  <input id="json-import" type="file" accept="application/json,.json" hidden>
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Modal backdrop -->
   <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
     <div id="modal-box" class="modal-box" role="dialog" aria-modal="true">
       <div id="modal-content"></div>
     </div>
   </div>
 
-  <!-- JS load order: storage first, lang second, modules, app last -->
-  <!-- KHub infra — load before app modules -->
-  <script src="js/config.js"></script>
-  <script src="js/error-boundary.js"></script>
-  <script src="js/a11y.js"></script>
-  <script src="js/perf.js"></script>
-  <script src="js/components/button.js"></script>
-  <script src="js/components/modal.js"></script>
-  <script src="js/components/card.js"></script>
-  <script src="js/components/input.js"></script>
-
-  <script src="storage.js?v=55"></script>
-  <script src="lang.js?v=55"></script>
-  <script src="setup.js?v=55"></script>
-  <script src="paychecks.js?v=55"></script>
-  <script src="entry.js?v=55"></script>
-  <script src="transfers.js?v=55"></script>
-  <script src="tracker.js?v=55"></script>
-  <script src="accounts.js?v=55"></script>
-  <script src="investments.js?v=55"></script>
-  <script src="dashboard.js?v=55"></script>
-  <script src="goals.js?v=55"></script>
-  <script src="calendar.js?v=55"></script>
-  <script src="paycheck-tracker.js?v=55"></script>
-  <script src="next-year-planner.js?v=55"></script>
-  <script src="app.js?v=55"></script>
-
+  <script src="js/config.js?v=70"></script>
+  <script src="js/error-boundary.js?v=70"></script>
+  <script src="js/a11y.js?v=70"></script>
+  <script src="js/perf.js?v=70"></script>
+  <script src="storage.js?v=70"></script>
+  <script src="dashboard.js?v=70"></script>
+  <script src="app.js?v=70"></script>
 </body>
 </html>
-

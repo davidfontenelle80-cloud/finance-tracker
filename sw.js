@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v62-specific-error-labels';
+const CACHE_VERSION = 'finance-tracker-v70-workbook-dashboard';
 
 /**
  * All URLs that make up the app shell.

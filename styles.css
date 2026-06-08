@@ -31,3 +31,61 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* Workbook dashboard */
+.app-header{position:fixed;top:0;left:0;right:0;z-index:90;height:42px;background:color-mix(in srgb,var(--bg-secondary) 94%,transparent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;backdrop-filter:blur(10px)}
+.app-header__title{font-weight:800;font-size:.92rem;letter-spacing:.02em}
+.app-header__subtitle{font-size:.72rem;color:var(--text-secondary)}
+.tab-content{padding-top:10px}
+.workbook-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--neon-cyan) 14%,transparent),color-mix(in srgb,var(--neon-green) 8%,transparent));border:1px solid color-mix(in srgb,var(--neon-cyan) 35%,transparent);border-radius:var(--radius-md);padding:18px;margin-bottom:14px}
+.workbook-hero h1,.view-title h2{font-size:1.55rem;line-height:1.05;margin:3px 0 5px}
+.workbook-hero p,.help-text{color:var(--text-secondary);font-size:.88rem;line-height:1.45}
+.eyebrow{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--neon-cyan);font-weight:800}
+.hero-actions,.button-row{display:flex;gap:8px;flex-wrap:wrap}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;min-width:0}
+.kpi span{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);font-weight:800;margin-bottom:5px}
+.kpi strong{display:block;font-family:var(--font-mono);font-size:1.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi--good{border-color:color-mix(in srgb,var(--neon-green) 45%,var(--border))}
+.kpi--good strong{color:var(--neon-green)}
+.kpi--bad{border-color:color-mix(in srgb,var(--neon-red) 45%,var(--border))}
+.kpi--bad strong{color:var(--neon-red)}
+.status-card{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:14px;border:1px solid var(--border);background:var(--bg-secondary)}
+.status-card--ok{border-color:color-mix(in srgb,var(--neon-green) 45%,var(--border));box-shadow:var(--glow-green)}
+.status-card--warn{border-color:color-mix(in srgb,var(--neon-red) 45%,var(--border));box-shadow:var(--glow-red)}
+.status-title{font-size:.95rem;font-weight:800}
+.status-sub{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
+.status-card strong{font-family:var(--font-mono);font-size:1.05rem}
+.two-col{display:grid;grid-template-columns:1fr;gap:0}
+.card-head,.view-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.link-btn{background:transparent;border:none;color:var(--neon-cyan);font-weight:800;font-size:.82rem;cursor:pointer;padding:4px 0}
+.mini-list,.editor-list{display:flex;flex-direction:column;gap:8px}
+.mini-row,.summary-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+.mini-row span,.summary-line span{color:var(--text-secondary);font-size:.83rem}
+.mini-row strong,.summary-line strong{font-family:var(--font-mono)}
+.note-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+.note-row div{min-width:0}
+.note-row strong{display:block;font-size:.88rem;line-height:1.3}
+.note-row span{display:block;font-size:.72rem;color:var(--text-secondary);margin-top:3px}
+.empty-state{font-size:.84rem;color:var(--text-secondary);padding:10px 0;border-top:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+.form-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+.edit-row{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+.edit-row input{min-height:38px;padding:7px 9px;font-size:.86rem}
+.edit-row .btn{grid-column:1/-1;justify-self:end;min-height:34px}
+.edit-row--card{grid-template-columns:1fr 100px 100px}
+.path-box{font-family:var(--font-mono);font-size:.76rem;color:var(--text-secondary);background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;overflow-wrap:anywhere;margin:10px 0}
+.danger-zone{border-color:color-mix(in srgb,var(--neon-red) 38%,var(--border))}
+textarea{resize:vertical}
+@media(min-width:680px){
+  .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .two-col{grid-template-columns:1fr 1fr;gap:14px}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .edit-row{grid-template-columns:1.2fr 120px 1fr auto}
+  .edit-row .btn{grid-column:auto}
+}
+@media(max-width:520px){
+  .workbook-hero,.view-title{flex-direction:column}
+  .hero-actions,.button-row{width:100%}
+  .hero-actions .btn,.button-row .btn{flex:1}
+  .edit-row--card{grid-template-columns:1fr 95px}
+}

@@ -1,1 +1,115 @@
-!function(e){"use strict";let t=null;window.addEventListener("beforeinstallprompt",function(e){e.preventDefault(),t=e,function(){if(localStorage.getItem("pwa_install_dismissed"))return;if(window.matchMedia("(display-mode: standalone)").matches)return;var e=document.createElement("div");e.id="pwa-banner",e.style.cssText=["position:fixed","bottom:70px","left:12px","right:12px","background:var(--card-bg,#0f1629)","border:1px solid var(--neon-cyan)","border-radius:12px","padding:12px 14px","z-index:9999","display:flex","align-items:center","gap:10px","box-shadow:0 4px 20px rgba(0,240,255,0.15)"].join(";"),e.innerHTML='<span style="font-size:1.3rem">📲</span><div style="flex:1"><div class="text-sm font-bold">Install Finance Tracker</div><div class="text-xs text-secondary">Add to home screen for offline use</div></div><button id="pwa-install-btn" class="btn btn--primary btn--sm">Install</button><button id="pwa-dismiss-btn" class="btn btn--secondary btn--sm">✕</button>',document.body.appendChild(e),document.getElementById("pwa-install-btn").addEventListener("click",function(){t&&(t.prompt(),t.userChoice.then(function(){t=null,e.remove()}))}),document.getElementById("pwa-dismiss-btn").addEventListener("click",function(){localStorage.setItem("pwa_install_dismissed","1"),e.remove()})}()});let n=null,a="dashboard";e.events={_listeners:{},on:function(e,t){this._listeners[e]||(this._listeners[e]=[]),this._listeners[e].push(t)},off:function(e,t){this._listeners[e]&&(this._listeners[e]=this._listeners[e].filter(function(e){return e!==t}))},emit:function(e,t){(this._listeners[e]||[]).forEach(function(n){try{n(t)}catch(t){console.error('[App.events] Error in listener for "'+e+'":',t)}})}};const s={setup:()=>{e.Setup.render(n,l("tab-setup"))},planner:()=>{e.Paychecks?e.Paychecks.render(n,l("tab-planner")):r("tab-planner","Paycheck Planner","Phase 2","Set up your income and categories in Setup first, then come back here.")},tracker:()=>{e.Tracker?e.Tracker.render(n,l("tab-tracker")):r("tab-tracker","Paycheck Tracker","Phase 2","Tracks all 26 pay periods, planned vs actual.")},entry:()=>{e.Entry?e.Entry.render(n,l("tab-entry")):r("tab-entry","Data Entry","Phase 2","Log transactions here. They cascade to every other tab.")},transfers:()=>{e.Transfers?e.Transfers.render(n,l("tab-transfers")):r("tab-transfers","Transfers","Engine Upgrade","Paycheck allocation, card payments, and money movement.")},accounts:()=>{e.Accounts?e.Accounts.render(n,l("tab-accounts")):r("tab-accounts","Accounts","Phase 2","Vaults, bank accounts, and credit cards with the safety-net warning.")},investments:()=>{e.Investments?e.Investments.render(n,l("tab-investments")):r("tab-investments","Investments","Phase 3","Track your Roth IRA holdings and YTD contributions.")},goals:()=>{e.Goals?e.Goals.render(n,l("tab-goals")):r("tab-goals","Goals","Coming Soon","Vault savings targets and yearly spending goal progress.")},calendar:()=>{e.Calendar?e.Calendar.render(n,l("tab-calendar")):r("tab-calendar","Calendar","Coming Soon","Full-year calendar with payday highlights and OT tracker.")},dashboard:()=>{e.Dashboard?e.Dashboard.render(n,l("tab-dashboard")):r("tab-dashboard","Dashboard","Phase 3","Net worth tracker and 12-month charts.")},settings:()=>{const t=l("tab-settings");t.innerHTML="",e.Setup.renderSettings(n,t)},setup:()=>{e.Setup.render(n,l("tab-setup"))},"paycheck-tracker":()=>{e.PaycheckTracker?e.PaycheckTracker.render(n,l("tab-paycheck-tracker")):r("tab-paycheck-tracker","Paycheck Tracker","Loading...","")},"next-year":()=>{e.NextYearPlanner?e.NextYearPlanner.render(n,l("tab-next-year")):r("tab-next-year","Next Year Planner","Loading...","")}};function r(e,t,n,a){l(e).innerHTML=`\n      <div class="stub-container">\n        <div class="stub-icon">🚧</div>\n        <h2>${t}</h2>\n        <p>${a||""}</p>\n        <p class="text-dim text-xs" style="margin-top:8px;">Coming in ${n}</p>\n      </div>\n    `}function o(e){if(!s[e])return void console.warn("[App] Unknown tab:",e);document.querySelectorAll(".tab-btn").forEach(t=>{const n=t.dataset.tab===e;t.classList.toggle("active",n),t.setAttribute("aria-selected",n?"true":"false")}),document.querySelectorAll(".tab-pane").forEach(t=>{t.classList.toggle("active",t.id===`tab-${e}`)}),a=e;try{s[e]()}catch(t){console.error(`[App] Error rendering tab "${e}":`,t),l(`tab-${e}`).innerHTML=`\n        <div class="stub-container">\n          <div class="stub-icon">⚠️</div>\n          <h2>Render Error</h2>\n          <p class="text-red">${t.message}</p>\n          <p class="text-dim text-xs">Check the console for details.</p>\n        </div>\n      `}try{localStorage.setItem("financeApp_activeTab",e)}catch(e){}const t=l(`tab-${e}`);t&&(t.scrollTop=0)}function i(e){if(a===e&&s[e])try{s[e]()}catch(e){console.error("[App] reactive refresh error:",e)}}let d=null;function c(){var e=document.getElementById("modal-backdrop"),t=document.getElementById("modal-content");e&&(e.classList.add("hidden"),e.setAttribute("aria-hidden","true"),e.onclick=null),t&&(t.innerHTML="")}function l(e){return document.getElementById(e)}e.getState=()=>n,e.setState=t=>{n=t,e.Storage.saveState(n),e.events.emit("state:changed",n)},e.showToast=function(e,t="success"){const n=document.getElementById("toast");n&&(d&&clearTimeout(d),n.textContent=e,n.className=`toast toast--${t} toast--visible`,d=setTimeout(()=>{n.classList.remove("toast--visible")},3e3))},e.showModal=function(e){var t=document.getElementById("modal-backdrop"),n=document.getElementById("modal-content");t&&n&&(n.innerHTML=e,t.classList.remove("hidden"),t.setAttribute("aria-hidden","false"),t.onclick=function(e){e.target===t&&c()})},e.closeModal=c,e.showTab=o,e.refreshCurrentTab=()=>o(a),document.addEventListener("DOMContentLoaded",function(){var t,a;if(function(){try{const t=localStorage.getItem("financeApp_theme")||"dark-neon";e.Setup&&e.Setup.applyTheme&&e.Setup.applyTheme(t)}catch(e){}}(),n=e.Storage.loadState(),t=(new Date).toISOString().slice(0,7),(a=n.lastSaveDate||null)&&a!==t&&n.subscriptions&&(n.subscriptions.forEach(function(e){e.paid=!1}),e.Storage.saveState(n),console.log("[App] New month — subscription paid flags reset.")),e.Lang){var s=n.settings&&n.settings.lang||"en";e.Lang._lang=s,e.Lang.init()}document.querySelectorAll(".tab-btn").forEach(e=>{e.addEventListener("click",()=>o(e.dataset.tab))});const r=["accounts","dashboard","planner","tracker"];e.events.on("state:changed",function(){r.forEach(i)}),window.visualViewport&&window.visualViewport.addEventListener("resize",function(){var e=document.querySelector(".modal-box");e&&(window.innerHeight-window.visualViewport.height>100?(e.classList.add("keyboard-open"),setTimeout(function(){var t=e.querySelector("input:focus, textarea:focus, select:focus");t&&t.scrollIntoView({behavior:"smooth",block:"center"})},150)):e.classList.remove("keyboard-open"))}),o((()=>{try{return localStorage.getItem("financeApp_activeTab")||"dashboard"}catch(e){return"setup"}})()),"serviceWorker"in navigator&&navigator.serviceWorker.register("sw.js").catch(()=>{}),console.log("[App] Finance Tracker v1.1 — Engine Upgrade loaded.")})}(window.App=window.App||{}),function(e){"use strict";function t(){var t=document.getElementById("modal-backdrop"),n=document.getElementById("modal-content");t&&n&&(n.innerHTML='<div style="padding:8px"><div style="text-align:center;margin-bottom:16px"><div style="font-size:2.5rem;margin-bottom:6px">💰</div><div style="font-size:1.2rem;font-weight:700">Welcome to Finance Tracker</div><div class="text-secondary text-sm" style="margin-top:4px">Let\'s get you set up in 3 quick steps.</div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px"><div style="text-align:center;padding:10px 6px;background:rgba(0,240,255,0.08);border-radius:8px;border:1px solid var(--neon-cyan)"><div style="font-size:1.3rem">💵</div><div class="text-xs font-bold" style="margin-top:4px">1. Income</div><div class="text-xs text-secondary">Payday &amp; amount</div></div><div style="text-align:center;padding:10px 6px;background:var(--surface-2);border-radius:8px"><div style="font-size:1.3rem">🏦</div><div class="text-xs font-bold" style="margin-top:4px">2. Accounts</div><div class="text-xs text-secondary">Banks &amp; cards</div></div><div style="text-align:center;padding:10px 6px;background:var(--surface-2);border-radius:8px"><div style="font-size:1.3rem">🎯</div><div class="text-xs font-bold" style="margin-top:4px">3. Goals</div><div class="text-xs text-secondary">Savings targets</div></div></div><div style="background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.2);border-radius:8px;padding:10px 12px;margin-bottom:16px"><div class="text-xs text-secondary">⚡ Quick start: Go to <strong>Settings → Setup</strong> to configure your income, accounts, and categories.<br><br>📱 Works offline on any device. Install it: tap <strong>Share → Add to Home Screen</strong> on iPhone, or the install icon in your browser address bar on PC.</div></div><div style="display:flex;gap:8px"><button class="btn btn--secondary" style="flex:1" id="wizard-skip">Skip for now</button><button class="btn btn--primary" style="flex:1" id="wizard-go">Go to Setup ➜</button></div></div>',t.classList.remove("hidden"),t.setAttribute("aria-hidden","false"),document.getElementById("wizard-skip").addEventListener("click",function(){localStorage.setItem("wizard_dismissed","1"),t.classList.add("hidden"),n.innerHTML=""}),document.getElementById("wizard-go").addEventListener("click",function(){localStorage.setItem("wizard_dismissed","1"),t.classList.add("hidden"),n.innerHTML="",e.showTab("settings")}))}var n=e.init;e.init=function(){(n&&n.apply(this,arguments),localStorage.getItem("wizard_dismissed"))||function(e){if(!e)return!0;var t=e.accounts&&e.accounts.bank||[],n=e.income&&e.income.paydayDates||[];return 0===t.length&&0===n.length}(e.Storage.loadState())&&setTimeout(t,600)}}(window.App=window.App||{});
+(function (window) {
+  "use strict";
+
+  const App = (window.App = window.App || {});
+  let state = null;
+  let activeView = "dashboard";
+
+  const views = {
+    dashboard: "tab-dashboard",
+    paycheck: "tab-paycheck",
+    accounts: "tab-accounts",
+    changes: "tab-changes",
+    sync: "tab-sync",
+    settings: "tab-settings",
+  };
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function save(nextState) {
+    state = nextState;
+    App.Storage.saveState(state);
+    render();
+  }
+
+  function showToast(message, type) {
+    const toast = $("toast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.className = `toast toast--${type || "success"} toast--visible`;
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove("toast--visible"), 2800);
+  }
+
+  function showView(view) {
+    activeView = views[view] ? view : "dashboard";
+    Object.entries(views).forEach(([key, paneId]) => {
+      const pane = $(paneId);
+      if (pane) pane.classList.toggle("active", key === activeView);
+    });
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+      const isActive = button.dataset.tab === activeView;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    render();
+    try {
+      localStorage.setItem("finance_dashboard_active_view", activeView);
+    } catch (err) {}
+  }
+
+  function render() {
+    if (!state) return;
+    App.Dashboard.render(state, {
+      activeView,
+      save,
+      showToast,
+      showView,
+    });
+  }
+
+  function applyTheme() {
+    const theme = (state && state.settings && state.settings.theme) || "dark";
+    document.documentElement.dataset.theme = theme;
+    document.body.dataset.theme = theme;
+  }
+
+  App.getState = () => state;
+  App.setState = save;
+  App.showToast = showToast;
+  App.showTab = showView;
+  App.refreshCurrentTab = render;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    state = App.Storage.loadState();
+    applyTheme();
+
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+      button.addEventListener("click", () => showView(button.dataset.tab));
+    });
+
+    const importInput = $("json-import");
+    if (importInput) {
+      importInput.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          const imported = await App.Storage.importJSON(file);
+          state = App.Storage.mergeImportedState(state, imported);
+          App.Storage.saveState(state);
+          showToast("Dashboard updated from JSON", "success");
+          render();
+        } catch (err) {
+          showToast(err.message || "Import failed", "error");
+        } finally {
+          event.target.value = "";
+        }
+      });
+    }
+
+    const last = (() => {
+      try {
+        return localStorage.getItem("finance_dashboard_active_view") || "dashboard";
+      } catch (err) {
+        return "dashboard";
+      }
+    })();
+    showView(last);
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+  });
+})(window);

@@ -1,7 +1,7 @@
 {
-  "name": "Finance Tracker",
+  "name": "Finance Dashboard",
   "short_name": "Finance",
-  "description": "Personal finance tracker for David & Yamel \u2014 budgets, paychecks, investments.",
+  "description": "Workbook dashboard and JSON change bridge for House Budgetper.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0d12",
