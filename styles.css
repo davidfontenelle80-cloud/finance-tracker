@@ -89,3 +89,195 @@ textarea{resize:vertical}
   .hero-actions .btn,.button-row .btn{flex:1}
   .edit-row--card{grid-template-columns:1fr 95px}
 }
+
+/* Smooth Ministry/Overtime dashboard theme */
+:root,
+html[data-theme="dark"],
+body[data-theme="dark"]{
+  --bg-primary:#050607;
+  --bg-secondary:#111318;
+  --bg-tertiary:#171a21;
+  --bg-hover:#1d222b;
+  --card-bg:#111318;
+  --color-danger:#f2817f;
+  --text-primary:#f7f8fb;
+  --text-secondary:#a0a8bd;
+  --text-dim:#768198;
+  --neon-cyan:#5be3a0;
+  --neon-green:#58c18f;
+  --neon-magenta:#7e9cff;
+  --neon-red:#f2817f;
+  --neon-amber:#f4c152;
+  --border:rgba(143,151,184,.18);
+  --border-focus:#5be3a0;
+  --glow-cyan:0 12px 28px rgba(91,227,160,.18);
+  --glow-magenta:0 12px 28px rgba(126,156,255,.14);
+  --glow-green:0 12px 28px rgba(88,193,143,.2);
+  --glow-red:0 12px 28px rgba(242,129,127,.16);
+  --card-radius:18px;
+  --btn-radius:14px;
+  --color-primary:#5be3a0;
+  --color-primary-dark:#3fbf84;
+  --color-on-primary:#06100b;
+  --color-bg:#050607;
+  --color-surface:#111318;
+  --color-surface-2:#171a21;
+  --color-border:rgba(143,151,184,.18);
+  --color-overlay:rgba(0,0,0,.62);
+  --color-text:#f7f8fb;
+  --color-text-muted:#a0a8bd;
+  --color-text-dim:#768198;
+  --color-error:#f2817f;
+  --color-success:#58c18f;
+  --color-warning:#f4c152;
+  --shadow-glow:0 18px 42px rgba(91,227,160,.16);
+  --radius-sm:14px;
+  --radius-md:18px;
+  --radius-lg:22px;
+  --radius-xl:28px;
+}
+
+html[data-theme="light"],
+body[data-theme="light"],
+[data-theme="light"]{
+  --bg-primary:#eef1f5;
+  --bg-secondary:#ffffff;
+  --bg-tertiary:#e7ecf1;
+  --bg-hover:#dde5ec;
+  --card-bg:#ffffff;
+  --text-primary:#172018;
+  --text-secondary:#647184;
+  --text-dim:#8a95a5;
+  --neon-cyan:#12a06a;
+  --neon-green:#12a06a;
+  --neon-magenta:#486ee8;
+  --neon-red:#c84748;
+  --neon-amber:#b87909;
+  --border:#d7dee8;
+  --border-focus:#12a06a;
+  --glow-cyan:0 10px 24px rgba(18,160,106,.15);
+  --glow-green:0 10px 24px rgba(18,160,106,.16);
+  --glow-red:0 10px 24px rgba(200,71,72,.12);
+  --color-on-primary:#ffffff;
+  --color-overlay:rgba(17,24,39,.42);
+}
+
+body{
+  background:
+    radial-gradient(circle at 18% 0%,rgba(91,227,160,.13),transparent 34%),
+    radial-gradient(circle at 82% 4%,rgba(126,156,255,.08),transparent 28%),
+    var(--bg-primary);
+}
+
+.app-header{
+  background:color-mix(in srgb,var(--bg-primary) 82%,transparent);
+  border-bottom-color:rgba(143,151,184,.14);
+  box-shadow:0 10px 30px rgba(0,0,0,.16);
+}
+
+.tab-nav{
+  background:color-mix(in srgb,var(--bg-secondary) 96%,transparent);
+  border-top-color:rgba(143,151,184,.16);
+  box-shadow:0 -12px 30px rgba(0,0,0,.2);
+}
+
+.tab-btn.active{
+  color:var(--neon-green);
+  border-top-color:var(--neon-green);
+}
+
+.tab-btn.active .tab-icon{
+  filter:drop-shadow(0 0 10px rgba(91,227,160,.22));
+}
+
+.card,
+.kpi,
+.status-card,
+.mode-card,
+.workflow-card,
+.stat-block,
+.modal-box{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bg-secondary) 96%,#fff 4%),var(--bg-secondary));
+  border-color:rgba(143,151,184,.18);
+  border-radius:var(--radius-md);
+  box-shadow:0 12px 32px rgba(0,0,0,.12);
+}
+
+.workbook-hero{
+  background:
+    linear-gradient(135deg,rgba(91,227,160,.17),rgba(126,156,255,.09)),
+    var(--bg-secondary);
+  border-color:rgba(91,227,160,.26);
+  border-radius:22px;
+  box-shadow:0 18px 42px rgba(0,0,0,.18);
+}
+
+.kpi--good,
+.status-card--ok{
+  border-color:rgba(91,227,160,.34);
+  box-shadow:0 14px 30px rgba(91,227,160,.12);
+}
+
+.kpi--bad,
+.status-card--warn,
+.danger-zone{
+  border-color:rgba(242,129,127,.34);
+  box-shadow:0 14px 30px rgba(242,129,127,.1);
+}
+
+input[type=date],
+input[type=email],
+input[type=number],
+input[type=text],
+select,
+textarea,
+.path-box{
+  background:color-mix(in srgb,var(--bg-tertiary) 90%,#fff 10%);
+  border-color:rgba(143,151,184,.2);
+  border-radius:14px;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:var(--neon-green);
+  box-shadow:0 0 0 3px rgba(91,227,160,.16);
+}
+
+.btn{
+  border-radius:14px;
+}
+
+.btn--primary,
+.workflow-actions .btn-execute,
+.theme-seg-btn.active{
+  background:linear-gradient(135deg,#5be3a0,#58c18f);
+  color:#06100b;
+  box-shadow:0 12px 24px rgba(91,227,160,.18);
+}
+
+.btn--primary:hover,
+.workflow-actions .btn-execute:hover{
+  box-shadow:0 14px 28px rgba(91,227,160,.24);
+}
+
+.btn--secondary{
+  background:rgba(255,255,255,.02);
+  border-color:rgba(143,151,184,.2);
+}
+
+.btn--secondary:hover,
+.link-btn{
+  color:var(--neon-green);
+  border-color:var(--neon-green);
+}
+
+.section-title,
+.eyebrow,
+.stub-container h2{
+  color:var(--neon-green);
+}
+
+.safety-banner--warn{
+  animation:none;
+}
