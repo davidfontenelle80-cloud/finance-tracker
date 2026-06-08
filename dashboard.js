@@ -214,13 +214,30 @@
     `;
   }
 
-  function renderSync(state) {
+  function renderSync(state, api) {
+    const cloud = (api && api.cloudStatus) || {};
+    const cloudLine = cloud.ready
+      ? cloud.signedIn
+        ? `Signed in as ${cloud.email || "cloud account"}. Last cloud save on this device: ${cloud.lastSaved || "not saved yet"}.`
+        : "Not signed in. Sign in once, then this device can save and restore your Finance dashboard."
+      : "Cloud backup is still loading. If this stays here, Firebase scripts did not load.";
     return `
       <div class="view-title">
         <div>
-          <div class="eyebrow">JSON bridge</div>
+          <div class="eyebrow">Cloud and JSON bridge</div>
           <h2>Workbook Sync</h2>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cloud Backup</div>
+        <p class="help-text">${esc(cloudLine)}</p>
+        <div class="button-row">
+          ${button(cloud.signedIn ? "Account" : "Sign in / create account", "cloud-account", "btn--secondary")}
+          ${button("Cloud Save", "cloud-save", "btn--primary")}
+          ${button("Cloud Restore", "cloud-restore", "btn--secondary")}
+        </div>
+        <p class="help-text mt-8">Use the same account on your phone, tablet, and PC. Backups are saved under your Firebase user ID so another person's account will not overwrite yours.</p>
       </div>
 
       <div class="card">
@@ -467,6 +484,9 @@
     if (action === "open-import") return document.getElementById("json-import").click();
     if (action === "export-changes") return Storage().exportJSON(state, "changes");
     if (action === "export-snapshot") return Storage().exportJSON(state, "snapshot");
+    if (action === "cloud-account") return api.cloudAccount && api.cloudAccount();
+    if (action === "cloud-save") return api.cloudSave && api.cloudSave();
+    if (action === "cloud-restore") return api.cloudRestore && api.cloudRestore();
     if (action === "add-note") return openNoteModal(state, api);
 
     if (action === "done-note") {
@@ -524,7 +544,7 @@
 
       Object.entries(screens).forEach(([key, [el, renderer]]) => {
         if (!el || key !== api.activeView) return;
-        el.innerHTML = renderer(state);
+        el.innerHTML = renderer(state, api);
         wire(el, state, api);
       });
     },

@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v71-smooth-dashboard-theme';
+const CACHE_VERSION = 'finance-tracker-v72-cloud-backup';
 
 /**
  * All URLs that make up the app shell.
@@ -36,6 +36,8 @@ const PRECACHE_URLS = [
   './js/error-boundary.js',
   './js/a11y.js',
   './js/perf.js',
+  './js/firebase/firebase-config.js',
+  './js/firebase/cloud-backup.js',
   './js/components/button.js',
   './js/components/modal.js',
   './js/components/card.js',

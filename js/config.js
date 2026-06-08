@@ -24,8 +24,8 @@
   window.KHub = window.KHub || {};
   window.KHub.Config = {
     // ── Identity ──────────────────────────────────────────
-    appName:   'Finance Tracker',
-    version:   '1.0.0',
+    appName:   'Finance Dashboard',
+    version:   '1.1.0',
     repoOwner: 'davidfontenelle80-cloud',
     repoName:  'finance-tracker',
 
@@ -37,8 +37,8 @@
     // ── Feature flags ─────────────────────────────────────
     // Set to true to activate. See individual module files for setup steps.
     features: {
-      auth:     false,   // -> js/auth.js
-      firebase: false,   // -> firebase/firebase-config.js
+      auth:     true,    // -> KHub.CloudAuth
+      firebase: true,    // -> js/firebase/firebase-config.js
     },
 
     // ── Logging ───────────────────────────────────────────
