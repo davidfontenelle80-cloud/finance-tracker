@@ -251,7 +251,13 @@
       }
       var provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      return auth().signInWithPopup(provider);
+      return auth().signInWithPopup(provider).catch(function (e) {
+        var code = e && (e.code || e.message) || '';
+        if (code.indexOf('auth/popup-blocked') !== -1 || code.indexOf('auth/popup-closed-by-user') !== -1) {
+          return auth().signInWithRedirect(provider);
+        }
+        throw e;
+      });
     },
     signOut: function () {
       var a = auth();
