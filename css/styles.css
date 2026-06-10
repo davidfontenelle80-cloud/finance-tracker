@@ -1,4 +1,4 @@
-:root{--bg-primary:#0a0e1a;--bg-secondary:#131826;--bg-tertiary:#1c2333;--bg-hover:#222b3d;--card-bg:#131826;--color-danger:#ff3d00;--text-primary:#e4e8f0;--text-secondary:#8b95a8;--text-dim:#5a6478;--neon-cyan:#00f0ff;--neon-magenta:#ff00ea;--neon-green:#00ff88;--neon-red:#ff3860;--neon-amber:#ffb000;--border:#2a3346;--border-focus:var(--neon-cyan);--glow-cyan:0 0 12px rgba(0, 240, 255, 0.4);--glow-magenta:0 0 12px rgba(255, 0, 234, 0.4);--glow-green:0 0 10px rgba(0, 255, 136, 0.35);--glow-red:0 0 10px rgba(255, 56, 96, 0.35);--tab-nav-height:66px;--page-pad:16px;--card-radius:10px;--btn-radius:8px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-mono:"SF Mono","Fira Code",Consolas,monospace;
+:root{--bg-primary:#0a0e1a;--bg-secondary:#131826;--bg-tertiary:#1c2333;--bg-hover:#222b3d;--card-bg:#131826;--color-danger:#ff3d00;--text-primary:#e4e8f0;--text-secondary:#8b95a8;--text-dim:#5a6478;--neon-cyan:#00f0ff;--neon-magenta:#ff00ea;--neon-green:#00ff88;--neon-red:#ff3860;--neon-amber:#ffb000;--border:#2a3346;--border-focus:var(--neon-cyan);--glow-cyan:0 0 12px rgba(0, 240, 255, 0.4);--glow-magenta:0 0 12px rgba(255, 0, 234, 0.4);--glow-green:0 0 10px rgba(0, 255, 136, 0.35);--glow-red:0 0 10px rgba(255, 56, 96, 0.35);--tab-nav-height:66px;--page-pad:16px;--card-radius:var(--radius-lg);--btn-radius:var(--radius-md);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--font-mono:"SF Mono","Fira Code",Consolas,monospace;
   /* ── KHub house tokens (additive) ── */
   --color-primary:        var(--neon-cyan);
   --color-primary-dark:   #00c8d4;
@@ -7,7 +7,6 @@
   --color-surface:        var(--bg-secondary);
   --color-surface-2:      var(--bg-tertiary);
   --color-border:         var(--border);
-  --color-overlay:        var(--color-overlay);
   --color-text:           var(--text-primary);
   --color-text-muted:     var(--text-secondary);
   --color-text-dim:       var(--text-dim);
@@ -114,8 +113,8 @@ body[data-theme="dark"]{
   --glow-magenta:0 12px 28px rgba(126,156,255,.14);
   --glow-green:0 12px 28px rgba(88,193,143,.2);
   --glow-red:0 12px 28px rgba(242,129,127,.16);
-  --card-radius:18px;
-  --btn-radius:14px;
+  --card-radius:var(--radius-lg);
+  --btn-radius:var(--radius-md);
   --color-primary:#5be3a0;
   --color-primary-dark:#3fbf84;
   --color-on-primary:#06100b;
@@ -131,10 +130,28 @@ body[data-theme="dark"]{
   --color-success:#58c18f;
   --color-warning:#f4c152;
   --shadow-glow:0 18px 42px rgba(91,227,160,.16);
-  --radius-sm:14px;
-  --radius-md:18px;
-  --radius-lg:22px;
-  --radius-xl:28px;
+  --bg-decor:radial-gradient(circle at 18% 0%,rgba(91,227,160,.13),transparent 34%),radial-gradient(circle at 82% 4%,rgba(126,156,255,.08),transparent 28%);
+  --line-soft:rgba(143,151,184,.14);
+  --line-mid:rgba(143,151,184,.16);
+  --line-strong:rgba(143,151,184,.2);
+  --shadow-header:0 10px 30px rgba(0,0,0,.16);
+  --shadow-nav:0 -12px 30px rgba(0,0,0,.2);
+  --shadow-card:0 12px 32px rgba(0,0,0,.12);
+  --shadow-hero:0 18px 42px rgba(0,0,0,.18);
+  --icon-glow:drop-shadow(0 0 10px rgba(91,227,160,.22));
+  --card-surface:linear-gradient(180deg,color-mix(in srgb,var(--bg-secondary) 96%,#ffffff 4%),var(--bg-secondary));
+  --hero-surface:linear-gradient(135deg,rgba(91,227,160,.17),rgba(126,156,255,.09));
+  --hero-border:rgba(91,227,160,.26);
+  --wash-good-border:rgba(91,227,160,.34);
+  --wash-good-shadow:0 14px 30px rgba(91,227,160,.12);
+  --wash-bad-border:rgba(242,129,127,.34);
+  --wash-bad-shadow:0 14px 30px rgba(242,129,127,.1);
+  --input-surface:color-mix(in srgb,var(--bg-tertiary) 90%,#ffffff 10%);
+  --focus-ring:0 0 0 3px rgba(91,227,160,.16);
+  --btn-primary-surface:linear-gradient(135deg,var(--neon-cyan),var(--neon-green));
+  --btn-glow:0 12px 24px rgba(91,227,160,.18);
+  --btn-glow-hover:0 14px 28px rgba(91,227,160,.24);
+  --surface-ghost:rgba(255,255,255,.02);
 }
 
 html[data-theme="light"],
@@ -160,25 +177,42 @@ body[data-theme="light"],
   --glow-red:0 10px 24px rgba(200,71,72,.12);
   --color-on-primary:#ffffff;
   --color-overlay:rgba(17,24,39,.42);
+  --bg-decor:radial-gradient(circle at 18% 0%,rgba(18,160,106,.08),transparent 34%),radial-gradient(circle at 82% 4%,rgba(72,110,232,.05),transparent 28%);
+  --line-soft:rgba(23,32,24,.08);
+  --line-mid:rgba(23,32,24,.1);
+  --line-strong:rgba(23,32,24,.12);
+  --shadow-header:0 10px 30px rgba(23,32,24,.08);
+  --shadow-nav:0 -12px 30px rgba(23,32,24,.1);
+  --shadow-card:0 12px 32px rgba(23,32,24,.08);
+  --shadow-hero:0 18px 42px rgba(23,32,24,.1);
+  --icon-glow:drop-shadow(0 0 10px rgba(18,160,106,.18));
+  --hero-surface:linear-gradient(135deg,rgba(18,160,106,.12),rgba(72,110,232,.07));
+  --hero-border:rgba(18,160,106,.24);
+  --wash-good-border:rgba(18,160,106,.3);
+  --wash-good-shadow:0 14px 30px rgba(18,160,106,.1);
+  --wash-bad-border:rgba(200,71,72,.3);
+  --wash-bad-shadow:0 14px 30px rgba(200,71,72,.08);
+  --input-surface:#ffffff;
+  --focus-ring:0 0 0 3px rgba(18,160,106,.18);
+  --btn-glow:0 12px 24px rgba(18,160,106,.16);
+  --btn-glow-hover:0 14px 28px rgba(18,160,106,.22);
+  --surface-ghost:rgba(23,32,24,.03);
 }
 
 body{
-  background:
-    radial-gradient(circle at 18% 0%,rgba(91,227,160,.13),transparent 34%),
-    radial-gradient(circle at 82% 4%,rgba(126,156,255,.08),transparent 28%),
-    var(--bg-primary);
+  background:var(--bg-decor),var(--bg-primary);
 }
 
 .app-header{
   background:color-mix(in srgb,var(--bg-primary) 82%,transparent);
-  border-bottom-color:rgba(143,151,184,.14);
-  box-shadow:0 10px 30px rgba(0,0,0,.16);
+  border-bottom-color:var(--line-soft);
+  box-shadow:var(--shadow-header);
 }
 
 .tab-nav{
   background:color-mix(in srgb,var(--bg-secondary) 96%,transparent);
-  border-top-color:rgba(143,151,184,.16);
-  box-shadow:0 -12px 30px rgba(0,0,0,.2);
+  border-top-color:var(--line-mid);
+  box-shadow:var(--shadow-nav);
 }
 
 .tab-btn.active{
@@ -187,7 +221,7 @@ body{
 }
 
 .tab-btn.active .tab-icon{
-  filter:drop-shadow(0 0 10px rgba(91,227,160,.22));
+  filter:var(--icon-glow);
 }
 
 .card,
@@ -197,32 +231,30 @@ body{
 .workflow-card,
 .stat-block,
 .modal-box{
-  background:linear-gradient(180deg,color-mix(in srgb,var(--bg-secondary) 96%,#fff 4%),var(--bg-secondary));
-  border-color:rgba(143,151,184,.18);
-  border-radius:var(--radius-md);
-  box-shadow:0 12px 32px rgba(0,0,0,.12);
+  background:var(--card-surface);
+  border-color:var(--border);
+  border-radius:var(--card-radius);
+  box-shadow:var(--shadow-card);
 }
 
 .workbook-hero{
-  background:
-    linear-gradient(135deg,rgba(91,227,160,.17),rgba(126,156,255,.09)),
-    var(--bg-secondary);
-  border-color:rgba(91,227,160,.26);
-  border-radius:22px;
-  box-shadow:0 18px 42px rgba(0,0,0,.18);
+  background:var(--hero-surface),var(--bg-secondary);
+  border-color:var(--hero-border);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-hero);
 }
 
 .kpi--good,
 .status-card--ok{
-  border-color:rgba(91,227,160,.34);
-  box-shadow:0 14px 30px rgba(91,227,160,.12);
+  border-color:var(--wash-good-border);
+  box-shadow:var(--wash-good-shadow);
 }
 
 .kpi--bad,
 .status-card--warn,
 .danger-zone{
-  border-color:rgba(242,129,127,.34);
-  box-shadow:0 14px 30px rgba(242,129,127,.1);
+  border-color:var(--wash-bad-border);
+  box-shadow:var(--wash-bad-shadow);
 }
 
 input[type=date],
@@ -232,38 +264,38 @@ input[type=text],
 select,
 textarea,
 .path-box{
-  background:color-mix(in srgb,var(--bg-tertiary) 90%,#fff 10%);
-  border-color:rgba(143,151,184,.2);
-  border-radius:14px;
+  background:var(--input-surface);
+  border-color:var(--line-strong);
+  border-radius:var(--radius-md);
 }
 
 input:focus,
 select:focus,
 textarea:focus{
   border-color:var(--neon-green);
-  box-shadow:0 0 0 3px rgba(91,227,160,.16);
+  box-shadow:var(--focus-ring);
 }
 
 .btn{
-  border-radius:14px;
+  border-radius:var(--btn-radius);
 }
 
 .btn--primary,
 .workflow-actions .btn-execute,
 .theme-seg-btn.active{
-  background:linear-gradient(135deg,#5be3a0,#58c18f);
-  color:#06100b;
-  box-shadow:0 12px 24px rgba(91,227,160,.18);
+  background:var(--btn-primary-surface);
+  color:var(--color-on-primary);
+  box-shadow:var(--btn-glow);
 }
 
 .btn--primary:hover,
 .workflow-actions .btn-execute:hover{
-  box-shadow:0 14px 28px rgba(91,227,160,.24);
+  box-shadow:var(--btn-glow-hover);
 }
 
 .btn--secondary{
-  background:rgba(255,255,255,.02);
-  border-color:rgba(143,151,184,.2);
+  background:var(--surface-ghost);
+  border-color:var(--line-strong);
 }
 
 .btn--secondary:hover,

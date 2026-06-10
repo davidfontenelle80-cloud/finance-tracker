@@ -288,6 +288,17 @@
         </label>
       </div>
 
+      <div class="card">
+        <div class="card-title mb-8">Appearance</div>
+        <div class="theme-toggle-row">
+          <span class="text-secondary text-sm">Theme</span>
+          <div class="theme-segment">
+            <button class="theme-seg-btn${(state.settings.theme || "dark") === "dark" ? " active" : ""}" data-action="set-theme-dark">Dark</button>
+            <button class="theme-seg-btn${state.settings.theme === "light" ? " active" : ""}" data-action="set-theme-light">Light</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card danger-zone">
         <div class="card-title">Reset</div>
         <p class="help-text">This clears this dashboard's local data only. It does not touch your Excel workbook.</p>
@@ -522,6 +533,13 @@
       const next = Storage().clone(state);
       next.vaults.push({ id: Storage().id(), name: "New vault", balance: 0, target: 0 });
       api.save(Storage().addChange(next, { type: "add", label: "Vault added", target: "Bank Accounts" }));
+      return;
+    }
+
+    if (action === "set-theme-dark" || action === "set-theme-light") {
+      const next = Storage().clone(state);
+      next.settings.theme = action === "set-theme-light" ? "light" : "dark";
+      api.save(next);
       return;
     }
 

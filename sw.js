@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v74-email-cloud-auth';
+const CACHE_VERSION = 'finance-tracker-v75-khub-house-finish';
 
 /**
  * All URLs that make up the app shell.
@@ -28,7 +28,7 @@ const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
-  './styles.css',
+  './css/styles.css',
   './css/dark-mode.css',
   './css/components.css',
   './css/responsive.css',

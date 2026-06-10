@@ -25,6 +25,7 @@
   function save(nextState) {
     state = nextState;
     App.Storage.saveState(state);
+    applyTheme();
     render();
     scheduleCloudSave();
   }
@@ -73,6 +74,8 @@
     const theme = (state && state.settings && state.settings.theme) || "dark";
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "light" ? "#eef1f5" : "#0b0d12");
   }
 
   App.getState = () => state;
