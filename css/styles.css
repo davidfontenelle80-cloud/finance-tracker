@@ -313,3 +313,26 @@ textarea:focus{
 .safety-banner--warn{
   animation:none;
 }
+
+
+/* ── Ministry-style bottom nav: centered grid, icon chips, blur ── */
+:root{--tab-nav-height:76px}
+.tab-nav{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  max-width:680px;margin:0 auto;height:auto;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
+  overflow:visible;
+  background:color-mix(in srgb,var(--bg-secondary) 92%,transparent);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+}
+.tab-btn{width:auto;max-width:none;min-width:0;flex:initial;border-top:none;gap:2px;padding:4px 0}
+.tab-btn.active{border-top:none}
+.tab-icon{
+  width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-md);font-size:18px;line-height:1;
+  transition:background .15s;
+}
+.tab-btn.active .tab-icon{background:color-mix(in srgb,var(--neon-green) 15%,transparent)}
+.tab-label{font-size:9px;font-weight:700;letter-spacing:.04em}
+@media (min-width:700px){.tab-nav{border-radius:var(--radius-lg) var(--radius-lg) 0 0}}
