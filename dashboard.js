@@ -4,6 +4,78 @@
   const App = (window.App = window.App || {});
   const Storage = () => App.Storage;
 
+  // ── EN/ES strings ──────────────────────────────────────────
+  const STR = {
+    en: {
+      tab_dashboard: "Home", tab_accounts: "Accounts", tab_cards: "Cards", tab_paycheck: "Paycheck",
+      tab_changes: "Changes", tab_settings: "Settings", subtitle: "Home base for the House Budget",
+      net_worth: "Net worth", bank_cash: "Bank cash", vaults: "Vaults", card_debt: "Card debt",
+      cards_covered: "Cards covered", cards_short: "Cards short", vs_cards: "Transfer account vs total card balance",
+      next_paycheck: "Next Paycheck", open: "Open", no_plan: "No paycheck plan yet.",
+      left_after: "Left after plan", over_planned: "Over planned", notes_changes: "Notes & Changes",
+      add: "Add", no_notes: "No open notes.", credit_cards: "Credit Cards", total_owed: "Total owed",
+      total_available: "Total available", nw_history: "Net worth history", no_history: "History builds as you save changes.",
+      banking: "Banking", bank_accounts: "Bank Accounts", savings_vaults: "Savings Vaults", investments: "Investments",
+      add_item: "+ Add item", add_card: "+ Add card", add_investment: "+ Add investment", add_bill: "+ Add bill",
+      quick_edit: "Quick edit", accounts: "Accounts", balance: "Balance", available: "Available",
+      limit: "Limit", change_limit: "Change limit", limit_locked: "Tap to unlock", used: "used",
+      enter_either: "Type the new balance OR the available credit. The other fills in from the limit.",
+      save: "Save", delete: "Delete", cards_title: "Cards", cards_eyebrow: "Balance or available, either works",
+      register: "Register", register_sub: "Every balance change, newest first", no_register: "No changes logged yet.",
+      bills: "Recurring Bills", due_day: "Due day", bills_total: "Monthly bills total",
+      paycheck_amount: "Paycheck amount", next_payday: "Next payday", allocation: "Allocation Checklist",
+      add_line: "+ Add line", cloud: "Cloud Backup", import_title: "Import From Workbook or Backup",
+      import_help: "Import a dashboard snapshot or workbook-generated JSON to refresh this dashboard.",
+      choose_json: "Choose JSON file", export_title: "Export For Workbook",
+      export_help: "Export pending changes for spreadsheet updates, or a full snapshot as a backup.",
+      export_changes: "Export pending changes", export_snapshot: "Export full snapshot",
+      source_workbook: "Source Workbook", language: "Language", theme: "Theme", dark: "Dark", light: "Light",
+      appearance: "Appearance", reset: "Reset", open_notes: "Open", pending_json: "Pending JSON Changes",
+      completed_notes: "Completed Notes", clear_pending: "Clear pending after workbook update",
+      no_pending: "No pending changes.", no_completed: "No completed notes.", no_items: "No items yet.", no_cards: "No cards yet.",
+    },
+    es: {
+      tab_dashboard: "Inicio", tab_accounts: "Cuentas", tab_cards: "Tarjetas", tab_paycheck: "Cheque",
+      tab_changes: "Cambios", tab_settings: "Ajustes", subtitle: "Base del presupuesto de la casa",
+      net_worth: "Patrimonio neto", bank_cash: "Efectivo en bancos", vaults: "Apartados", card_debt: "Deuda de tarjetas",
+      cards_covered: "Tarjetas cubiertas", cards_short: "Tarjetas al descubierto", vs_cards: "Cuenta de transferencia vs saldo total de tarjetas",
+      next_paycheck: "Próximo cheque", open: "Abrir", no_plan: "Aún no hay plan de cheque.",
+      left_after: "Sobra tras el plan", over_planned: "Plan excedido", notes_changes: "Notas y cambios",
+      add: "Agregar", no_notes: "Sin notas abiertas.", credit_cards: "Tarjetas de crédito", total_owed: "Total adeudado",
+      total_available: "Total disponible", nw_history: "Historial de patrimonio", no_history: "El historial crece al guardar cambios.",
+      banking: "Bancos", bank_accounts: "Cuentas bancarias", savings_vaults: "Apartados de ahorro", investments: "Inversiones",
+      add_item: "+ Agregar", add_card: "+ Agregar tarjeta", add_investment: "+ Agregar inversión", add_bill: "+ Agregar factura",
+      quick_edit: "Edición rápida", accounts: "Cuentas", balance: "Saldo", available: "Disponible",
+      limit: "Límite", change_limit: "Cambiar límite", limit_locked: "Toca para desbloquear", used: "usado",
+      enter_either: "Escribe el saldo nuevo O el crédito disponible. El otro se calcula con el límite.",
+      save: "Guardar", delete: "Eliminar", cards_title: "Tarjetas", cards_eyebrow: "Saldo o disponible, cualquiera sirve",
+      register: "Registro", register_sub: "Cada cambio de saldo, lo más reciente primero", no_register: "Sin cambios registrados.",
+      bills: "Facturas recurrentes", due_day: "Día de pago", bills_total: "Total mensual de facturas",
+      paycheck_amount: "Monto del cheque", next_payday: "Próximo día de pago", allocation: "Lista de asignación",
+      add_line: "+ Agregar línea", cloud: "Respaldo en la nube", import_title: "Importar del workbook o respaldo",
+      import_help: "Importa un respaldo JSON del dashboard o generado desde el workbook.",
+      choose_json: "Elegir archivo JSON", export_title: "Exportar para el workbook",
+      export_help: "Exporta cambios pendientes para actualizar la hoja, o un respaldo completo.",
+      export_changes: "Exportar cambios pendientes", export_snapshot: "Exportar respaldo completo",
+      source_workbook: "Workbook de origen", language: "Idioma", theme: "Tema", dark: "Oscuro", light: "Claro",
+      appearance: "Apariencia", reset: "Restablecer", open_notes: "Abiertas", pending_json: "Cambios JSON pendientes",
+      completed_notes: "Notas completadas", clear_pending: "Limpiar pendientes tras actualizar workbook",
+      no_pending: "Sin cambios pendientes.", no_completed: "Sin notas completadas.", no_items: "Sin elementos.", no_cards: "Sin tarjetas.",
+    },
+  };
+  let LANG = "en";
+  const t = (key) => (STR[LANG] && STR[LANG][key]) || STR.en[key] || key;
+
+  function applyChrome() {
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      const label = btn.querySelector(".tab-label");
+      if (label) label.textContent = t("tab_" + btn.dataset.tab);
+    });
+    const sub = document.querySelector(".app-header__subtitle");
+    if (sub) sub.textContent = t("subtitle");
+    document.documentElement.lang = LANG;
+  }
+
   function esc(value) {
     return String(value || "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;",
@@ -26,6 +98,9 @@
     const bank = total(state.accounts, "balance");
     const vaults = total(state.vaults, "balance");
     const cards = total(state.creditCards, "balance");
+    const invest = total(state.investments, "balance");
+    const cardAvailable = total(state.creditCards, "available");
+    const billsTotal = total(state.bills, "amount");
     const transfer = (state.accounts || []).find((item) => item.role === "transfer");
     const paycheckTotal = total(state.paycheckPlan, "amount");
     return {
@@ -34,7 +109,10 @@
       cards,
       transferBalance: transfer ? Number(transfer.balance) || 0 : 0,
       transferName: transfer ? transfer.name : "Transfer account",
-      netWorth: bank + vaults - cards,
+      invest,
+      cardAvailable,
+      billsTotal,
+      netWorth: bank + vaults + invest - cards,
       transferGap: (transfer ? Number(transfer.balance) || 0 : 0) - cards,
       paycheckTotal,
       paycheckLeft: (Number(state.settings.paycheckAmount) || 0) - paycheckTotal,
@@ -103,7 +181,7 @@
         <div class="card">
           <div class="card-head">
             <div>
-              <div class="card-title">Notes & Changes</div>
+              <div class="card-title">${t("notes_changes")}</div>
               <div class="card-subtitle">${m.openNotes} open notes - ${m.pending} pending workbook changes</div>
             </div>
             <button class="link-btn" data-action="add-note">Add</button>
@@ -113,6 +191,51 @@
           </div>
         </div>
       </section>
+
+      <section class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">${t("credit_cards")}</div>
+              <div class="card-subtitle">${(state.creditCards || []).length} cards</div>
+            </div>
+            <button class="link-btn" data-action="go-cards">${t("open")}</button>
+          </div>
+          <div class="mini-list">
+            ${row(t("total_owed"), money(m.cards))}
+            ${row(t("total_available"), money(m.cardAvailable))}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">${t("nw_history")}</div>
+          ${sparkline(state.snapshots)}
+        </div>
+      </section>
+    `;
+  }
+
+  function sparkline(snapshots) {
+    const points = (snapshots || []).slice(-60);
+    if (points.length < 2) return `<div class="empty-state">${t("no_history")}</div>`;
+    const values = points.map((p) => Number(p.netWorth) || 0);
+    const min = Math.min(...values), max = Math.max(...values);
+    const span = max - min || 1;
+    const coords = values.map((v, i) => {
+      const x = (i / (values.length - 1)) * 280 + 10;
+      const y = 64 - ((v - min) / span) * 48;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const lastDelta = values[values.length - 1] - values[0];
+    return `
+      <svg viewBox="0 0 300 80" style="width:100%;height:64px" role="img" aria-label="${t("nw_history")}">
+        <polyline points="${coords.join(" ")}" fill="none" stroke="var(--color-primary)" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <div class="summary-line ${lastDelta >= 0 ? "text-green" : "text-red"}">
+        <span>${points[0].date} → ${points[points.length - 1].date}</span>
+        <strong>${lastDelta >= 0 ? "+" : "-"}${money(Math.abs(lastDelta))}</strong>
+      </div>
     `;
   }
 
@@ -148,6 +271,30 @@
           <strong>${money(Math.abs(m.paycheckLeft))}</strong>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${t("bills")}</div>
+            <div class="card-subtitle">${t("due_day")} 1-31</div>
+          </div>
+          <button class="link-btn" data-action="add-bill">${t("add_bill")}</button>
+        </div>
+        <div class="editor-list">
+          ${(state.bills || []).map((bill) => `
+            <div class="edit-row" data-type="bill" data-id="${esc(bill.id)}">
+              <input type="text" value="${esc(bill.name)}" data-edit="name" aria-label="Bill name">
+              <input type="number" step="0.01" value="${esc(bill.amount)}" data-edit="amount" aria-label="Amount">
+              <input type="number" step="1" min="1" max="31" value="${esc(bill.dueDay || 1)}" data-edit="dueDay" aria-label="${t("due_day")}">
+              <button class="btn btn--secondary btn--sm" data-action="delete-row" data-type="bill" data-id="${esc(bill.id)}">${t("delete")}</button>
+            </div>
+          `).join("") || empty(t("no_items"))}
+        </div>
+        <div class="summary-line">
+          <span>${t("bills_total")}</span>
+          <strong>${money(m.billsTotal)}</strong>
+        </div>
+      </div>
     `;
   }
 
@@ -169,9 +316,9 @@
         ${kpi("Transfer gap", money(m.transferGap), m.transferGap >= 0 ? "good" : "bad")}
       </section>
 
-      ${accountGroup("Bank Accounts", "account", state.accounts || [])}
-      ${accountGroup("Savings Vaults", "vault", state.vaults || [])}
-      ${cardGroup(state.creditCards || [])}
+      ${accountGroup(t("bank_accounts"), "account", state.accounts || [])}
+      ${accountGroup(t("savings_vaults"), "vault", state.vaults || [])}
+      ${accountGroup(t("investments"), "investment", state.investments || [])}
     `;
   }
 
@@ -188,9 +335,28 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Open</div>
+        <div class="card-head">
+          <div>
+            <div class="card-title">${t("register")}</div>
+            <div class="card-subtitle">${t("register_sub")}</div>
+          </div>
+        </div>
         <div class="mini-list">
-          ${openNotes.map((note) => noteRow(note, true)).join("") || empty("No open notes.")}
+          ${(state.transactions || []).slice(0, 30).map((tx) => `
+            <div class="note-row">
+              <div>
+                <strong>${esc(tx.target)}</strong>
+                <span>${esc(tx.date)} · ${money(tx.from)} → ${money(tx.to)} (${tx.to - tx.from >= 0 ? "+" : "-"}${money(Math.abs((Number(tx.to) || 0) - (Number(tx.from) || 0)))})</span>
+              </div>
+            </div>
+          `).join("") || empty(t("no_register"))}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("open_notes")}</div>
+        <div class="mini-list">
+          ${openNotes.map((note) => noteRow(note, true)).join("") || empty(t("no_notes"))}
         </div>
       </div>
 
@@ -210,57 +376,6 @@
         <div class="mini-list">
           ${doneNotes.map((note) => noteRow(note, false)).join("") || empty("No completed notes.")}
         </div>
-      </div>
-    `;
-  }
-
-  function renderSync(state, api) {
-    const cloud = (api && api.cloudStatus) || {};
-    const cloudLine = cloud.ready
-      ? cloud.signedIn
-        ? `Signed in as ${cloud.email || "cloud account"}. Last cloud save on this device: ${cloud.lastSaved || "not saved yet"}.`
-        : "Not signed in. Sign in once, then this device can save and restore your Finance dashboard."
-      : "Cloud backup is still loading. If this stays here, Firebase scripts did not load.";
-    return `
-      <div class="view-title">
-        <div>
-          <div class="eyebrow">Cloud and JSON bridge</div>
-          <h2>Workbook Sync</h2>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Cloud Backup</div>
-        <p class="help-text">${esc(cloudLine)}</p>
-        <div class="button-row">
-          ${button(cloud.signedIn ? "Account" : "Sign in / create account", "cloud-account", "btn--secondary")}
-          ${button("Cloud Save", "cloud-save", "btn--primary")}
-          ${button("Cloud Restore", "cloud-restore", "btn--secondary")}
-        </div>
-        <p class="help-text mt-8">Use the same account on your phone, tablet, and PC. Backups are saved under your Firebase user ID so another person's account will not overwrite yours.</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Import From Workbook or Backup</div>
-        <p class="help-text">Import a dashboard snapshot or old finance backup JSON to refresh this dashboard.</p>
-        <div class="button-row">
-          ${button("Choose JSON file", "open-import", "btn--primary")}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Export For Workbook</div>
-        <p class="help-text">Export pending changes when you want the spreadsheet updated. Export a full snapshot when you want a complete backup.</p>
-        <div class="button-row">
-          ${button("Export pending changes", "export-changes", "btn--primary")}
-          ${button("Export full snapshot", "export-snapshot", "btn--secondary")}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Source Workbook</div>
-        <div class="path-box">${esc(state.workbook.sourcePath)}</div>
-        <p class="help-text">The app does not silently edit this file. It exports structured JSON so the workbook can be updated deliberately.</p>
       </div>
     `;
   }
@@ -299,8 +414,51 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="card-title mb-8">${t("language")}</div>
+        <div class="theme-toggle-row">
+          <span class="text-secondary text-sm">${t("language")}</span>
+          <div class="theme-segment">
+            <button class="theme-seg-btn${(state.settings.lang || "en") === "en" ? " active" : ""}" data-action="set-lang-en">English</button>
+            <button class="theme-seg-btn${state.settings.lang === "es" ? " active" : ""}" data-action="set-lang-es">Español</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("cloud")}</div>
+        <p class="help-text" id="cloud-status-line"></p>
+        <div class="button-row">
+          ${button("Sign in / account", "cloud-account", "btn--secondary")}
+          ${button("Cloud Save", "cloud-save", "btn--primary")}
+          ${button("Cloud Restore", "cloud-restore", "btn--secondary")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("import_title")}</div>
+        <p class="help-text">${t("import_help")}</p>
+        <div class="button-row">
+          ${button(t("choose_json"), "open-import", "btn--primary")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("export_title")}</div>
+        <p class="help-text">${t("export_help")}</p>
+        <div class="button-row">
+          ${button(t("export_changes"), "export-changes", "btn--primary")}
+          ${button(t("export_snapshot"), "export-snapshot", "btn--secondary")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">${t("source_workbook")}</div>
+        <div class="path-box">${esc(state.workbook.sourcePath)}</div>
+      </div>
+
       <div class="card danger-zone">
-        <div class="card-title">Reset</div>
+        <div class="card-title">${t("reset")}</div>
         <p class="help-text">This clears this dashboard's local data only. It does not touch your Excel workbook.</p>
         ${button("Reset dashboard", "reset-dashboard", "btn--danger")}
       </div>
@@ -364,21 +522,57 @@
     `;
   }
 
-  function cardGroup(cards) {
+  function renderCards(state) {
+    const m = metrics(state);
     return `
-      <div class="card">
-        <div class="card-title">Credit Cards</div>
-        <div class="editor-list">
-          ${cards.map((card) => `
-            <div class="edit-row edit-row--card" data-type="card" data-id="${esc(card.id)}">
-              <input type="text" value="${esc(card.name)}" data-edit="name" aria-label="Name">
-              <input type="number" step="0.01" value="${esc(card.balance)}" data-edit="balance" aria-label="Balance">
-              <input type="number" step="0.01" value="${esc(card.limit)}" data-edit="limit" aria-label="Limit">
-              <button class="btn btn--secondary btn--sm" data-action="delete-row" data-type="card" data-id="${esc(card.id)}">Delete</button>
-            </div>
-          `).join("") || empty("No cards yet.")}
+      <div class="view-title">
+        <div>
+          <div class="eyebrow">${t("cards_eyebrow")}</div>
+          <h2>${t("cards_title")}</h2>
         </div>
+        ${button(t("add_card"), "add-card", "btn--primary")}
       </div>
+
+      <section class="kpi-grid">
+        ${kpi(t("total_owed"), money(m.cards), m.cards > 0 ? "bad" : "good")}
+        ${kpi(t("total_available"), money(m.cardAvailable), "good")}
+        ${kpi(t("cards_covered"), money(m.transferGap), m.transferGap >= 0 ? "good" : "bad")}
+      </section>
+
+      <p class="help-text">${t("enter_either")}</p>
+
+      ${(state.creditCards || []).map((card) => {
+        const limit = Number(card.limit) || 0;
+        const pct = limit > 0 ? Math.min(100, Math.round(((Number(card.balance) || 0) / limit) * 100)) : 0;
+        return `
+        <div class="card" data-type="card" data-id="${esc(card.id)}">
+          <div class="card-head">
+            <div>
+              <div class="card-title">${esc(card.name)}</div>
+              <div class="card-subtitle">
+                ${t("limit")} ${money(card.limit)} · ${pct}% ${t("used")} ·
+                <button class="link-btn" data-action="reveal-limit" data-id="${esc(card.id)}" title="${t("limit_locked")}">${t("change_limit")} \uD83D\uDD12</button>
+              </div>
+            </div>
+          </div>
+          <div class="limit-bar" style="height:6px;background:var(--color-surface-2,rgba(143,151,184,.18));border-radius:999px;margin:6px 0 10px;overflow:hidden">
+            <div style="width:${pct}%;height:6px;background:${pct >= 80 ? "var(--color-error)" : pct >= 40 ? "var(--color-warning)" : "var(--color-primary)"};border-radius:999px"></div>
+          </div>
+          <div class="edit-row edit-row--card" data-type="card" data-id="${esc(card.id)}">
+            <label class="card-input-label">${t("balance")}
+              <input type="number" step="0.01" inputmode="decimal" style="font-size:16px" value="${esc(card.balance)}" data-edit="balance" aria-label="${esc(card.name)} ${t("balance")}">
+            </label>
+            <label class="card-input-label">${t("available")}
+              <input type="number" step="0.01" inputmode="decimal" style="font-size:16px" value="${esc(card.available != null ? card.available : Math.max(0, limit - (Number(card.balance) || 0)))}" data-edit="available" aria-label="${esc(card.name)} ${t("available")}">
+            </label>
+            <label class="card-input-label limit-input hidden" data-limit-for="${esc(card.id)}">${t("limit")}
+              <input type="number" step="0.01" inputmode="decimal" style="font-size:16px" value="${esc(card.limit)}" data-edit="limit" aria-label="${esc(card.name)} ${t("limit")}">
+            </label>
+            <button class="btn btn--secondary btn--sm" data-action="delete-row" data-type="card" data-id="${esc(card.id)}">${t("delete")}</button>
+          </div>
+        </div>
+      `;
+      }).join("") || empty(t("no_cards"))}
     `;
   }
 
@@ -458,10 +652,28 @@
           if (!item) return;
           const key = input.dataset.edit;
           const value = input.type === "number" ? Number(input.value) || 0 : input.value;
-          if (key === "amount") item[type === "paycheck" ? "amount" : "balance"] = value;
+          const balanceKeys = { account: "balance", vault: "balance", card: "balance", investment: "balance", paycheck: "amount", bill: "amount" };
+          const balanceKey = balanceKeys[type] || "balance";
+          const oldBalance = Number(item[balanceKey]) || 0;
+          if (key === "amount") item[balanceKey] = value;
           else if (key === "destination") item[type === "account" ? "role" : "destination"] = value;
-          else item[key] = value;
-          if (type === "card") item.available = Math.max(0, (Number(item.limit) || 0) - (Number(item.balance) || 0));
+          else if (key === "available" && type === "card") {
+            // Dual entry: typing available credit derives the balance from the limit
+            item.available = value;
+            item.balance = Math.max(0, (Number(item.limit) || 0) - value);
+          } else item[key] = value;
+          if (type === "card" && key !== "available") {
+            item.available = Math.max(0, (Number(item.limit) || 0) - (Number(item.balance) || 0));
+          }
+          const newBalance = Number(item[balanceKey]) || 0;
+          if (newBalance !== oldBalance && (key === "amount" || key === "balance" || key === "available" || key === "limit")) {
+            next.transactions = next.transactions || [];
+            next.transactions.unshift({
+              id: Storage().id(), date: Storage().todayISO(), kind: type,
+              target: item.name, from: oldBalance, to: newBalance,
+            });
+            if (next.transactions.length > 400) next.transactions = next.transactions.slice(0, 400);
+          }
           api.save(Storage().addChange(next, { type: "edit", label: `${type} edited`, target: item.name, amount: value }));
         });
       });
@@ -478,12 +690,14 @@
       account: state.accounts,
       vault: state.vaults,
       card: state.creditCards,
+      investment: state.investments,
+      bill: state.bills,
     };
     return (map[type] || []).find((item) => item.id === id);
   }
 
   function removeItem(state, type, id) {
-    const key = { paycheck: "paycheckPlan", account: "accounts", vault: "vaults", card: "creditCards" }[type];
+    const key = { paycheck: "paycheckPlan", account: "accounts", vault: "vaults", card: "creditCards", investment: "investments", bill: "bills" }[type];
     if (!key) return state;
     state[key] = (state[key] || []).filter((item) => item.id !== id);
     return state;
@@ -492,6 +706,38 @@
   function handleAction(el, state, api) {
     const action = el.dataset.action;
     if (action === "go-paycheck") return api.showView("paycheck");
+    if (action === "go-cards") return api.showView("cards");
+    if (action === "reveal-limit") {
+      const limitLabel = document.querySelector(`[data-limit-for="${el.dataset.id}"]`);
+      if (limitLabel) limitLabel.classList.toggle("hidden");
+      return;
+    }
+    if (action === "add-card") {
+      const next = Storage().clone(state);
+      next.creditCards.push({ id: Storage().id(), name: "New card", limit: 0, balance: 0, available: 0 });
+      api.save(Storage().addChange(next, { type: "add", label: "Card added", target: "Credit Cards" }));
+      return;
+    }
+    if (action === "add-investment") {
+      const next = Storage().clone(state);
+      next.investments = next.investments || [];
+      next.investments.push({ id: Storage().id(), name: "New investment", balance: 0 });
+      api.save(Storage().addChange(next, { type: "add", label: "Investment added", target: "Investments" }));
+      return;
+    }
+    if (action === "add-bill") {
+      const next = Storage().clone(state);
+      next.bills = next.bills || [];
+      next.bills.push({ id: Storage().id(), name: "New bill", amount: 0, dueDay: 1 });
+      api.save(Storage().addChange(next, { type: "add", label: "Bill added", target: "Bills" }));
+      return;
+    }
+    if (action === "set-lang-en" || action === "set-lang-es") {
+      const next = Storage().clone(state);
+      next.settings.lang = action === "set-lang-es" ? "es" : "en";
+      api.save(next);
+      return;
+    }
     if (action === "open-import") return document.getElementById("json-import").click();
     if (action === "export-changes") return Storage().exportJSON(state, "changes");
     if (action === "export-snapshot") return Storage().exportJSON(state, "snapshot");
@@ -551,12 +797,14 @@
 
   App.Dashboard = {
     render(state, api) {
+      LANG = (state.settings && state.settings.lang) === "es" ? "es" : "en";
+      applyChrome();
       const screens = {
         dashboard: [document.getElementById("tab-dashboard"), renderHome],
-        paycheck: [document.getElementById("tab-paycheck"), renderPaycheck],
         accounts: [document.getElementById("tab-accounts"), renderAccounts],
+        paycheck: [document.getElementById("tab-paycheck"), renderPaycheck],
         changes: [document.getElementById("tab-changes"), renderChanges],
-        sync: [document.getElementById("tab-sync"), renderSync],
+        cards: [document.getElementById("tab-cards"), renderCards],
         settings: [document.getElementById("tab-settings"), renderSettings],
       };
 
@@ -565,6 +813,15 @@
         el.innerHTML = renderer(state, api);
         wire(el, state, api);
       });
+      const cloudLineEl = document.getElementById("cloud-status-line");
+      if (cloudLineEl) {
+        const cloud = (api && api.cloudStatus) || {};
+        cloudLineEl.textContent = cloud.ready
+          ? cloud.signedIn
+            ? `Signed in as ${cloud.email || "cloud account"}. Last cloud save on this device: ${cloud.lastSaved || "not saved yet"}.`
+            : "Not signed in. Sign in once, then this device can save and restore your Finance dashboard."
+          : "Cloud backup is still loading. If this stays here, Firebase scripts did not load.";
+      }
     },
   };
 })(window);

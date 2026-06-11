@@ -36,6 +36,7 @@
       },
       settings: {
         theme: "dark",
+        lang: "en",
         paycheckAmount: 3000,
         nextPayday: "",
         paychecksPerYear: 26,
@@ -53,6 +54,9 @@
         { id: id(), name: "Clothing", balance: 0, target: 1200 },
       ],
       creditCards: [],
+      investments: [],
+      bills: [],
+      snapshots: [],
       paycheckPlan: [
         { id: id(), name: "Transfer Account", amount: 0, destination: "SoFi Transfer Account" },
         { id: id(), name: "Hold / subscriptions", amount: 0, destination: "Hold Account" },
@@ -86,6 +90,9 @@
         accounts: Array.isArray(source.accounts) ? source.accounts : base.accounts,
         vaults: Array.isArray(source.vaults) ? source.vaults : base.vaults,
         creditCards: Array.isArray(source.creditCards) ? source.creditCards : base.creditCards,
+        investments: Array.isArray(source.investments) ? source.investments : [],
+        bills: Array.isArray(source.bills) ? source.bills : [],
+        snapshots: Array.isArray(source.snapshots) ? source.snapshots : [],
         paycheckPlan: Array.isArray(source.paycheckPlan) ? source.paycheckPlan : base.paycheckPlan,
         notes: Array.isArray(source.notes) ? source.notes : base.notes,
         transactions: Array.isArray(source.transactions) ? source.transactions : [],
@@ -196,8 +203,21 @@
     return defaultState();
   }
 
+  function netWorthOf(state) {
+    const sum = (list) => (list || []).reduce((t, item) => t + (Number(item.balance) || 0), 0);
+    return round(sum(state.accounts) + sum(state.vaults) + sum(state.investments) - sum(state.creditCards));
+  }
+
   function saveState(state) {
     const next = normalizeState(state);
+    // Net worth history: one point per day, updated in place on same-day saves
+    const nw = netWorthOf(next);
+    const today = todayISO();
+    next.snapshots = Array.isArray(next.snapshots) ? next.snapshots : [];
+    const last = next.snapshots[next.snapshots.length - 1];
+    if (last && last.date === today) last.netWorth = nw;
+    else next.snapshots.push({ date: today, netWorth: nw });
+    if (next.snapshots.length > 200) next.snapshots = next.snapshots.slice(-200);
     next.updatedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }

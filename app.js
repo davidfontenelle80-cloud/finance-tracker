@@ -11,10 +11,10 @@
 
   const views = {
     dashboard: "tab-dashboard",
-    paycheck: "tab-paycheck",
     accounts: "tab-accounts",
+    cards: "tab-cards",
+    paycheck: "tab-paycheck",
     changes: "tab-changes",
-    sync: "tab-sync",
     settings: "tab-settings",
   };
 

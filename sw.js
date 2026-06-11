@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-tracker-v75-khub-house-finish';
+const CACHE_VERSION = 'finance-v76-reorg';
 
 /**
  * All URLs that make up the app shell.
@@ -38,25 +38,8 @@ const PRECACHE_URLS = [
   './js/perf.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
-  './js/components/button.js',
-  './js/components/modal.js',
-  './js/components/card.js',
-  './js/components/input.js',
   './storage.js',
-  './lang.js',
-  './setup.js',
-  './paychecks.js',
-  './entry.js',
-  './transfers.js',
-  './tracker.js',
-  './accounts.js',
-  './investments.js',
   './dashboard.js',
-  './goals.js',
-  './calendar.js',
-  './paycheck-tracker.js',
-  './next-year-planner.js',
-  './savings-plan.js',
   './app.js',
 ];
 

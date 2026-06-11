@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Finance Dashboard</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/dark-mode.css?v=75" />
-  <link rel="stylesheet" href="css/components.css?v=75" />
-  <link rel="stylesheet" href="css/responsive.css?v=75" />
-  <link rel="stylesheet" href="css/styles.css?v=75" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=76" />
+  <link rel="stylesheet" href="css/components.css?v=76" />
+  <link rel="stylesheet" href="css/responsive.css?v=76" />
+  <link rel="stylesheet" href="css/styles.css?v=76" />
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -39,18 +39,19 @@
     <button class="tab-btn active" data-tab="dashboard" aria-selected="true" role="tab">
       <span class="tab-icon">&#128202;</span><span class="tab-label">Dashboard</span>
     </button>
-    <button class="tab-btn" data-tab="paycheck" aria-selected="false" role="tab">
-      <span class="tab-icon">&#128184;</span><span class="tab-label">Paycheck</span>
-    </button>
     <button class="tab-btn" data-tab="accounts" aria-selected="false" role="tab">
       <span class="tab-icon">&#127974;</span><span class="tab-label">Accounts</span>
+    </button>
+    <button class="tab-btn" data-tab="cards" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128179;</span><span class="tab-label">Cards</span>
+    </button>
+    <button class="tab-btn" data-tab="paycheck" aria-selected="false" role="tab">
+      <span class="tab-icon">&#128184;</span><span class="tab-label">Paycheck</span>
     </button>
     <button class="tab-btn" data-tab="changes" aria-selected="false" role="tab">
       <span class="tab-icon">&#128221;</span><span class="tab-label">Changes</span>
     </button>
-    <button class="tab-btn" data-tab="sync" aria-selected="false" role="tab">
-      <span class="tab-icon">&#128260;</span><span class="tab-label">Sync</span>
-    </button>
+
     <button class="tab-btn" data-tab="settings" aria-selected="false" role="tab">
       <span class="tab-icon">&#9881;</span><span class="tab-label">Settings</span>
     </button>
@@ -58,10 +59,10 @@
 
   <main class="tab-content" id="main-content">
     <section id="tab-dashboard" class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
-    <section id="tab-paycheck" class="tab-pane" role="tabpanel" aria-label="Next Paycheck"></section>
     <section id="tab-accounts" class="tab-pane" role="tabpanel" aria-label="Accounts"></section>
+    <section id="tab-cards" class="tab-pane" role="tabpanel" aria-label="Credit Cards"></section>
+    <section id="tab-paycheck" class="tab-pane" role="tabpanel" aria-label="Next Paycheck"></section>
     <section id="tab-changes" class="tab-pane" role="tabpanel" aria-label="Changes"></section>
-    <section id="tab-sync" class="tab-pane" role="tabpanel" aria-label="Workbook Sync"></section>
     <section id="tab-settings" class="tab-pane" role="tabpanel" aria-label="Settings"></section>
   </main>
 
@@ -77,14 +78,14 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="js/config.js?v=75"></script>
-  <script src="js/error-boundary.js?v=75"></script>
-  <script src="js/a11y.js?v=75"></script>
-  <script src="js/perf.js?v=75"></script>
-  <script src="js/firebase/firebase-config.js?v=75"></script>
-  <script src="js/firebase/cloud-backup.js?v=75"></script>
-  <script src="storage.js?v=75"></script>
-  <script src="dashboard.js?v=75"></script>
-  <script src="app.js?v=75"></script>
+  <script src="js/config.js?v=76"></script>
+  <script src="js/error-boundary.js?v=76"></script>
+  <script src="js/a11y.js?v=76"></script>
+  <script src="js/perf.js?v=76"></script>
+  <script src="js/firebase/firebase-config.js?v=76"></script>
+  <script src="js/firebase/cloud-backup.js?v=76"></script>
+  <script src="storage.js?v=76"></script>
+  <script src="dashboard.js?v=76"></script>
+  <script src="app.js?v=76"></script>
 </body>
 </html>
