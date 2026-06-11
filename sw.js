@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v77-app-icons';
+const CACHE_VERSION = 'finance-v78-transfers-zoomfix';
 
 /**
  * All URLs that make up the app shell.

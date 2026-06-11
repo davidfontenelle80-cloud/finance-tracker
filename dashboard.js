@@ -33,6 +33,10 @@
       appearance: "Appearance", reset: "Reset", open_notes: "Open", pending_json: "Pending JSON Changes",
       completed_notes: "Completed Notes", clear_pending: "Clear pending after workbook update",
       no_pending: "No pending changes.", no_completed: "No completed notes.", no_items: "No items yet.", no_cards: "No cards yet.",
+      transfers: "Transfer Money", transfers_sub: "Vaults, accounts, and card payments",
+      from: "From", to: "To", amount: "Amount", do_transfer: "Transfer",
+      pick_both: "Pick a from and a to.", same_pick: "From and to are the same.",
+      enter_amount: "Enter an amount above zero.", transferred: "Transferred",
     },
     es: {
       tab_dashboard: "Inicio", tab_accounts: "Cuentas", tab_cards: "Tarjetas", tab_paycheck: "Cheque",
@@ -61,6 +65,10 @@
       appearance: "Apariencia", reset: "Restablecer", open_notes: "Abiertas", pending_json: "Cambios JSON pendientes",
       completed_notes: "Notas completadas", clear_pending: "Limpiar pendientes tras actualizar workbook",
       no_pending: "Sin cambios pendientes.", no_completed: "Sin notas completadas.", no_items: "Sin elementos.", no_cards: "Sin tarjetas.",
+      transfers: "Transferir dinero", transfers_sub: "Apartados, cuentas y pagos de tarjeta",
+      from: "De", to: "A", amount: "Monto", do_transfer: "Transferir",
+      pick_both: "Elige origen y destino.", same_pick: "Origen y destino son iguales.",
+      enter_amount: "Ingresa un monto mayor que cero.", transferred: "Transferido",
     },
   };
   let LANG = "en";
@@ -316,6 +324,7 @@
         ${kpi("Transfer gap", money(m.transferGap), m.transferGap >= 0 ? "good" : "bad")}
       </section>
 
+      ${transferCard(state)}
       ${accountGroup(t("bank_accounts"), "account", state.accounts || [])}
       ${accountGroup(t("savings_vaults"), "vault", state.vaults || [])}
       ${accountGroup(t("investments"), "investment", state.investments || [])}
@@ -507,6 +516,46 @@
         <input type="number" step="0.01" value="${esc(item.amount != null ? item.amount : item.balance)}" data-edit="amount" aria-label="Amount">
         ${detail != null ? `<input type="text" value="${esc(detail)}" data-edit="destination" aria-label="Destination">` : ""}
         <button class="btn btn--secondary btn--sm" data-action="delete-row" data-type="${type}" data-id="${esc(item.id)}">Delete</button>
+      </div>
+    `;
+  }
+
+  function moneyTargets(state, includeCards) {
+    const opts = [];
+    (state.accounts || []).forEach((a) => opts.push({ key: "account:" + a.id, label: a.name, balance: a.balance }));
+    (state.vaults || []).forEach((v) => opts.push({ key: "vault:" + v.id, label: v.name + " (vault)", balance: v.balance }));
+    if (includeCards) (state.creditCards || []).forEach((cd) => opts.push({ key: "card:" + cd.id, label: cd.name + " (card payment)", balance: cd.balance }));
+    return opts;
+  }
+
+  function transferCard(state) {
+    const fromOpts = moneyTargets(state, false);
+    const toOpts = moneyTargets(state, true);
+    const opt = (o) => `<option value="${esc(o.key)}">${esc(o.label)} — ${money(o.balance)}</option>`;
+    return `
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">${t("transfers")}</div>
+            <div class="card-subtitle">${t("transfers_sub")}</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>${t("from")}
+            <select id="transfer-from">${fromOpts.map(opt).join("")}</select>
+          </label>
+          <label>${t("to")}
+            <select id="transfer-to">${toOpts.map(opt).join("")}</select>
+          </label>
+        </div>
+        <div class="form-row mt-8">
+          <label>${t("amount")}
+            <input id="transfer-amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+          </label>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn--primary btn--full" data-action="do-transfer">${t("do_transfer")}</button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -706,6 +755,34 @@
   function handleAction(el, state, api) {
     const action = el.dataset.action;
     if (action === "go-paycheck") return api.showView("paycheck");
+    if (action === "do-transfer") {
+      const fromKey = (document.getElementById("transfer-from") || {}).value;
+      const toKey = (document.getElementById("transfer-to") || {}).value;
+      const amount = Number((document.getElementById("transfer-amount") || {}).value) || 0;
+      if (!fromKey || !toKey) return api.showToast(t("pick_both"), "error");
+      if (fromKey === toKey) return api.showToast(t("same_pick"), "error");
+      if (amount <= 0) return api.showToast(t("enter_amount"), "error");
+      const next = Storage().clone(state);
+      const get = (key) => { const [type, id] = key.split(":"); return { type, item: findItem(next, type, id) }; };
+      const src = get(fromKey), dst = get(toKey);
+      if (!src.item || !dst.item) return api.showToast(t("pick_both"), "error");
+      src.item.balance = Math.round(((Number(src.item.balance) || 0) - amount) * 100) / 100;
+      if (dst.type === "card") {
+        // Paying a card: balance goes DOWN, available goes up
+        dst.item.balance = Math.round(((Number(dst.item.balance) || 0) - amount) * 100) / 100;
+        if (dst.item.balance < 0) dst.item.balance = 0;
+        dst.item.available = Math.max(0, (Number(dst.item.limit) || 0) - dst.item.balance);
+      } else {
+        dst.item.balance = Math.round(((Number(dst.item.balance) || 0) + amount) * 100) / 100;
+      }
+      const label = `${src.item.name} → ${dst.item.name}`;
+      next.transactions = next.transactions || [];
+      next.transactions.unshift({ id: Storage().id(), date: Storage().todayISO(), kind: "transfer", target: label, from: 0, to: amount });
+      if (next.transactions.length > 400) next.transactions = next.transactions.slice(0, 400);
+      api.save(Storage().addChange(next, { type: "transfer", label: "Transfer", target: label, amount }));
+      api.showToast(`${t("transferred")} ${money(amount)}: ${label}`, "success");
+      return;
+    }
     if (action === "go-cards") return api.showView("cards");
     if (action === "reveal-limit") {
       const limitLabel = document.querySelector(`[data-limit-for="${el.dataset.id}"]`);

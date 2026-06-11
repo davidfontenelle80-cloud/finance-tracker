@@ -336,3 +336,15 @@ textarea:focus{
 .tab-btn.active .tab-icon{background:color-mix(in srgb,var(--neon-green) 15%,transparent)}
 .tab-label{font-size:9px;font-weight:700;letter-spacing:.04em}
 @media (min-width:700px){.tab-nav{border-radius:var(--radius-lg) var(--radius-lg) 0 0}}
+
+
+/* ── iOS Safari zoom fix (Codex diagnosis): fields under 16px zoom the page
+   on focus and it stays zoomed. Force 16px on all mobile form fields. ── */
+@media (max-width: 680px) {
+  input[type=date], input[type=email], input[type=number], input[type=password],
+  input[type=tel], input[type=text], select, textarea,
+  .edit-row input, .alloc-amount, .tracker-amount-input,
+  .paycheck-notes-input, .card-pay-amount-row input[type=number] {
+    font-size: 16px;
+  }
+}
