@@ -342,11 +342,11 @@ const INV_DAVID_ROWS = [
   { row: 7, ticker: 'VOO' },
 ];
 const INV_YAMEL_ROWS = [
-  { row: 8, ticker: 'SPGI' },
-  { row: 9, ticker: 'BRK.B' },
-  { row: 10, ticker: 'SGOV' },
-  { row: 11, ticker: 'COST' },
-  { row: 12, ticker: 'ETHA' },
+  { row: 8, ticker: 'IBIT' },
+  { row: 9, ticker: 'QQQM' },
+  { row: 10, ticker: 'SCHD' },
+  { row: 11, ticker: 'SCHG' },
+  { row: 12, ticker: 'VOO' },
 ];
 
 // ============================================================
@@ -608,13 +608,13 @@ function buildChanges(wb, ftState) {
 
   if (mode === 'dashboard') {
     INV_ROWS.forEach(row => {
-      const ticker = readText(invSheet, 'A', row).toUpperCase();
+      const ticker = readText(invSheet, 'E', row).toUpperCase();
       const accountName = readText(invSheet, 'D', row) || (row <= 7 ? "David's Roth" : "Yamel's Roth");
-      const price = readCell(invSheet, 'B', row);
+      const price = (ticker && priceMap[ticker] !== undefined) ? priceMap[ticker] : null;
       const shares = readCell(invSheet, 'F', row);
       if (!ticker) return;
       if (price === null || shares === null) {
-        addSkip(SHEET_INV, `B${row}/F${row}`, `${ticker} missing price or shares`);
+        addSkip(SHEET_INV, `E${row}/F${row}`, `${ticker || '(no ticker)'} - price not in map or missing shares`);
         return;
       }
       dashboardInvestmentBalances[accountName] = round2((dashboardInvestmentBalances[accountName] || 0) + (price * shares));
