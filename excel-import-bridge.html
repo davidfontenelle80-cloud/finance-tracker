@@ -293,9 +293,10 @@
 // by position within state.accounts.bank/vaults/cards arrays.
 // Investments match by ticker name.
 // ============================================================
-const FT_STATE_KEY   = 'financeApp_v1';
-const FT_LOG_KEY     = 'ft_import_log';
-const LOG_MAX        = 20; // max log entries to keep
+const FT_DASHBOARD_KEY = 'financeDashboard_v1';
+const FT_LEGACY_KEY    = 'financeApp_v1';
+const FT_LOG_KEY       = 'ft_import_log';
+const LOG_MAX          = 20; // max log entries to keep
 
 // Sheet name substrings — match any case
 const SHEET_CC    = 'Credit Cards';
@@ -313,34 +314,36 @@ const BANK_ROWS = [7,8,9,10,11,12];
 const VAULT_ROWS = [];
 for (let r = 17; r <= 35; r++) VAULT_ROWS.push(r);
 
-// Investment tickers by row (B column = price)
-// Row order matches spec: IBIT, QQQM, SCHD, SCHG, VOO, SPGI, BRK.B, SGOV, COST
+// Investments: ticker in A, price in B, account name in D, shares in F.
+const INV_ROWS = [];
+for (let r = 3; r <= 14; r++) INV_ROWS.push(r);
 const INV_PRICE_ROWS = [
-  { row: 3,  ticker: 'IBIT'  },
-  { row: 4,  ticker: 'QQQM'  },
-  { row: 5,  ticker: 'SCHD'  },
-  { row: 6,  ticker: 'SCHG'  },
-  { row: 7,  ticker: 'VOO'   },
-  { row: 8,  ticker: 'SPGI'  },
-  { row: 9,  ticker: 'BRK.B' },
-  { row: 10, ticker: 'SGOV'  },
-  { row: 11, ticker: 'COST'  },
+  { row: 3, ticker: 'IBIT' },
+  { row: 4, ticker: 'QQQM' },
+  { row: 5, ticker: 'SCHD' },
+  { row: 6, ticker: 'SCHG' },
+  { row: 7, ticker: 'VOO' },
+  { row: 8, ticker: 'SPGI' },
+  { row: 9, ticker: 'BRK.B' },
+  { row: 10, ticker: 'SGOV' },
+  { row: 11, ticker: 'COST' },
+  { row: 12, ticker: 'ETHA' },
+  { row: 13, ticker: 'V' },
+  { row: 14, ticker: 'BND' },
 ];
-// David Roth shares: F3:F7 → tickers match rows 3-7
 const INV_DAVID_ROWS = [
-  { row: 3,  ticker: 'IBIT' },
-  { row: 4,  ticker: 'QQQM' },
-  { row: 5,  ticker: 'SCHD' },
-  { row: 6,  ticker: 'SCHG' },
-  { row: 7,  ticker: 'VOO'  },
+  { row: 3, ticker: 'IBIT' },
+  { row: 4, ticker: 'QQQM' },
+  { row: 5, ticker: 'SCHD' },
+  { row: 6, ticker: 'SCHG' },
+  { row: 7, ticker: 'VOO' },
 ];
-// Yamel Roth shares: F8:F12
 const INV_YAMEL_ROWS = [
-  { row: 8,  ticker: 'IBIT' },
-  { row: 9,  ticker: 'QQQM' },
-  { row: 10, ticker: 'SCHD' },
-  { row: 11, ticker: 'SCHG' },
-  { row: 12, ticker: 'VOO'  },
+  { row: 8, ticker: 'SPGI' },
+  { row: 9, ticker: 'BRK.B' },
+  { row: 10, ticker: 'SGOV' },
+  { row: 11, ticker: 'COST' },
+  { row: 12, ticker: 'ETHA' },
 ];
 
 // ============================================================
@@ -372,23 +375,95 @@ function fmt(v) {
 }
 function round2(v) { return Math.round((v || 0) * 100) / 100; }
 
+function bridgeId() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function defaultDashboardState() {
+  return {
+    __bridgeMode: 'dashboard',
+    version: 'dashboard-1.0',
+    updatedAt: new Date().toISOString(),
+    workbook: {
+      name: 'House Budget.xlsx',
+      sourcePath: 'C:\\Users\\david\\OneDrive\\Accounting\\House Budget.xlsx',
+      lastSnapshot: null,
+    },
+    settings: { theme: 'dark', lang: 'en', paycheckAmount: 3000, nextPayday: '', paychecksPerYear: 26 },
+    accounts: [],
+    vaults: [],
+    creditCards: [],
+    investments: [],
+    bills: [],
+    snapshots: [],
+    paycheckPlan: [],
+    notes: [{ id: bridgeId(), date: todayISO(), text: 'Seeded from Excel Import Bridge.', status: 'open', source: 'excel bridge' }],
+    transactions: [],
+    pendingChanges: [],
+  };
+}
+
+function stateMode(ftState) {
+  return ftState && ftState.__bridgeMode === 'legacy' ? 'legacy' : 'dashboard';
+}
+
+function cleanForStorage(state) {
+  const copy = JSON.parse(JSON.stringify(state));
+  delete copy.__bridgeMode;
+  return copy;
+}
+
+function saveFtState(state) {
+  const key = stateMode(state) === 'legacy' ? FT_LEGACY_KEY : FT_DASHBOARD_KEY;
+  localStorage.setItem(key, JSON.stringify(cleanForStorage(state)));
+}
+
+function getCards(ftState) {
+  return stateMode(ftState) === 'legacy'
+    ? ((ftState.accounts && ftState.accounts.cards) || [])
+    : (ftState.creditCards || []);
+}
+
+function getBanks(ftState) {
+  return stateMode(ftState) === 'legacy'
+    ? ((ftState.accounts && ftState.accounts.bank) || [])
+    : (ftState.accounts || []);
+}
+
+function getVaults(ftState) {
+  return stateMode(ftState) === 'legacy'
+    ? ((ftState.accounts && ftState.accounts.vaults) || [])
+    : (ftState.vaults || []);
+}
+
+function readText(sheet, col, row) {
+  if (!sheet) return '';
+  const cell = sheet[col + row];
+  const value = cell ? (cell.w || cell.v) : '';
+  return value === null || value === undefined ? '' : String(value).trim();
+}
+
+function stripLeadingIcon(value) {
+  return String(value || '').replace(/^[^\w$]+/, '').trim();
+}
+
 function findSheet(wb, hint) {
   const name = wb.SheetNames.find(n => n.toLowerCase().includes(hint.toLowerCase()));
   return name ? wb.Sheets[name] : null;
 }
 
-// Read a raw numeric cell value. Returns null if:
-//   - cell doesn't exist
-//   - cell type is 'f' (formula — spec says skip)
-//   - cell is not numeric
+// Read a numeric cell value. Formula cells are okay when SheetJS provides
+// a cached numeric value in `v`; the bridge never reads the formula text.
 function readCell(sheet, col, row) {
   if (!sheet) return null;
   const addr = col + row;
   const cell = sheet[addr];
   if (!cell) return null;
-  if (cell.t === 'f') return null;   // HARD RULE: never read formula cells
-  if (cell.t !== 'n') return null;   // must be a number
-  return typeof cell.v === 'number' ? cell.v : null;
+  return typeof cell.v === 'number' && Number.isFinite(cell.v) ? cell.v : null;
 }
 
 // ============================================================
@@ -396,11 +471,22 @@ function readCell(sheet, col, row) {
 // ============================================================
 function loadFtState() {
   try {
-    const raw = localStorage.getItem(FT_STATE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    const dashboardRaw = localStorage.getItem(FT_DASHBOARD_KEY);
+    if (dashboardRaw) {
+      const state = JSON.parse(dashboardRaw);
+      state.__bridgeMode = 'dashboard';
+      return state;
+    }
+    const legacyRaw = localStorage.getItem(FT_LEGACY_KEY);
+    if (legacyRaw) {
+      const state = JSON.parse(legacyRaw);
+      state.__bridgeMode = 'legacy';
+      return state;
+    }
+    return defaultDashboardState();
   } catch(e) {
-    return null;
+    console.warn('[Excel Bridge] Could not load Finance state:', e);
+    return defaultDashboardState();
   }
 }
 
@@ -410,6 +496,7 @@ function loadFtState() {
 function buildChanges(wb, ftState) {
   const changes = [];
   const skips   = [];
+  const mode = stateMode(ftState);
 
   function addChange(category, tag, name, field, oldVal, newVal, stateTarget) {
     changes.push({ category, tag, name, field, oldVal, newVal, stateTarget });
@@ -420,18 +507,19 @@ function buildChanges(wb, ftState) {
 
   // ---- CREDIT CARDS ----
   const ccSheet = findSheet(wb, SHEET_CC);
-  const ftCards = ftState ? (ftState.accounts && ftState.accounts.cards || []) : [];
+  const ftCards = getCards(ftState);
 
   CC_ROWS.forEach((row, idx) => {
-    const cardName = ftCards[idx] ? ftCards[idx].name : `Card ${idx+1}`;
+    const sheetName = readText(ccSheet, 'B', row) || `Card ${idx+1}`;
+    const cardName = ftCards[idx] ? ftCards[idx].name : sheetName;
     const rawAvail = readCell(ccSheet, 'C', row);
     const rawLimit = readCell(ccSheet, 'D', row);
 
     if (rawAvail === null) {
-      addSkip(SHEET_CC, `C${row}`, 'Empty or formula cell');
+      addSkip(SHEET_CC, `C${row}`, 'Empty or non-numeric cell');
     }
     if (rawLimit === null) {
-      addSkip(SHEET_CC, `D${row}`, 'Empty or formula cell');
+      addSkip(SHEET_CC, `D${row}`, 'Empty or non-numeric cell');
     }
 
     // NEVER read column E (formula =D-C)
@@ -441,7 +529,15 @@ function buildChanges(wb, ftState) {
       const oldLimit = ftCards[idx] ? round2(ftCards[idx].limit || 0) : null;
       if (oldLimit !== newLimit) {
         addChange('cc', 'Credit Card', cardName, 'limit', oldLimit, newLimit,
-          { type: 'card', idx, field: 'limit' });
+          { type: 'card', idx, field: 'limit', name: sheetName });
+      }
+    }
+    if (rawAvail !== null && stateMode(ftState) === 'dashboard') {
+      const newAvailable = round2(rawAvail);
+      const oldAvailable = ftCards[idx] ? round2(ftCards[idx].available || 0) : null;
+      if (oldAvailable !== newAvailable) {
+        addChange('cc', 'Credit Card', cardName, 'available', oldAvailable, newAvailable,
+          { type: 'card', idx, field: 'available', name: sheetName });
       }
     }
     if (rawAvail !== null && rawLimit !== null) {
@@ -449,60 +545,78 @@ function buildChanges(wb, ftState) {
       const oldBalance = ftCards[idx] ? round2(ftCards[idx].balance || 0) : null;
       if (oldBalance !== newBalance) {
         addChange('cc', 'Credit Card', cardName, 'balance', oldBalance, newBalance,
-          { type: 'card', idx, field: 'balance' });
+          { type: 'card', idx, field: 'balance', name: sheetName });
       }
     }
   });
 
   // ---- BANK ACCOUNTS ----
   const bankSheet = findSheet(wb, SHEET_BANK);
-  const ftBanks   = ftState ? (ftState.accounts && ftState.accounts.bank || []) : [];
+  const ftBanks   = getBanks(ftState);
 
   BANK_ROWS.forEach((row, idx) => {
-    const bankName = ftBanks[idx] ? ftBanks[idx].name : `Account ${idx+1}`;
+    const sheetName = stripLeadingIcon(readText(bankSheet, 'B', row)) || `Account ${idx+1}`;
+    const bankName = ftBanks[idx] ? ftBanks[idx].name : sheetName;
     const rawBal = readCell(bankSheet, 'C', row);
     if (rawBal === null) {
-      addSkip(SHEET_BANK, `C${row}`, 'Empty or formula cell');
+      addSkip(SHEET_BANK, `C${row}`, 'Empty or non-numeric cell');
       return;
     }
     const newBal = round2(rawBal);
     const oldBal = ftBanks[idx] ? round2(ftBanks[idx].balance || 0) : null;
     if (oldBal !== newBal) {
       addChange('bank', 'Bank', bankName, 'balance', oldBal, newBal,
-        { type: 'bank', idx, field: 'balance' });
+        { type: 'bank', idx, field: 'balance', name: sheetName });
     }
   });
 
   // ---- VAULTS ----
-  const ftVaults = ftState ? (ftState.accounts && ftState.accounts.vaults || []) : [];
+  const ftVaults = getVaults(ftState);
 
   VAULT_ROWS.forEach((row, idx) => {
-    const vaultName = ftVaults[idx] ? ftVaults[idx].name : `Vault ${idx+1}`;
+    const sheetName = readText(bankSheet, 'B', row) || `Vault ${idx+1}`;
+    const vaultName = ftVaults[idx] ? ftVaults[idx].name : sheetName;
     const rawBal = readCell(bankSheet, 'C', row);
     if (rawBal === null) {
       // Many vault rows may be empty — only log as skip if vault exists in app
-      if (ftVaults[idx]) addSkip(SHEET_BANK, `C${row}`, 'Empty or formula cell');
+      if (ftVaults[idx]) addSkip(SHEET_BANK, `C${row}`, 'Empty or non-numeric cell');
       return;
     }
     const newBal = round2(rawBal);
     const oldBal = ftVaults[idx] ? round2(ftVaults[idx].balance || 0) : null;
     if (oldBal !== newBal) {
       addChange('vault', 'Vault', vaultName, 'balance', oldBal, newBal,
-        { type: 'vault', idx, field: 'balance' });
+        { type: 'vault', idx, field: 'balance', name: sheetName });
     }
   });
 
   // ---- INVESTMENTS ----
   const invSheet = findSheet(wb, SHEET_INV);
-  const ftInvAccts = ftState ? (ftState.investments && ftState.investments.accounts || []) : [];
+  const ftInvAccts = mode === 'legacy' ? (ftState.investments && ftState.investments.accounts || []) : [];
+  const dashboardInvestmentBalances = {};
 
   // Build a flat map of ticker → price from B column
   const priceMap = {};
   INV_PRICE_ROWS.forEach(({ row, ticker }) => {
     const v = readCell(invSheet, 'B', row);
     if (v !== null) priceMap[ticker] = v;
-    else addSkip(SHEET_INV, `B${row}`, `Price for ${ticker} - empty or formula`);
+    else addSkip(SHEET_INV, `B${row}`, `Price for ${ticker} - empty or non-numeric`);
   });
+
+  if (mode === 'dashboard') {
+    INV_ROWS.forEach(row => {
+      const ticker = readText(invSheet, 'A', row).toUpperCase();
+      const accountName = readText(invSheet, 'D', row) || (row <= 7 ? "David's Roth" : "Yamel's Roth");
+      const price = readCell(invSheet, 'B', row);
+      const shares = readCell(invSheet, 'F', row);
+      if (!ticker) return;
+      if (price === null || shares === null) {
+        addSkip(SHEET_INV, `B${row}/F${row}`, `${ticker} missing price or shares`);
+        return;
+      }
+      dashboardInvestmentBalances[accountName] = round2((dashboardInvestmentBalances[accountName] || 0) + (price * shares));
+    });
+  }
 
   // Helper: find a holding by ticker across all investment accounts
   function findHolding(acctIdx, ticker) {
@@ -511,8 +625,8 @@ function buildChanges(wb, ftState) {
     return acct.holdings.find(h => h.ticker && h.ticker.toUpperCase() === ticker.toUpperCase());
   }
 
-  // Update prices for any matching holding across all accounts
-  Object.entries(priceMap).forEach(([ticker, newPrice]) => {
+  // Update prices for any matching legacy holding across all accounts
+  if (mode === 'legacy') Object.entries(priceMap).forEach(([ticker, newPrice]) => {
     ftInvAccts.forEach((acct, ai) => {
       const h = findHolding(ai, ticker);
       if (!h) return;
@@ -528,7 +642,7 @@ function buildChanges(wb, ftState) {
 
   // David shares (F3:F7 → acct index 0)
   const davidAcct = ftInvAccts[0] ? ftInvAccts[0].name : "David's Roth";
-  INV_DAVID_ROWS.forEach(({ row, ticker }) => {
+  if (mode === 'legacy') INV_DAVID_ROWS.forEach(({ row, ticker }) => {
     const v = readCell(invSheet, 'F', row);
     if (v === null) { addSkip(SHEET_INV, `F${row}`, `David shares ${ticker}`); return; }
     const h = findHolding(0, ticker);
@@ -544,7 +658,7 @@ function buildChanges(wb, ftState) {
 
   // Yamel shares (F8:F12 → acct index 1)
   const yamelAcct = ftInvAccts[1] ? ftInvAccts[1].name : "Yamel's Roth";
-  INV_YAMEL_ROWS.forEach(({ row, ticker }) => {
+  if (mode === 'legacy') INV_YAMEL_ROWS.forEach(({ row, ticker }) => {
     const v = readCell(invSheet, 'F', row);
     if (v === null) { addSkip(SHEET_INV, `F${row}`, `Yamel shares ${ticker}`); return; }
     const h = findHolding(1, ticker);
@@ -558,6 +672,19 @@ function buildChanges(wb, ftState) {
     }
   });
 
+  if (mode === 'dashboard') {
+    Object.entries(dashboardInvestmentBalances).forEach(([accountName, newBalance], fallbackIdx) => {
+      const list = ftState.investments || [];
+      const matchIdx = list.findIndex(item => String(item.name || '').trim().toLowerCase() === accountName.trim().toLowerCase());
+      const idx = matchIdx >= 0 ? matchIdx : fallbackIdx;
+      const oldBalance = list[idx] ? round2(list[idx].balance || 0) : null;
+      if (oldBalance !== newBalance) {
+        addChange('inv', 'Investment', accountName, 'balance', oldBalance, newBalance,
+          { type: 'dashboard_investment', idx, field: 'balance', name: accountName });
+      }
+    });
+  }
+
   return { changes, skips };
 }
 
@@ -567,17 +694,57 @@ function buildChanges(wb, ftState) {
 function applyChanges(changes, ftState) {
   // Deep clone to avoid partial mutations on error
   const state = JSON.parse(JSON.stringify(ftState));
+  const mode = stateMode(state);
+
+  if (mode === 'legacy') {
+    state.accounts = state.accounts || {};
+    state.accounts.cards = state.accounts.cards || [];
+    state.accounts.bank = state.accounts.bank || [];
+    state.accounts.vaults = state.accounts.vaults || [];
+    state.investments = state.investments || { accounts: [] };
+    state.investments.accounts = state.investments.accounts || [];
+  } else {
+    state.accounts = state.accounts || [];
+    state.vaults = state.vaults || [];
+    state.creditCards = state.creditCards || [];
+    state.investments = state.investments || [];
+    state.pendingChanges = state.pendingChanges || [];
+  }
+
+  function ensureItem(list, idx, factory) {
+    while (list.length <= idx) list.push(factory(list.length));
+    return list[idx];
+  }
 
   changes.forEach(c => {
     const t = c.stateTarget;
     if (!t) return;
     try {
-      if (t.type === 'card') {
-        state.accounts.cards[t.idx][t.field] = c.newVal;
+      if (mode === 'dashboard' && t.type === 'card') {
+        const card = ensureItem(state.creditCards, t.idx, i => ({ id: bridgeId(), name: t.name || `Card ${i+1}`, limit: 0, balance: 0, available: 0 }));
+        card[t.field] = c.newVal;
+        if (t.field === 'limit' || t.field === 'balance') {
+          card.available = round2((Number(card.limit) || 0) - (Number(card.balance) || 0));
+        }
+      } else if (mode === 'dashboard' && t.type === 'bank') {
+        const bank = ensureItem(state.accounts, t.idx, i => ({ id: bridgeId(), name: t.name || `Account ${i+1}`, type: 'bank', balance: 0, role: i === 0 ? 'transfer' : 'bank' }));
+        bank[t.field] = c.newVal;
+      } else if (mode === 'dashboard' && t.type === 'vault') {
+        const vault = ensureItem(state.vaults, t.idx, i => ({ id: bridgeId(), name: t.name || `Vault ${i+1}`, balance: 0, target: 0 }));
+        vault[t.field] = c.newVal;
+      } else if (mode === 'dashboard' && t.type === 'dashboard_investment') {
+        const inv = ensureItem(state.investments, t.idx, i => ({ id: bridgeId(), name: t.name || `Investment ${i+1}`, balance: 0 }));
+        inv.name = inv.name || t.name;
+        inv[t.field] = c.newVal;
+      } else if (t.type === 'card') {
+        const card = ensureItem(state.accounts.cards, t.idx, i => ({ id: bridgeId(), name: t.name || `Card ${i+1}`, limit: 0, balance: 0 }));
+        card[t.field] = c.newVal;
       } else if (t.type === 'bank') {
-        state.accounts.bank[t.idx][t.field] = c.newVal;
+        const bank = ensureItem(state.accounts.bank, t.idx, i => ({ id: bridgeId(), name: t.name || `Account ${i+1}`, balance: 0 }));
+        bank[t.field] = c.newVal;
       } else if (t.type === 'vault') {
-        state.accounts.vaults[t.idx][t.field] = c.newVal;
+        const vault = ensureItem(state.accounts.vaults, t.idx, i => ({ id: bridgeId(), name: t.name || `Vault ${i+1}`, balance: 0 }));
+        vault[t.field] = c.newVal;
       } else if (t.type === 'inv_price') {
         const acct = state.investments.accounts[t.acctIdx];
         const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
@@ -589,6 +756,24 @@ function applyChanges(changes, ftState) {
       }
     } catch(e) { console.warn('Apply error:', t, e); }
   });
+
+  if (mode === 'dashboard') {
+    state.updatedAt = new Date().toISOString();
+    state.workbook = state.workbook || {};
+    state.workbook.name = 'House Budget.xlsx';
+    state.workbook.sourcePath = 'C:\\Users\\david\\OneDrive\\Accounting\\House Budget.xlsx';
+    state.workbook.lastSnapshot = { date: todayISO() };
+    state.pendingChanges.unshift({
+      id: bridgeId(),
+      date: todayISO(),
+      createdAt: new Date().toISOString(),
+      type: 'excel_import',
+      label: 'Excel Import Bridge',
+      target: 'House Budget.xlsx',
+      amount: changes.length,
+    });
+    if (state.pendingChanges.length > 100) state.pendingChanges = state.pendingChanges.slice(0, 100);
+  }
 
   return state;
 }
@@ -767,7 +952,7 @@ function confirmImport() {
 
   try {
     const newState = applyChanges(pendingChanges, pendingState);
-    localStorage.setItem(FT_STATE_KEY, JSON.stringify(newState));
+    saveFtState(newState);
     const logEntry = appendLog(pendingChanges, selectedFile ? selectedFile.name : 'House Budget.xlsx');
 
     // Update done screen
@@ -833,3 +1018,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
