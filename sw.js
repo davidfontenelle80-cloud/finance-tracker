@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v80-firebase-sync';
+const CACHE_VERSION = 'finance-v81-sync-key-fix';
 
 /**
  * All URLs that make up the app shell.

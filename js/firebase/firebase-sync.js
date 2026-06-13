@@ -1,12 +1,12 @@
 /**
- * firebase-sync.js — Bridge Import Sync
+ * firebase-sync.js -- Bridge Import Sync
  *
  * On Finance Tracker load, checks Firestore for a newer balance snapshot
  * written by excel-import-bridge.html. If found, applies it to localStorage
  * and reloads so the app boots with fresh balances.
  *
  * Runs after firebase-config.js (KHub.Firebase.db is already ready).
- * The Firestore read is async — it never blocks the initial page render.
+ * The Firestore read is async -- it never blocks the initial page render.
  *
  * Reload guard: stores the applied timestamp in localStorage so the check
  * on the next load returns immediately without triggering another reload.
@@ -14,8 +14,8 @@
 (function () {
   'use strict';
 
-  var SYNC_TS_KEY  = 'financeApp_v1_bridge_sync_ts';
-  var FT_STATE_KEY = 'financeApp_v1';
+  var SYNC_TS_KEY  = 'financeDashboard_v1_bridge_sync_ts';
+  var FT_STATE_KEY = 'financeDashboard_v1';
 
   function run() {
     var db = window.KHub && KHub.Firebase && KHub.Firebase.db;
@@ -36,11 +36,11 @@
 
         localStorage.setItem(FT_STATE_KEY, JSON.stringify(newState));
         localStorage.setItem(SYNC_TS_KEY, data.timestamp);
-        console.log('[BridgeSync] Applied import from', data.timestamp, '— reloading');
+        console.log('[BridgeSync] Applied import from', data.timestamp, '- reloading');
         location.reload();
       })
       .catch(function (e) {
-        // Non-fatal — app continues with local state
+        // Non-fatal -- app continues with local state
         console.warn('[BridgeSync] Firestore check failed:', e.message || e);
       });
   }
