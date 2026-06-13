@@ -1,14 +1,60 @@
 {
   "name": "Excel Import Bridge",
   "short_name": "Excel Bridge",
-  "description": "Import House Budget.xlsx balances into Finance Tracker",
+  "description": "Import House Budget.xlsx balances into Finance Tracker.",
+  "id": "./excel-import-bridge.html",
+  "scope": "./",
   "start_url": "./excel-import-bridge.html",
   "display": "standalone",
-  "background_color": "#0f1117",
-  "theme_color": "#0f1117",
+  "background_color": "#07110d",
+  "theme_color": "#07110d",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity"],
+  "lang": "en-US",
   "icons": [
     {
-      "src": "icons/excel-import-bridge-icon.png.png",
+      "src": "icons/excel-bridge-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/excel-bridge-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/excel-bridge-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

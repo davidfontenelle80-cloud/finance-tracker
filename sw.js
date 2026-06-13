@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v78-transfers-zoomfix';
+const CACHE_VERSION = 'finance-v79-excel-bridge-standalone';
 
 /**
  * All URLs that make up the app shell.
@@ -28,6 +28,17 @@ const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
+  './excel-import-bridge.html',
+  './bridge-manifest.json',
+  './icons/excel-bridge-72.png',
+  './icons/excel-bridge-96.png',
+  './icons/excel-bridge-128.png',
+  './icons/excel-bridge-144.png',
+  './icons/excel-bridge-152.png',
+  './icons/excel-bridge-180.png',
+  './icons/excel-bridge-192.png',
+  './icons/excel-bridge-384.png',
+  './icons/excel-bridge-512.png',
   './css/styles.css',
   './css/dark-mode.css',
   './css/components.css',
