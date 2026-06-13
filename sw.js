@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v82-yamel-inv-fix';
+const CACHE_VERSION = 'finance-v83-transfer-role-fix';
 
 /**
  * All URLs that make up the app shell.

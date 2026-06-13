@@ -731,6 +731,7 @@ function applyChanges(changes, ftState) {
         }
       } else if (mode === 'dashboard' && t.type === 'bank') {
         const bank = ensureItem(state.accounts, t.idx, i => ({ id: bridgeId(), name: t.name || `Account ${i+1}`, type: 'bank', balance: 0, role: i === 0 ? 'transfer' : 'bank' }));
+        if (!bank.role) bank.role = t.idx === 0 ? 'transfer' : 'bank';
         bank[t.field] = c.newVal;
       } else if (mode === 'dashboard' && t.type === 'vault') {
         const vault = ensureItem(state.vaults, t.idx, i => ({ id: bridgeId(), name: t.name || `Vault ${i+1}`, balance: 0, target: 0 }));
