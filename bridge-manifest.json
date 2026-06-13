@@ -1,0 +1,17 @@
+{
+  "name": "Excel Import Bridge",
+  "short_name": "Excel Bridge",
+  "description": "Import House Budget.xlsx balances into Finance Tracker",
+  "start_url": "./excel-import-bridge.html",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": [
+    {
+      "src": "icons/excel-import-bridge-icon.png.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
