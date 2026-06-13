@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v78-transfers-zoomfix';
+const CACHE_VERSION = 'finance-v79-firebase-sync';
 
 /**
  * All URLs that make up the app shell.
@@ -38,6 +38,7 @@ const PRECACHE_URLS = [
   './js/perf.js',
   './js/firebase/firebase-config.js',
   './js/firebase/cloud-backup.js',
+  './js/firebase/firebase-sync.js',
   './storage.js',
   './dashboard.js',
   './app.js',

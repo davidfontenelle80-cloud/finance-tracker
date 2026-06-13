@@ -108,6 +108,9 @@
     #loading-msg { display: none; text-align: center; color: var(--muted);
       padding: 20px; font-size: 14px; }
   </style>
+  <!-- Firebase SDK for bridge-to-app sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -682,6 +685,7 @@ function confirmImport() {
   try {
     const newState = applyChanges(pendingChanges, pendingState);
     localStorage.setItem(FT_STATE_KEY, JSON.stringify(newState));
+    if (typeof pushBridgeSync === 'function') pushBridgeSync(newState); // Firebase sync
     const logEntry = appendLog(pendingChanges, selectedFile ? selectedFile.name : 'House Budget.xlsx');
 
     // Update done screen
@@ -737,6 +741,45 @@ $('btn-cancel').addEventListener('click',  () => {
 // INIT
 // ============================================================
 renderLog('log-list');
+</script>
+<script>
+// ============================================================
+// FIREBASE BRIDGE SYNC
+// Writes a Firestore snapshot after each confirmed import so
+// the Finance Tracker on the phone picks it up automatically.
+// ============================================================
+(function () {
+  var BRIDGE_CONFIG = {
+    apiKey:            "AIzaSyAUiVMxG1JbtpaW3KKmYSsTheMP473uTbQ",
+    authDomain:        "khub-apps.firebaseapp.com",
+    projectId:         "khub-apps",
+    storageBucket:     "khub-apps.firebasestorage.app",
+    messagingSenderId: "969605091721",
+    appId:             "1:969605091721:web:4068564af7bc0dc56c1158"
+  };
+
+  var bridgeDb = null;
+
+  try {
+    if (window.firebase) {
+      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(BRIDGE_CONFIG);
+      bridgeDb = firebase.firestore(app);
+    }
+  } catch (e) {
+    console.warn('[Bridge] Firebase init failed:', e);
+  }
+
+  window.pushBridgeSync = function (state) {
+    if (!bridgeDb) return;
+    var payload = {
+      timestamp: new Date().toISOString(),
+      state: JSON.stringify(state)
+    };
+    bridgeDb.collection('finance-sync').doc('bridge-import').set(payload)
+      .then(function () { console.log('[Bridge] Sync pushed:', payload.timestamp); })
+      .catch(function (e) { console.warn('[Bridge] Sync failed:', e); });
+  };
+})();
 </script>
 </body>
 </html>
