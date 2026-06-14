@@ -71,14 +71,39 @@ Personal finance tracker for David and Yamel Fontenelle. It replaces a manual Ex
 
 ---
 
-## Open bugs (as of 2026-06-14)
+## Current version: v85 — deployed and verified
 
-| Bug | Status | Notes |
-|-----|--------|-------|
-| "Cards short $2,512.07" banner always shows | Unresolved | `findTransferAccount()` fix deployed at v84 but user still sees banner. Likely cause: SoFi Transfer Account name in their JSON doesn't include "transfer account" — need to export JSON and check exact `.name` value. Fix: update name-match pattern OR set `role:"transfer"` on that account. |
-| Auto-payday date | Deployed v84 | `getNextPayday()` now auto-advances seed date — should be working |
+**All known bugs resolved as of 2026-06-14.**
 
-**First move next session:** Ask David to export JSON → check `state.accounts` → find exact name of the SoFi account → update `findTransferAccount()` to match it.
+| Bug | Status | Root Cause | Fix |
+|-----|--------|-----------|-----|
+| "Cards short $2,512.07" banner | ✅ FIXED v85 | Coverage calc only checked SoFi Transfer Account (balance $0). Real coverage comes from SoFi Checking ($2,512.07, role:"immediate") — which was excluded. | Expanded `metrics()` to sum ALL accounts with role:"immediate" or role:"checking" into coverage calc. transferGap now = $0 → "Cards covered." |
+| Auto-payday date | ✅ FIXED v84 | `nextPayday` was showing stored seed date, not next future date. | `getNextPayday()` advances seed by 14-day intervals to always show next upcoming date. |
+
+**Key data insight:** SoFi Transfer Account has balance $0. SoFi Checking (role:"immediate") holds $2,512.07 = exact card debt. Coverage works when you sum ALL liquid accounts, not just the transfer account.
+
+---
+
+## App redesign in progress (next session)
+
+David approved a full redesign. The app is becoming a **read-only financial dashboard** — workbook is source of truth, Claude pushes data in directly. No more in-app editing.
+
+**New 6-tab layout:**
+| Tab | What it shows |
+|-----|--------------|
+| Home | Keep as-is. KPIs, cards-covered banner, next paycheck preview, notes preview. |
+| Cards | Donut chart (used vs available across all cards). Each card row with utilization bar colored green/yellow/red. |
+| Accounts | Bank account balance bars. Vault progress rings toward each target. |
+| Paycheck | Donut of $3K allocation split. Scrollable list of next 8–10 paydays computed from seed date. |
+| Goals | Full goals tracker — radial rings per goal, sorted by % complete. Big ring: $38K / $110K overall (34.5%). |
+| Notes | Simple note cards, date + text. Can flag "for workbook." |
+
+**What's being cut:** Changes tab, JSON import button, all inline edit/add buttons, the Import JSON flow, pending-changes export.
+
+**Goals sheet data (from House Budgetper.xlsx):**
+14 goals, $110,450 total target, $38,074 saved (34.5%). Top performers: Car Savings 72.8%, Car Tax 81.6%. Biggest gap: Emergency Account ($11K of $39.6K). Also has a Savings Challenge tab (52-week and 26 bi-weekly).
+
+**Redesign is handed off** — dashboard.js is 930 lines. Next session starts fresh with a tight brief. Read HANDOFF.md for context.
 
 ---
 

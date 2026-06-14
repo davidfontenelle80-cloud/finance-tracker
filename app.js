@@ -14,7 +14,8 @@
     accounts: "tab-accounts",
     cards: "tab-cards",
     paycheck: "tab-paycheck",
-    changes: "tab-changes",
+    goals: "tab-goals",
+    notes: "tab-notes",
     settings: "tab-settings",
   };
 
@@ -203,25 +204,6 @@
     document.querySelectorAll(".tab-btn").forEach((button) => {
       button.addEventListener("click", () => showView(button.dataset.tab));
     });
-
-    const importInput = $("json-import");
-    if (importInput) {
-      importInput.addEventListener("change", async (event) => {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
-        try {
-          const imported = await App.Storage.importJSON(file);
-          state = App.Storage.mergeImportedState(state, imported);
-          App.Storage.saveState(state);
-          showToast("Dashboard updated from JSON", "success");
-          render();
-        } catch (err) {
-          showToast(err.message || "Import failed", "error");
-        } finally {
-          event.target.value = "";
-        }
-      });
-    }
 
     const last = (() => {
       try {

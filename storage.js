@@ -74,6 +74,7 @@
       ],
       transactions: [],
       pendingChanges: [],
+      goals: [],
     };
   }
 
@@ -97,6 +98,7 @@
         notes: Array.isArray(source.notes) ? source.notes : base.notes,
         transactions: Array.isArray(source.transactions) ? source.transactions : [],
         pendingChanges: Array.isArray(source.pendingChanges) ? source.pendingChanges : [],
+        goals: Array.isArray(source.goals) ? source.goals : [],
       };
     }
 

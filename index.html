@@ -13,10 +13,10 @@
   <title>Finance Dashboard</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="css/dark-mode.css?v=79" />
-  <link rel="stylesheet" href="css/components.css?v=79" />
-  <link rel="stylesheet" href="css/responsive.css?v=79" />
-  <link rel="stylesheet" href="css/styles.css?v=79" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=86" />
+  <link rel="stylesheet" href="css/components.css?v=86" />
+  <link rel="stylesheet" href="css/responsive.css?v=86" />
+  <link rel="stylesheet" href="css/styles.css?v=86" />
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -49,10 +49,12 @@
     <button class="tab-btn" data-tab="paycheck" aria-selected="false" role="tab">
       <span class="tab-icon"><i class="fa-solid fa-money-check-dollar"></i></span><span class="tab-label">Paycheck</span>
     </button>
-    <button class="tab-btn" data-tab="changes" aria-selected="false" role="tab">
-      <span class="tab-icon"><i class="fa-solid fa-list"></i></span><span class="tab-label">Changes</span>
+    <button class="tab-btn" data-tab="goals" aria-selected="false" role="tab">
+      <span class="tab-icon"><i class="fa-solid fa-bullseye"></i></span><span class="tab-label">Goals</span>
     </button>
-
+    <button class="tab-btn" data-tab="notes" aria-selected="false" role="tab">
+      <span class="tab-icon"><i class="fa-solid fa-sticky-note"></i></span><span class="tab-label">Notes</span>
+    </button>
     <button class="tab-btn" data-tab="settings" aria-selected="false" role="tab">
       <span class="tab-icon"><i class="fa-solid fa-gear"></i></span><span class="tab-label">Settings</span>
     </button>
@@ -63,11 +65,11 @@
     <section id="tab-accounts" class="tab-pane" role="tabpanel" aria-label="Accounts"></section>
     <section id="tab-cards" class="tab-pane" role="tabpanel" aria-label="Credit Cards"></section>
     <section id="tab-paycheck" class="tab-pane" role="tabpanel" aria-label="Next Paycheck"></section>
-    <section id="tab-changes" class="tab-pane" role="tabpanel" aria-label="Changes"></section>
+    <section id="tab-goals" class="tab-pane" role="tabpanel" aria-label="Goals"></section>
+    <section id="tab-notes" class="tab-pane" role="tabpanel" aria-label="Notes"></section>
     <section id="tab-settings" class="tab-pane" role="tabpanel" aria-label="Settings"></section>
   </main>
 
-  <input id="json-import" type="file" accept="application/json,.json" hidden>
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
@@ -79,15 +81,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="js/config.js?v=79"></script>
-  <script src="js/error-boundary.js?v=79"></script>
-  <script src="js/a11y.js?v=79"></script>
-  <script src="js/perf.js?v=79"></script>
-  <script src="js/firebase/firebase-config.js?v=79"></script>
-  <script src="js/firebase/cloud-backup.js?v=79"></script>
-  <script src="js/firebase/firebase-sync.js?v=79"></script>
-  <script src="storage.js?v=79"></script>
-  <script src="dashboard.js?v=79"></script>
-  <script src="app.js?v=79"></script>
+  <script src="js/config.js?v=86"></script>
+  <script src="js/error-boundary.js?v=86"></script>
+  <script src="js/a11y.js?v=86"></script>
+  <script src="js/perf.js?v=86"></script>
+  <script src="js/firebase/firebase-config.js?v=86"></script>
+  <script src="js/firebase/cloud-backup.js?v=86"></script>
+  <script src="js/firebase/firebase-sync.js?v=86"></script>
+  <script src="storage.js?v=86"></script>
+  <script src="dashboard.js?v=86"></script>
+  <script src="app.js?v=86"></script>
 </body>
 </html>
