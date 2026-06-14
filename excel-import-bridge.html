@@ -404,6 +404,9 @@ function buildChanges(wb, ftState) {
 
   // Match each app bank account to its Excel row by name
   const usedBankRows = new Set();
+  // DEBUG: log Excel bank names vs app bank names
+  console.log('[Bridge Debug] Excel bank rows found:', Object.keys(excelBankMap));
+  console.log('[Bridge Debug] App bank accounts:', ftBanks.map(b => b ? normName(b.name||'') : null));
   ftBanks.forEach((bank, idx) => {
     if (!bank) return;
     const appNorm   = normName(bank.name || '');
