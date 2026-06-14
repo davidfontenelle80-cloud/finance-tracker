@@ -74,10 +74,11 @@ Personal finance tracker for David and Yamel Fontenelle. It replaces a manual Ex
 
 ---
 
-## Current version: v92 — deployed and verified 2026-06-14
+## Current version: v93 — deployed and verified 2026-06-14
 
 | Version | What shipped |
 |---------|-------------|
+| v93 | Bridge vault row range fixed: 17-35 → 17-36. Row 36 (Food, $300) was never imported. Workbook sheet map fully confirmed via direct inspection. |
 | v92 | Accounts tab: bank account balance now displays in green (primary color), bold name, 1rem monospace — clearly visible on dark mobile screen. |
 | v91 | Bridge reads dates from row 1 of all 3 paycheck columns (B1, D1, F1), picks the one with the NEXT upcoming date, and imports that column only. Falls back to most recent past date if all are past. |
 | v90 | Fixed paycheck duplicate items — bridge now reads PAYCHECK #1 only (B/C cols). Each column is a separate paycheck, not additive. Removes "over planned" caused by combining P1+P2. |

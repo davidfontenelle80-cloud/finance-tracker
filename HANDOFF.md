@@ -1,18 +1,38 @@
 # Finance Tracker — Session Handoff
 
 **Date:** 2026-06-14
-**Last version live:** v92 — `finance-v92-accounts-layout`
-**Open issue:** Account balances look wrong — not yet diagnosed.
+**Last version live:** v93 — `finance-v93-bridge-vault-fix`
+**Open issue:** None — vault row fix deployed and verified.
 
 ---
 
-## Open issue — account balances off
+## What shipped this session (v93)
 
-David said "the account balances are off" after seeing v92 live. No diagnosis done yet.
+**Root cause found:** `excel-import-bridge.html` was reading `VAULT_ROWS` only up to row 35, but the Bank Accounts sheet has 20 vaults (rows 17–36). Row 36 = Food ($300.00) was never imported.
 
-**Diagnose before writing any code — in this order:**
+**Fix:** Changed `for (let r = 17; r <= 35; r++)` → `r <= 36` in bridge. Bumped CACHE_VERSION to `finance-v93-bridge-vault-fix`.
 
-1. **Check the data.** Ask David to export JSON from the app (Home tab → Export Changes button) and paste the `accounts` array. Are the numbers wrong in the data, or just displaying wrong?
+**Also confirmed from workbook inspection:**
+- Bank accounts: rows 7–12, column C = balance ✓
+- Vaults: rows 17–36, column C = balance (now fixed)
+- Transfer Account vault (row 25) stays — David confirmed he wants it visible
+- SoFi Checking / Savings Account show "-" in workbook → bridge skips those rows → app keeps stale balance. If those show non-zero, zero them out manually in the app.
+- Data Entry sheet = transaction log + monthly net worth tracker (not used by bridge)
+
+**Workbook sheet map (confirmed):**
+| Sheet | Bridge reads? | What it is |
+|-------|--------------|-----------|
+| Credit Cards | Yes | CC balances, rows 7-16 |
+| Bank Accounts | Yes | Bank accounts rows 7-12, SoFi Vaults rows 17-36 |
+| Paycheck Planner | Yes | Paycheck allocation |
+| Paycheck Tracker | No | Historical paycheck log |
+| Investment Tracker 2026 | Yes | Investment accounts |
+| Data Entry | No | Transaction log + monthly net worth |
+| Savings Goals | Yes | 14 goals, rows 7-20 |
+| Savings Plan | No | Unknown |
+| Savings Challenge | No | 52-week / 26 bi-weekly challenge |
+
+---
 2. **Check the bridge.** If data is wrong, the issue is in `excel-import-bridge.html` — look at how bank account balances are read from `House Budgetper.xlsx`.
 3. **Check the render.** If data is correct but display is wrong, look at `renderAccounts()` in `dashboard.js` around line 311 — the bank account rows added in v92.
 
