@@ -122,6 +122,9 @@
     const cardAvailable = total(state.creditCards, "available");
     const billsTotal = total(state.bills, "amount");
     const transfer = findTransferAccount(state.accounts);
+    const liquidBal = (state.accounts || [])
+      .filter(function(a) { return a.role === 'transfer' || a.role === 'immediate' || a.role === 'checking'; })
+      .reduce(function(sum, a) { return sum + (Number(a.balance) || 0); }, 0);
     const paycheckTotal = total(state.paycheckPlan, "amount");
     return {
       bank,
@@ -133,7 +136,7 @@
       cardAvailable,
       billsTotal,
       netWorth: bank + vaults + invest - cards,
-      transferGap: (transfer ? Number(transfer.balance) || 0 : 0) - cards,
+      transferGap: liquidBal - cards,
       paycheckTotal,
       paycheckLeft: (Number(state.settings.paycheckAmount) || 0) - paycheckTotal,
       openNotes: (state.notes || []).filter((note) => note.status !== "done").length,
@@ -187,7 +190,7 @@
       <section class="status-card status-card--${cardStatus}">
         <div>
           <div class="status-title">${cardText}</div>
-          <div class="status-sub">${esc(m.transferName)} vs total card balance</div>
+          <div class="status-sub">Liquid cash vs total card balance</div>
         </div>
         <strong>${money(Math.abs(m.transferGap))}</strong>
       </section>
