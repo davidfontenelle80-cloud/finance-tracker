@@ -305,6 +305,11 @@ const LOG_MAX          = 20; // max log entries to keep
 const SHEET_CC    = 'Credit Cards';
 const SHEET_BANK  = 'Bank Accounts';
 const SHEET_INV   = 'Investment Tracker';
+const SHEET_GOALS = 'Savings Goals';
+
+// Savings Goals: rows 7-20 (14 goals). B=Name, C=Target, D=Current Saved.
+// E=Still Need and F=%Complete are formulas — never read those columns.
+const GOALS_ROWS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
 // Credit cards: 10 cards, rows 7-16
 // C = available credit, D = limit, NEVER E (formula)
@@ -405,6 +410,7 @@ function defaultDashboardState() {
     snapshots: [],
     paycheckPlan: [],
     notes: [{ id: bridgeId(), date: todayISO(), text: 'Seeded from Excel Import Bridge.', status: 'open', source: 'excel bridge' }],
+    goals: [],
     transactions: [],
     pendingChanges: [],
   };
@@ -688,6 +694,41 @@ function buildChanges(wb, ftState) {
     });
   }
 
+  // ---- SAVINGS GOALS ----
+  const goalsSheet = findSheet(wb, SHEET_GOALS);
+  const ftGoals = mode === 'dashboard' ? (ftState.goals || []) : [];
+
+  if (goalsSheet && mode === 'dashboard') {
+    GOALS_ROWS.forEach((row, idx) => {
+      const goalName = readText(goalsSheet, 'B', row);
+      if (!goalName) return;
+      const rawTarget = readCell(goalsSheet, 'C', row);
+      const rawSaved  = readCell(goalsSheet, 'D', row);
+      if (rawTarget === null && rawSaved === null) return;
+
+      const existing = ftGoals[idx] || {};
+
+      if (rawTarget !== null) {
+        const newTarget = round2(rawTarget);
+        const oldTarget = existing.target !== undefined ? round2(existing.target) : null;
+        if (oldTarget !== newTarget) {
+          addChange('goal', 'Goal', goalName, 'target', oldTarget, newTarget,
+            { type: 'goal', idx, field: 'target', name: goalName });
+        }
+      }
+      if (rawSaved !== null) {
+        const newSaved = round2(rawSaved);
+        const oldSaved = existing.saved !== undefined ? round2(existing.saved) : null;
+        if (oldSaved !== newSaved) {
+          addChange('goal', 'Goal', goalName, 'saved', oldSaved, newSaved,
+            { type: 'goal', idx, field: 'saved', name: goalName });
+        }
+      }
+    });
+  } else if (!goalsSheet && mode === 'dashboard') {
+    addSkip(SHEET_GOALS, '—', 'Sheet "Savings Goals" not found — goals not imported');
+  }
+
   return { changes, skips };
 }
 
@@ -740,6 +781,15 @@ function applyChanges(changes, ftState) {
         const inv = ensureItem(state.investments, t.idx, i => ({ id: bridgeId(), name: t.name || `Investment ${i+1}`, balance: 0 }));
         inv.name = inv.name || t.name;
         inv[t.field] = c.newVal;
+      } else if (mode === 'dashboard' && t.type === 'goal') {
+        state.goals = state.goals || [];
+        const goal = ensureItem(state.goals, t.idx, i => ({ id: bridgeId(), name: t.name || `Goal ${i+1}`, target: 0, saved: 0, pct: 0 }));
+        goal.name = goal.name || t.name;
+        goal[t.field] = c.newVal;
+        // Recompute pct whenever saved or target changes
+        const s = Number(goal.saved) || 0;
+        const tg = Number(goal.target) || 0;
+        goal.pct = tg > 0 ? Math.round((s / tg) * 1000) / 10 : 0;
       } else if (t.type === 'card') {
         const card = ensureItem(state.accounts.cards, t.idx, i => ({ id: bridgeId(), name: t.name || `Card ${i+1}`, limit: 0, balance: 0 }));
         card[t.field] = c.newVal;
@@ -841,8 +891,8 @@ function renderLog(containerId) {
 // ============================================================
 function renderPreview(changes, skips) {
   const tbody = $('preview-body');
-  const tagLabels = { cc:'Credit Card', bank:'Bank', vault:'Vault', inv:'Investment' };
-  const tagClass  = { cc:'tag-cc', bank:'tag-bank', vault:'tag-vault', inv:'tag-inv' };
+  const tagLabels = { cc:'Credit Card', bank:'Bank', vault:'Vault', inv:'Investment', goal:'Goal' };
+  const tagClass  = { cc:'tag-cc', bank:'tag-bank', vault:'tag-vault', inv:'tag-inv', goal:'tag-vault' };
 
   if (!changes.length) {
     tbody.innerHTML = '';
