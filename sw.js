@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v87-goals-bridge';
+const CACHE_VERSION = 'finance-v88-paycheck-bridge';
 
 /**
  * All URLs that make up the app shell.

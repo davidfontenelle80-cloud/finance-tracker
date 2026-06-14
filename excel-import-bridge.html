@@ -305,11 +305,17 @@ const LOG_MAX          = 20; // max log entries to keep
 const SHEET_CC    = 'Credit Cards';
 const SHEET_BANK  = 'Bank Accounts';
 const SHEET_INV   = 'Investment Tracker';
-const SHEET_GOALS = 'Savings Goals';
+const SHEET_GOALS    = 'Savings Goals';
+const SHEET_PAYCHECK = 'Paycheck Planner';
 
 // Savings Goals: rows 7-20 (14 goals). B=Name, C=Target, D=Current Saved.
 // E=Still Need and F=%Complete are formulas — never read those columns.
 const GOALS_ROWS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+
+// Paycheck Planner: PAYCHECK #1 column only. B=Name, C=Amount. Rows 4-28.
+// Row 29 = TOTAL EXPENSES — never read. Skip rows where amount is 0 or null.
+const PAYCHECK_ROWS = [];
+for (let r = 4; r <= 28; r++) PAYCHECK_ROWS.push(r);
 
 // Credit cards: 10 cards, rows 7-16
 // C = available credit, D = limit, NEVER E (formula)
@@ -729,6 +735,36 @@ function buildChanges(wb, ftState) {
     addSkip(SHEET_GOALS, '—', 'Sheet "Savings Goals" not found — goals not imported');
   }
 
+  // ---- PAYCHECK PLANNER ----
+  // Read PAYCHECK #1 column only (B=Name, C=Amount). Rows 4-28, nonzero only.
+  // Wholesale-replaces state.paycheckPlan so the app matches the workbook exactly.
+  if (mode === 'dashboard') {
+    const paycheckSheet = findSheet(wb, SHEET_PAYCHECK);
+    if (paycheckSheet) {
+      const newPlan = [];
+      PAYCHECK_ROWS.forEach(row => {
+        const itemName = readText(paycheckSheet, 'B', row);
+        const rawAmt   = readCell(paycheckSheet, 'C', row);
+        if (!itemName || rawAmt === null || rawAmt === 0) return;
+        newPlan.push({ name: itemName, amount: round2(rawAmt) });
+      });
+
+      // Compare against current plan — emit one change per item that differs,
+      // plus a sentinel "wholesale replace" change that applyChanges uses.
+      const oldPlan = ftState.paycheckPlan || [];
+      const planChanged = JSON.stringify(newPlan) !== JSON.stringify(
+        oldPlan.map(p => ({ name: p.name, amount: round2(p.amount) }))
+      );
+      if (planChanged) {
+        addChange('paycheck', 'Paycheck', 'Paycheck Plan', 'plan',
+          oldPlan.length + ' items', newPlan.length + ' items',
+          { type: 'paycheck_plan', newPlan });
+      }
+    } else {
+      addSkip(SHEET_PAYCHECK, '—', 'Sheet "Paycheck Planner" not found — paycheck plan not imported');
+    }
+  }
+
   return { changes, skips };
 }
 
@@ -790,6 +826,13 @@ function applyChanges(changes, ftState) {
         const s = Number(goal.saved) || 0;
         const tg = Number(goal.target) || 0;
         goal.pct = tg > 0 ? Math.round((s / tg) * 1000) / 10 : 0;
+      } else if (mode === 'dashboard' && t.type === 'paycheck_plan') {
+        // Wholesale replace — workbook is source of truth for the plan
+        state.paycheckPlan = t.newPlan.map(item => ({
+          id: bridgeId(),
+          name: item.name,
+          amount: item.amount
+        }));
       } else if (t.type === 'card') {
         const card = ensureItem(state.accounts.cards, t.idx, i => ({ id: bridgeId(), name: t.name || `Card ${i+1}`, limit: 0, balance: 0 }));
         card[t.field] = c.newVal;
@@ -891,8 +934,8 @@ function renderLog(containerId) {
 // ============================================================
 function renderPreview(changes, skips) {
   const tbody = $('preview-body');
-  const tagLabels = { cc:'Credit Card', bank:'Bank', vault:'Vault', inv:'Investment', goal:'Goal' };
-  const tagClass  = { cc:'tag-cc', bank:'tag-bank', vault:'tag-vault', inv:'tag-inv', goal:'tag-vault' };
+  const tagLabels = { cc:'Credit Card', bank:'Bank', vault:'Vault', inv:'Investment', goal:'Goal', paycheck:'Paycheck' };
+  const tagClass  = { cc:'tag-cc', bank:'tag-bank', vault:'tag-vault', inv:'tag-inv', goal:'tag-vault', paycheck:'tag-bank' };
 
   if (!changes.length) {
     tbody.innerHTML = '';

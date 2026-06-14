@@ -71,16 +71,15 @@ Personal finance tracker for David and Yamel Fontenelle. It replaces a manual Ex
 
 ---
 
-## Current version: v85 — deployed and verified
+## Current version: v88 — deployed and verified 2026-06-14
 
-**All known bugs resolved as of 2026-06-14.**
-
-| Bug | Status | Root Cause | Fix |
-|-----|--------|-----------|-----|
-| "Cards short $2,512.07" banner | ✅ FIXED v85 | Coverage calc only checked SoFi Transfer Account (balance $0). Real coverage comes from SoFi Checking ($2,512.07, role:"immediate") — which was excluded. | Expanded `metrics()` to sum ALL accounts with role:"immediate" or role:"checking" into coverage calc. transferGap now = $0 → "Cards covered." |
-| Auto-payday date | ✅ FIXED v84 | `nextPayday` was showing stored seed date, not next future date. | `getNextPayday()` advances seed by 14-day intervals to always show next upcoming date. |
-
-**Key data insight:** SoFi Transfer Account has balance $0. SoFi Checking (role:"immediate") holds $2,512.07 = exact card debt. Coverage works when you sum ALL liquid accounts, not just the transfer account.
+| Version | What shipped |
+|---------|-------------|
+| v88 | Excel Import Bridge now reads Paycheck Planner sheet (PAYCHECK #1, B=Name, C=Amount, rows 4-28) and wholesale-replaces `state.paycheckPlan[]` on import. |
+| v87 | Excel Import Bridge now reads Savings Goals sheet (rows 7-20, B=Name, C=Target, D=Saved) and writes `state.goals[]` with name/target/saved/pct on import. |
+| v86 | Full read-only dashboard redesign: Goals tab, Notes tab, SVG donuts/rings, no edit inputs, workbook is source of truth. |
+| v85 | Fixed "Cards short" banner — coverage now sums ALL liquid accounts (role:"immediate"/"checking"), not just SoFi Transfer Account. |
+| v84 | Fixed auto-payday date — `getNextPayday()` advances seed by 14-day intervals. |
 
 ---
 
