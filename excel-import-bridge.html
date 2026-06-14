@@ -207,7 +207,7 @@
 // by position within state.accounts.bank/vaults/cards arrays.
 // Investments match by ticker name.
 // ============================================================
-const FT_STATE_KEY   = 'financeApp_v1';
+const FT_STATE_KEY   = 'financeDashboard_v1';
 const FT_LOG_KEY     = 'ft_import_log';
 const LOG_MAX        = 20; // max log entries to keep
 
@@ -334,7 +334,7 @@ function buildChanges(wb, ftState) {
 
   // ---- CREDIT CARDS ----
   const ccSheet = findSheet(wb, SHEET_CC);
-  const ftCards = ftState ? (ftState.accounts && ftState.accounts.cards || []) : [];
+  const ftCards = ftState ? (Array.isArray(ftState.creditCards) ? ftState.creditCards : (ftState.accounts && ftState.accounts.cards || [])) : [];
 
   CC_ROWS.forEach((row, idx) => {
     const cardName = ftCards[idx] ? ftCards[idx].name : `Card ${idx+1}`;
@@ -370,8 +370,8 @@ function buildChanges(wb, ftState) {
 
   // ---- BANK ACCOUNTS + VAULTS (name-based matching) ----
   const bankSheet = findSheet(wb, SHEET_BANK);
-  const ftBanks   = ftState ? (ftState.accounts && ftState.accounts.bank   || []) : [];
-  const ftVaults  = ftState ? (ftState.accounts && ftState.accounts.vaults || []) : [];
+  const ftBanks   = ftState ? (Array.isArray(ftState.accounts) ? ftState.accounts.filter(a => a.type === 'bank') : (ftState.accounts && ftState.accounts.bank || [])) : [];
+  const ftVaults  = ftState ? (Array.isArray(ftState.vaults) ? ftState.vaults : (ftState.accounts && ftState.accounts.vaults || [])) : [];
 
   // Normalize a display name for comparison:
   // strip non-ASCII (emoji), turn slashes into spaces, lowercase, collapse whitespace, drop punctuation
@@ -386,10 +386,14 @@ function buildChanges(wb, ftState) {
 
   // Manual overrides for names that differ between the app and the workbook
   // Key = normalized app name, Value = normalized Excel name
-  const BANK_NAME_OVERRIDES  = {};
+  const BANK_NAME_OVERRIDES  = {
+    'car savings sgov': 'car savings fidelity sgov',
+  };
   const VAULT_NAME_OVERRIDES = {
     'amica insurance': 'amica insurances',
     'emergency vault': 'emergency account',
+    'slush': 'slush fund',
+    'misc': 'slush fund',
   };
 
   // Build Excel bank map from rows 7-12, col B (name) / col C (balance)
@@ -534,11 +538,18 @@ function applyChanges(changes, ftState) {
     if (!t) return;
     try {
       if (t.type === 'card') {
-        state.accounts.cards[t.idx][t.field] = c.newVal;
+        const cards = Array.isArray(state.creditCards) ? state.creditCards : (state.accounts && state.accounts.cards || []);
+        if (cards[t.idx]) cards[t.idx][t.field] = c.newVal;
       } else if (t.type === 'bank') {
-        state.accounts.bank[t.idx][t.field] = c.newVal;
+        if (Array.isArray(state.accounts)) {
+          const banks = state.accounts.filter(a => a.type === 'bank');
+          if (banks[t.idx]) banks[t.idx][t.field] = c.newVal;
+        } else if (state.accounts && state.accounts.bank) {
+          state.accounts.bank[t.idx][t.field] = c.newVal;
+        }
       } else if (t.type === 'vault') {
-        state.accounts.vaults[t.idx][t.field] = c.newVal;
+        const vaults = Array.isArray(state.vaults) ? state.vaults : (state.accounts && state.accounts.vaults || []);
+        if (vaults[t.idx]) vaults[t.idx][t.field] = c.newVal;
       } else if (t.type === 'inv_price') {
         const acct = state.investments.accounts[t.acctIdx];
         const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());

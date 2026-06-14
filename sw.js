@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v95-bridge-debug';
+const CACHE_VERSION = 'finance-v96-bridge-new-state-key';
 
 /**
  * All URLs that make up the app shell.
