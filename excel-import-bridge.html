@@ -314,13 +314,9 @@ const GOALS_ROWS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
 // Paycheck Planner: up to 3 paychecks per month. Each has a date in row 1 of
 // its name column. If the date cell is empty, skip that paycheck entirely.
-// B=names/C=amounts (P1), D=names/E=amounts (P2), F=names/G=amounts (P3).
+// B=names/C=amounts (P1). Only PAYCHECK #1 is imported — it represents the
+// standard bi-weekly allocation. P2/P3 are separate paychecks, not additive.
 // Rows 4-28 have items; row 29 = TOTAL EXPENSES — never read.
-const PAYCHECK_COLUMNS = [
-  { nameCol: 'B', amtCol: 'C', label: 'PAYCHECK #1' },
-  { nameCol: 'D', amtCol: 'E', label: 'PAYCHECK #2' },
-  { nameCol: 'F', amtCol: 'G', label: 'PAYCHECK #3' },
-];
 const PAYCHECK_ROWS = [];
 for (let r = 4; r <= 28; r++) PAYCHECK_ROWS.push(r);
 
@@ -743,25 +739,18 @@ function buildChanges(wb, ftState) {
   }
 
   // ---- PAYCHECK PLANNER ----
-  // Read all paycheck columns that have a date in row 1 (nameCol, row 1).
-  // PAYCHECK #3 only happens in 3-paycheck months — date cell will be empty otherwise.
-  // Wholesale-replaces state.paycheckPlan with all active paychecks combined.
+  // Reads PAYCHECK #1 only (B=name, C=amount, rows 4-28).
+  // Each paycheck column in the workbook is a separate paycheck — not additive.
+  // Wholesale-replaces state.paycheckPlan with PAYCHECK #1 items.
   if (mode === 'dashboard') {
     const paycheckSheet = findSheet(wb, SHEET_PAYCHECK);
     if (paycheckSheet) {
       const newPlan = [];
-      PAYCHECK_COLUMNS.forEach(({ nameCol, amtCol, label }) => {
-        // Row 1 of the name column holds the paycheck date.
-        // If empty, this paycheck isn't scheduled this month — skip it.
-        const dateVal = readText(paycheckSheet, nameCol, 1) || readCell(paycheckSheet, nameCol, 1);
-        if (!dateVal) return; // no date → skip entire paycheck
-
-        PAYCHECK_ROWS.forEach(row => {
-          const itemName = readText(paycheckSheet, nameCol, row);
-          const rawAmt   = readCell(paycheckSheet, amtCol, row);
-          if (!itemName || rawAmt === null || rawAmt === 0) return;
-          newPlan.push({ name: itemName, amount: round2(rawAmt) });
-        });
+      PAYCHECK_ROWS.forEach(row => {
+        const itemName = readText(paycheckSheet, 'B', row);
+        const rawAmt   = readCell(paycheckSheet, 'C', row);
+        if (!itemName || rawAmt === null || rawAmt === 0) return;
+        newPlan.push({ name: itemName, amount: round2(rawAmt) });
       });
 
       const oldPlan = ftState.paycheckPlan || [];
