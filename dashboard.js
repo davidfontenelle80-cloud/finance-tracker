@@ -205,8 +205,11 @@
 
   function balanceBar(val, maxVal, label) {
     var pct = maxVal > 0 ? Math.min(100, (Math.abs(val) / maxVal) * 100) : 0;
-    return '<div style="margin-bottom:12px">' +
-      '<div class="mini-row" style="margin-bottom:4px"><span>' + esc(label) + "</span><strong>" + money(val) + "</strong></div>" +
+    return '<div style="margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<span style="font-weight:600;font-size:.95rem">' + esc(label) + '</span>' +
+        '<strong style="font-size:1rem;font-family:var(--font-mono);color:var(--color-primary)">' + money(val) + '</strong>' +
+      '</div>' +
       '<div style="height:8px;background:var(--color-surface-2,rgba(143,151,184,.18));border-radius:999px;overflow:hidden">' +
       '<div style="width:' + pct.toFixed(1) + '%;height:8px;background:var(--color-primary);border-radius:999px;transition:width .4s ease"></div></div></div>';
   }
@@ -306,17 +309,34 @@
         kpi("Net liquid", money(m.transferGap), m.transferGap >= 0 ? "good" : "bad") +
       "</section>" +
       '<div class="card"><div class="card-title" style="margin-bottom:16px">' + t("bank_accounts") + "</div>" +
-        (bankAccounts.map(function(a) { return balanceBar(Number(a.balance) || 0, maxBank || 1, a.name); }).join("") || empty(t("no_items"))) +
+        (bankAccounts.map(function(a) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent)">' +
+            '<span style="font-weight:600;font-size:.95rem">' + esc(a.name) + '</span>' +
+            '<strong style="font-family:var(--font-mono);color:var(--color-primary);font-size:1rem">' + money(Number(a.balance) || 0) + '</strong>' +
+          '</div>';
+        }).join("") || empty(t("no_items"))) +
       "</div>" +
       '<div class="card"><div class="card-title" style="margin-bottom:16px">' + t("savings_vaults") + "</div>" +
         (vaults.map(function(v) {
           var bal = Number(v.balance) || 0;
           var target = Number(v.target) || 0;
           var pct = target > 0 ? Math.min(100, (bal / target) * 100) : 0;
-          return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
-            svgVaultRing(pct) +
-            '<div style="flex:1;min-width:0"><div style="font-weight:600;margin-bottom:2px">' + esc(v.name) + "</div>" +
-            '<div class="text-secondary text-sm">' + money(bal) + (target ? " / " + money(target) : "") + "</div></div></div>";
+          var pctLabel = pct > 0 ? pct.toFixed(0) + '%' : '0%';
+          return '<div style="margin-bottom:18px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+              '<span style="font-weight:600;font-size:.95rem">' + esc(v.name) + '</span>' +
+              '<strong style="font-family:var(--font-mono);color:var(--color-primary);font-size:1rem">' + money(bal) + '</strong>' +
+            '</div>' +
+            (target > 0
+              ? '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                  '<span style="font-size:.78rem;color:var(--text-secondary)">' + money(bal) + ' of ' + money(target) + '</span>' +
+                  '<span style="font-size:.78rem;color:var(--color-primary);font-weight:600">' + pctLabel + '</span>' +
+                '</div>' +
+                '<div style="height:8px;background:var(--color-surface-2,rgba(143,151,184,.18));border-radius:999px;overflow:hidden">' +
+                  '<div style="width:' + pct.toFixed(1) + '%;height:8px;background:var(--color-primary);border-radius:999px;transition:width .4s ease"></div>' +
+                '</div>'
+              : '') +
+          '</div>';
         }).join("") || empty(t("no_items"))) +
       "</div>" +
       ((state.investments || []).length ? '<div class="card"><div class="card-title" style="margin-bottom:12px">' + t("investments") + "</div>" +

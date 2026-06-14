@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v91-paycheck-next-date';
+const CACHE_VERSION = 'finance-v92-accounts-layout';
 
 /**
  * All URLs that make up the app shell.
