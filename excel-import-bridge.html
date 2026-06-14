@@ -312,11 +312,16 @@ const SHEET_PAYCHECK = 'Paycheck Planner';
 // E=Still Need and F=%Complete are formulas — never read those columns.
 const GOALS_ROWS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
-// Paycheck Planner: up to 3 paychecks per month. Each has a date in row 1 of
-// its name column. If the date cell is empty, skip that paycheck entirely.
-// B=names/C=amounts (P1). Only PAYCHECK #1 is imported — it represents the
-// standard bi-weekly allocation. P2/P3 are separate paychecks, not additive.
+// Paycheck Planner: up to 3 paychecks per month.
+// B/C = PAYCHECK #1, D/E = PAYCHECK #2, F/G = PAYCHECK #3.
+// Row 1 of each name column holds the paycheck date.
+// The bridge picks whichever column has the NEXT upcoming date.
 // Rows 4-28 have items; row 29 = TOTAL EXPENSES — never read.
+const PAYCHECK_COLUMNS = [
+  { nameCol: 'B', amtCol: 'C', label: 'PAYCHECK #1' },
+  { nameCol: 'D', amtCol: 'E', label: 'PAYCHECK #2' },
+  { nameCol: 'F', amtCol: 'G', label: 'PAYCHECK #3' },
+];
 const PAYCHECK_ROWS = [];
 for (let r = 4; r <= 28; r++) PAYCHECK_ROWS.push(r);
 
@@ -739,28 +744,63 @@ function buildChanges(wb, ftState) {
   }
 
   // ---- PAYCHECK PLANNER ----
-  // Reads PAYCHECK #1 only (B=name, C=amount, rows 4-28).
-  // Each paycheck column in the workbook is a separate paycheck — not additive.
-  // Wholesale-replaces state.paycheckPlan with PAYCHECK #1 items.
+  // Reads row 1 date from each paycheck column (B1, D1, F1).
+  // Picks the column whose date is the NEXT upcoming paycheck.
+  // If all dates are past, picks the most recent one.
+  // Wholesale-replaces state.paycheckPlan with the chosen column's items.
   if (mode === 'dashboard') {
     const paycheckSheet = findSheet(wb, SHEET_PAYCHECK);
     if (paycheckSheet) {
-      const newPlan = [];
-      PAYCHECK_ROWS.forEach(row => {
-        const itemName = readText(paycheckSheet, 'B', row);
-        const rawAmt   = readCell(paycheckSheet, 'C', row);
-        if (!itemName || rawAmt === null || rawAmt === 0) return;
-        newPlan.push({ name: itemName, amount: round2(rawAmt) });
-      });
+      // Parse a date from row 1 of a name column.
+      // Dates may be stored as Excel serial numbers (numeric) or formatted text.
+      function parsePayDate(nameCol) {
+        const serial = readCell(paycheckSheet, nameCol, 1);
+        if (serial !== null) {
+          try {
+            const p = XLSX.SSF.parse_date_code(serial);
+            if (p && p.y) return new Date(p.y, p.m - 1, p.d);
+          } catch(e) {}
+        }
+        const txt = readText(paycheckSheet, nameCol, 1);
+        if (txt) {
+          const d = new Date(txt);
+          if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+      }
 
-      const oldPlan = ftState.paycheckPlan || [];
-      const planChanged = JSON.stringify(newPlan) !== JSON.stringify(
-        oldPlan.map(p => ({ name: p.name, amount: round2(p.amount) }))
-      );
-      if (planChanged) {
-        addChange('paycheck', 'Paycheck', 'Paycheck Plan', 'plan',
-          oldPlan.length + ' items', newPlan.length + ' items',
-          { type: 'paycheck_plan', newPlan });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const candidates = PAYCHECK_COLUMNS
+        .map(c => ({ ...c, date: parsePayDate(c.nameCol) }))
+        .filter(c => c.date !== null);
+
+      if (candidates.length === 0) {
+        addSkip(SHEET_PAYCHECK, '—', 'No paycheck dates found in row 1 — paycheck plan not imported');
+      } else {
+        candidates.sort((a, b) => a.date - b.date);
+        // Pick next upcoming date; fall back to most recent past date
+        const chosen = candidates.find(c => c.date >= today) || candidates[candidates.length - 1];
+
+        const newPlan = [];
+        PAYCHECK_ROWS.forEach(row => {
+          const itemName = readText(paycheckSheet, chosen.nameCol, row);
+          const rawAmt   = readCell(paycheckSheet, chosen.amtCol, row);
+          if (!itemName || rawAmt === null || rawAmt === 0) return;
+          newPlan.push({ name: itemName, amount: round2(rawAmt) });
+        });
+
+        const dateStr = chosen.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const oldPlan = ftState.paycheckPlan || [];
+        const planChanged = JSON.stringify(newPlan) !== JSON.stringify(
+          oldPlan.map(p => ({ name: p.name, amount: round2(p.amount) }))
+        );
+        if (planChanged) {
+          addChange('paycheck', 'Paycheck', `Paycheck Plan — ${chosen.label} (${dateStr})`, 'plan',
+            oldPlan.length + ' items', newPlan.length + ' items',
+            { type: 'paycheck_plan', newPlan });
+        }
       }
     } else {
       addSkip(SHEET_PAYCHECK, '—', 'Sheet "Paycheck Planner" not found — paycheck plan not imported');

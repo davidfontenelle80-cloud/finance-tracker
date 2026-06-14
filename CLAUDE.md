@@ -71,10 +71,11 @@ Personal finance tracker for David and Yamel Fontenelle. It replaces a manual Ex
 
 ---
 
-## Current version: v90 — deployed and verified 2026-06-14
+## Current version: v91 — deployed and verified 2026-06-14
 
 | Version | What shipped |
 |---------|-------------|
+| v91 | Bridge reads dates from row 1 of all 3 paycheck columns (B1, D1, F1), picks the one with the NEXT upcoming date, and imports that column only. Falls back to most recent past date if all are past. |
 | v90 | Fixed paycheck duplicate items — bridge now reads PAYCHECK #1 only (B/C cols). Each column is a separate paycheck, not additive. Removes "over planned" caused by combining P1+P2. |
 | v89 | Paycheck import now reads all 3 paycheck columns (B/C, D/E, F/G). Checks date in row 1 of each name column — if empty, skips that paycheck. PAYCHECK #3 only imports when it has a date (3-paycheck months). |
 | v88 | Excel Import Bridge now reads Paycheck Planner sheet (PAYCHECK #1, B=Name, C=Amount, rows 4-28) and wholesale-replaces `state.paycheckPlan[]` on import. |
