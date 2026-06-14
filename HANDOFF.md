@@ -1,7 +1,59 @@
 # Finance Tracker — Session Handoff
 
-**Date:** 2026-06-14  
-**Status:** Bug NOT resolved from user's perspective — service worker cache issue suspected, or data mismatch. Full diagnosis needed next session.
+**Date:** 2026-06-14
+**Last version live:** v92 — `finance-v92-accounts-layout`
+**Open issue:** Account balances look wrong — not yet diagnosed.
+
+---
+
+## Open issue — account balances off
+
+David said "the account balances are off" after seeing v92 live. No diagnosis done yet.
+
+**Diagnose before writing any code — in this order:**
+
+1. **Check the data.** Ask David to export JSON from the app (Home tab → Export Changes button) and paste the `accounts` array. Are the numbers wrong in the data, or just displaying wrong?
+2. **Check the bridge.** If data is wrong, the issue is in `excel-import-bridge.html` — look at how bank account balances are read from `House Budgetper.xlsx`.
+3. **Check the render.** If data is correct but display is wrong, look at `renderAccounts()` in `dashboard.js` around line 311 — the bank account rows added in v92.
+
+**Ask David:**
+- "Can you export your JSON and paste the `accounts` array?"
+- "Which accounts look wrong — all of them or specific ones?"
+
+---
+
+## What shipped this session
+
+| Version | What shipped |
+|---------|-------------|
+| v92 | Accounts tab redesign: bank accounts show bold name + green balance per row (no bar, no target). Vaults show name + balance + horizontal progress bar with "$X of $Y · Z%" label above it. Replaced SVG rings. |
+| v91 | Bridge picks paycheck column by NEXT upcoming date (reads row 1 of B, D, F cols — June 23 in col F was next, not July 7 in col B). |
+| v90 | Fixed paycheck duplicates — bridge was combining all 3 paycheck columns additively. Now imports one column only. |
+
+---
+
+## Key files
+
+| File | Relevant to issue |
+|------|------------------|
+| `dashboard.js` ~line 298 | `renderAccounts()` — bank account and vault rendering |
+| `excel-import-bridge.html` | Bank account import from workbook |
+| `storage.js` | `defaultState` shape for `state.accounts[]` |
+
+**State shape:**
+```js
+state.accounts = [ { name: "SoFi Checking", balance: 1234.56, role?: "transfer" } ]
+state.vaults   = [ { name: "Emergency Fund", balance: 11000, target: 39600 } ]
+```
+
+---
+
+## Deploy reminder
+
+- Edit only in `C:\Users\david\OneDrive\Documents\GitHub\finance-tracker`
+- Commit + push via **GitHub Desktop** (bash git is broken on OneDrive mount)
+- Bump `CACHE_VERSION` in `sw.js` on every deploy
+- Verify: `curl -s "https://davidfontenelle80-cloud.github.io/finance-tracker/sw.js" | grep CACHE_VERSION`
 
 ---
 

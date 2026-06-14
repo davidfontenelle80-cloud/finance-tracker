@@ -6,6 +6,9 @@ This file is read automatically when working in this repo. Honor it on every cha
 
 ## Session startup — do this FIRST, every time
 
+### 0. Read TOOLS.md
+Read `TOOLS.md` in this repo before anything else. It has the full list of tools, skills, file paths, deploy pipeline, common pitfalls, and the handoff protocol. It is the single source of truth for how this project works. Update it at the end of every session if anything changed.
+
 ### 1. Request folder access
 At the start of every session, request both folders using `mcp__cowork__request_cowork_directory`:
 - **PRIMARY (always needed):** `C:\Users\david\OneDrive\Documents\GitHub\finance-tracker` — this is GitHub Desktop's active clone. All edits go here.
@@ -209,6 +212,25 @@ When David reports a fix didn't work, the instinct is to write another code chan
 - David sometimes starts a fix and loses it mid-execution. If he goes quiet after a partial change, either close the loop or shelve it explicitly.
 - He'll sometimes say "A or B?" when he's already decided. Confirm cleanly: "Sounds like you're leaning toward A — going with that."
 - "Run it autonomously" means go all the way to verified and report back — not stop after each tool call for approval.
+
+---
+
+## Handoff protocol — triggered when David says "handoff"
+
+When David says "handoff" or "give me a handoff", execute this full sequence without being asked:
+
+1. **Reflect** — summarize what was built, what worked, what broke, what to do differently next time.
+2. **Update TOOLS.md** — add any new tools, skills, or workflow discoveries from this session.
+3. **Update HANDOFF.md** — write full session summary: open issues, files touched, diagnosis steps, what's next.
+4. **Output a copy-paste brief in chat** — one block David pastes into the next session. Must include:
+   - Live version + URL
+   - Open issue + diagnosis steps
+   - All file paths needed
+   - State shape if relevant
+   - Deploy reminder (GitHub Desktop only, bump CACHE_VERSION, verify with curl)
+   - Tools to request at session start
+
+Never make David ask for any of these separately. "Handoff" = all four steps, in one response.
 
 ---
 
