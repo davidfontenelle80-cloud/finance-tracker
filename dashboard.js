@@ -102,6 +102,18 @@
     return (list || []).reduce((sum, item) => sum + (Number(item[field || "balance"]) || 0), 0);
   }
 
+  function findTransferAccount(accounts) {
+    const list = accounts || [];
+    const candidates = list.filter((item) => {
+      const name = String(item.name || "").toLowerCase();
+      return item.role === "transfer" || name.includes("transfer account");
+    });
+    return candidates.find((item) => (Number(item.balance) || 0) > 0 && String(item.name || "").toLowerCase().includes("transfer account"))
+      || candidates.find((item) => (Number(item.balance) || 0) > 0)
+      || candidates[0]
+      || null;
+  }
+
   function metrics(state) {
     const bank = total(state.accounts, "balance");
     const vaults = total(state.vaults, "balance");
@@ -109,7 +121,7 @@
     const invest = total(state.investments, "balance");
     const cardAvailable = total(state.creditCards, "available");
     const billsTotal = total(state.bills, "amount");
-    const transfer = (state.accounts || []).find((item) => item.role === "transfer");
+    const transfer = findTransferAccount(state.accounts);
     const paycheckTotal = total(state.paycheckPlan, "amount");
     return {
       bank,
@@ -127,6 +139,18 @@
       openNotes: (state.notes || []).filter((note) => note.status !== "done").length,
       pending: (state.pendingChanges || []).length,
     };
+  }
+
+  function getNextPayday(state) {
+    const seed = (state.settings && state.settings.nextPayday) || '';
+    if (!seed) return null;
+    const perYear = Number((state.settings && state.settings.paychecksPerYear) || 26);
+    const intervalMs = Math.round(365 / perYear) * 86400000;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let d = new Date(seed + 'T12:00:00');
+    while (d < today) d = new Date(d.getTime() + intervalMs);
+    return d.toISOString().slice(0, 10);
   }
 
   function button(label, action, cls) {
@@ -173,7 +197,7 @@
           <div class="card-head">
             <div>
               <div class="card-title">Next Paycheck</div>
-              <div class="card-subtitle">${esc(state.settings.nextPayday || "No date set")} - ${money(state.settings.paycheckAmount)}</div>
+              <div class="card-subtitle">${esc(getNextPayday(state) || "No date set")} - ${money(state.settings.paycheckAmount)}</div>
             </div>
             <button class="link-btn" data-action="go-paycheck">Open</button>
           </div>
