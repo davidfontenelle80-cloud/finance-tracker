@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v100-correct-key';
+const CACHE_VERSION = 'finance-v101-bridge-dashboard-key';
 
 const PRECACHE_URLS = [
 './',

@@ -203,12 +203,12 @@
 <script>
 // ============================================================
 // CONFIG — syncMap
-// NOTE: The Finance Tracker uses the key "financeApp_v1" (not
-// "ft_accounts"). IDs are randomly generated so we match accounts
-// by position within state.accounts.bank/vaults/cards arrays.
-// Investments match by ticker name.
+// NOTE: The Finance Tracker uses the key "financeDashboard_v1" (primary key in storage.js).
+// State format is "dashboard-1.0": flat accounts[], vaults[], creditCards[], investments[].
+// Banks matched by name; vaults matched by name; cards matched by index (order must match sheet).
+// Investment holdings (per-ticker) not supported in dashboard-1.0 — only flat balances.
 // ============================================================
-const FT_STATE_KEY   = 'financeApp_v1';
+const FT_STATE_KEY   = 'financeDashboard_v1';  // primary key used by the Finance Tracker app (storage.js STORAGE_KEY)
 const FT_LOG_KEY     = 'ft_import_log';
 const LOG_MAX        = 20; // max log entries to keep
 
@@ -335,7 +335,7 @@ function buildChanges(wb, ftState) {
 
   // ---- CREDIT CARDS ----
   const ccSheet = findSheet(wb, SHEET_CC);
-  const ftCards = ftState ? (ftState.accounts && ftState.accounts.cards || []) : [];
+  const ftCards = ftState ? (ftState.creditCards || []) : [];  // dashboard-1.0: flat creditCards array
 
   CC_ROWS.forEach((row, idx) => {
     const cardName = ftCards[idx] ? ftCards[idx].name : `Card ${idx+1}`;
@@ -371,8 +371,8 @@ function buildChanges(wb, ftState) {
 
   // ---- BANK ACCOUNTS + VAULTS (name-based matching) ----
   const bankSheet = findSheet(wb, SHEET_BANK);
-  const ftBanks   = ftState ? (ftState.accounts && ftState.accounts.bank   || []) : [];
-  const ftVaults  = ftState ? (ftState.accounts && ftState.accounts.vaults || []) : [];
+  const ftBanks   = ftState ? (ftState.accounts || []).filter(a => a.type === 'bank') : [];  // dashboard-1.0: flat accounts array filtered by type
+  const ftVaults  = ftState ? (ftState.vaults || []) : [];  // dashboard-1.0: top-level vaults array
 
   // Normalize a display name for comparison:
   // strip non-ASCII (emoji), turn slashes into spaces, lowercase, collapse whitespace, drop punctuation
@@ -431,7 +431,7 @@ function buildChanges(wb, ftState) {
     const oldBal = round2(bank.balance || 0);
     if (oldBal !== newBal) {
       addChange('bank', 'Bank', bank.name, 'balance', oldBal, newBal,
-        { type: 'bank', idx, field: 'balance' });
+        { type: 'bank', id: bank.id, field: 'balance' });  // use id (not idx) for flat-array lookup
     }
   });
 
@@ -461,13 +461,13 @@ function buildChanges(wb, ftState) {
     const oldBal = round2(vault.balance || 0);
     if (oldBal !== newBal) {
       addChange('vault', 'Vault', vault.name, 'balance', oldBal, newBal,
-        { type: 'vault', idx, field: 'balance' });
+        { type: 'vault', id: vault.id, field: 'balance' });  // use id (not idx) for flat-array lookup
     }
   });
 
   // ---- INVESTMENTS ----
   const invSheet = findSheet(wb, SHEET_INV);
-  const ftInvAccts = ftState ? (ftState.investments && ftState.investments.accounts || []) : [];
+  const ftInvAccts = ftState ? (ftState.investments || []) : [];  // dashboard-1.0: flat investments array (no .accounts sub-key)
 
   // Build a flat map of ticker → price from B column
   const priceMap = {};
@@ -550,19 +550,18 @@ function applyChanges(changes, ftState) {
     if (!t) return;
     try {
       if (t.type === 'card') {
-        state.accounts.cards[t.idx][t.field] = c.newVal;
+        // dashboard-1.0: flat creditCards array, index-based (order must match Excel sheet)
+        if (state.creditCards && state.creditCards[t.idx]) state.creditCards[t.idx][t.field] = c.newVal;
       } else if (t.type === 'bank') {
-        state.accounts.bank[t.idx][t.field] = c.newVal;
+        // dashboard-1.0: flat accounts array — find by id
+        const item = (state.accounts || []).find(a => a.id === t.id);
+        if (item) item[t.field] = c.newVal;
       } else if (t.type === 'vault') {
-        state.accounts.vaults[t.idx][t.field] = c.newVal;
-      } else if (t.type === 'inv_price') {
-        const acct = state.investments.accounts[t.acctIdx];
-        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
-        if (h) h.price = c.newVal;
-      } else if (t.type === 'inv_shares') {
-        const acct = state.investments.accounts[t.acctIdx];
-        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
-        if (h) h.shares = c.newVal;
+        // dashboard-1.0: flat vaults array — find by id
+        const item = (state.vaults || []).find(v => v.id === t.id);
+        if (item) item[t.field] = c.newVal;
+      } else if (t.type === 'inv_price' || t.type === 'inv_shares') {
+        // dashboard-1.0 uses flat balance totals per investment account, not per-ticker holdings — skip
       }
     } catch(e) { console.warn('Apply error:', t, e); }
   });
@@ -721,7 +720,7 @@ async function processFile(file) {
       showStatus('Warning: Finance Tracker has no saved data. Old values will show as "no data". Continue to preview.', 'warn');
     }
 
-    const { changes, skips, wbBankTotal, wbVaultTotal } = buildChanges(wb, ftState || { accounts: { cards:[], bank:[], vaults:[] }, investments: { accounts:[] } });
+    const { changes, skips, wbBankTotal, wbVaultTotal } = buildChanges(wb, ftState || { accounts: [], vaults: [], creditCards: [], investments: [] });
     pendingChanges = changes;
     pendingSkips   = skips;
     pendingState   = ftState;
