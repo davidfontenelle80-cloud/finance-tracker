@@ -387,11 +387,12 @@ function buildChanges(wb, ftState) {
   // Manual overrides for names that differ between the app and the workbook
   // Key = normalized app name, Value = normalized Excel name
   const BANK_NAME_OVERRIDES  = {
-    'car savings sgov': 'car savings fidelity sgov',
+    'car savings sgov':          'car savings fidelity sgov',
+    'car savings fidelity sgov': 'car savings fidelity sgov', // exact match passthrough
+    'car savings':               'car savings fidelity sgov', // short name fallback
   };
   const VAULT_NAME_OVERRIDES = {
     'amica insurance': 'amica insurances',
-    'emergency vault': 'emergency account',
     'slush': 'slush fund',
     'misc': 'slush fund',
   };
@@ -407,13 +408,14 @@ function buildChanges(wb, ftState) {
   });
 
   // Match each app bank account to its Excel row by name
+  // Deduplicate by normalized name so duplicate app entries don't collide on the same Excel row
   const usedBankRows = new Set();
-  // DEBUG: log Excel bank names vs app bank names
-  console.log('[Bridge Debug] Excel bank rows found:', Object.keys(excelBankMap));
-  console.log('[Bridge Debug] App bank accounts:', ftBanks.map(b => b ? normName(b.name||'') : null));
+  const seenBankNorms = new Set();
   ftBanks.forEach((bank, idx) => {
     if (!bank) return;
     const appNorm   = normName(bank.name || '');
+    if (seenBankNorms.has(appNorm)) return; // skip duplicate app account names
+    seenBankNorms.add(appNorm);
     const lookupKey = BANK_NAME_OVERRIDES[appNorm] || appNorm;
     const match     = excelBankMap[lookupKey];
     if (!match || usedBankRows.has(match.row)) {
@@ -458,70 +460,71 @@ function buildChanges(wb, ftState) {
   });
 
   // ---- INVESTMENTS ----
+  // App state: investments = [{ name, balance }] flat array — no holdings structure.
+  // Strategy: compute total value per Roth account (shares × price) and update balance.
   const invSheet = findSheet(wb, SHEET_INV);
-  const ftInvAccts = ftState ? (ftState.investments && ftState.investments.accounts || []) : [];
+  const ftInvList = ftState ? (Array.isArray(ftState.investments) ? ftState.investments : []) : [];
 
-  // Build a flat map of ticker → price from B column
+  // Build ticker → price map from B column
   const priceMap = {};
   INV_PRICE_ROWS.forEach(({ row, ticker }) => {
     const v = readCell(invSheet, 'B', row);
     if (v !== null) priceMap[ticker] = v;
-    else addSkip(SHEET_INV, `B${row}`, `Price for ${ticker} — empty or formula`);
   });
 
-  // Helper: find a holding by ticker across all investment accounts
-  function findHolding(acctIdx, ticker) {
-    const acct = ftInvAccts[acctIdx];
-    if (!acct || !acct.holdings) return null;
-    return acct.holdings.find(h => h.ticker && h.ticker.toUpperCase() === ticker.toUpperCase());
-  }
-
-  // Update prices for any matching holding across all accounts
-  Object.entries(priceMap).forEach(([ticker, newPrice]) => {
-    ftInvAccts.forEach((acct, ai) => {
-      const h = findHolding(ai, ticker);
-      if (!h) return;
-      const oldPrice = round2(h.price || 0);
-      const np = round2(newPrice);
-      if (oldPrice !== np) {
-        addChange('inv', 'Investment', `${ticker} price (${acct.name})`, 'price',
-          oldPrice, np,
-          { type: 'inv_price', acctIdx: ai, ticker });
+  // Compute total value for a set of share rows
+  function computeRothTotal(shareRows) {
+    let total = 0;
+    let allFound = true;
+    shareRows.forEach(({ row, ticker }) => {
+      const shares = readCell(invSheet, 'F', row);
+      const price  = priceMap[ticker];
+      if (shares !== null && price != null) {
+        total += shares * price;
+      } else {
+        allFound = false;
       }
     });
-  });
+    return allFound ? round2(total) : null;
+  }
 
-  // David shares (F3:F7 → acct index 0)
-  const davidAcct = ftInvAccts[0] ? ftInvAccts[0].name : "David's Roth";
-  INV_DAVID_ROWS.forEach(({ row, ticker }) => {
-    const v = readCell(invSheet, 'F', row);
-    if (v === null) { addSkip(SHEET_INV, `F${row}`, `David shares ${ticker}`); return; }
-    const h = findHolding(0, ticker);
-    if (!h) { addSkip(SHEET_INV, `F${row}`, `${ticker} not found in ${davidAcct}`); return; }
-    const oldShares = h.shares || 0;
-    const newShares = round2(v);
-    if (round2(oldShares) !== newShares) {
-      addChange('inv', 'Investment', `${ticker} shares (${davidAcct})`, 'shares',
-        oldShares, newShares,
-        { type: 'inv_shares', acctIdx: 0, ticker });
-    }
-  });
+  // Find an investment account in the flat list by keyword in name
+  function findInvAcct(keyword) {
+    const kw = keyword.toLowerCase();
+    return ftInvList.findIndex(a => a.name && a.name.toLowerCase().includes(kw));
+  }
 
-  // Yamel shares (F8:F12 → acct index 1)
-  const yamelAcct = ftInvAccts[1] ? ftInvAccts[1].name : "Yamel's Roth";
-  INV_YAMEL_ROWS.forEach(({ row, ticker }) => {
-    const v = readCell(invSheet, 'F', row);
-    if (v === null) { addSkip(SHEET_INV, `F${row}`, `Yamel shares ${ticker}`); return; }
-    const h = findHolding(1, ticker);
-    if (!h) { addSkip(SHEET_INV, `F${row}`, `${ticker} not found in ${yamelAcct}`); return; }
-    const oldShares = h.shares || 0;
-    const newShares = round2(v);
-    if (round2(oldShares) !== newShares) {
-      addChange('inv', 'Investment', `${ticker} shares (${yamelAcct})`, 'shares',
-        oldShares, newShares,
-        { type: 'inv_shares', acctIdx: 1, ticker });
+  // David's Roth — keyword "david"
+  const davidTotal = computeRothTotal(INV_DAVID_ROWS);
+  const davidIdx   = findInvAcct('david');
+  if (davidTotal !== null && davidIdx >= 0) {
+    const acct   = ftInvList[davidIdx];
+    const oldBal = round2(acct.balance || 0);
+    if (oldBal !== davidTotal) {
+      addChange('inv', 'Investment', acct.name, 'balance', oldBal, davidTotal,
+        { type: 'inv_balance', idx: davidIdx });
     }
-  });
+  } else if (davidTotal === null) {
+    addSkip(SHEET_INV, 'F3:F7', 'David Roth — one or more prices/shares missing');
+  } else {
+    addSkip(SHEET_INV, 'F3:F7', 'David Roth — no account found with "david" in name');
+  }
+
+  // Yamel's Roth — keyword "yamel"
+  const yamelTotal = computeRothTotal(INV_YAMEL_ROWS);
+  const yamelIdx   = findInvAcct('yamel');
+  if (yamelTotal !== null && yamelIdx >= 0) {
+    const acct   = ftInvList[yamelIdx];
+    const oldBal = round2(acct.balance || 0);
+    if (oldBal !== yamelTotal) {
+      addChange('inv', 'Investment', acct.name, 'balance', oldBal, yamelTotal,
+        { type: 'inv_balance', idx: yamelIdx });
+    }
+  } else if (yamelTotal === null) {
+    addSkip(SHEET_INV, 'F8:F12', 'Yamel Roth — one or more prices/shares missing');
+  } else {
+    addSkip(SHEET_INV, 'F8:F12', 'Yamel Roth — no account found with "yamel" in name');
+  }
 
   return { changes, skips };
 }
@@ -550,14 +553,9 @@ function applyChanges(changes, ftState) {
       } else if (t.type === 'vault') {
         const vaults = Array.isArray(state.vaults) ? state.vaults : (state.accounts && state.accounts.vaults || []);
         if (vaults[t.idx]) vaults[t.idx][t.field] = c.newVal;
-      } else if (t.type === 'inv_price') {
-        const acct = state.investments.accounts[t.acctIdx];
-        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
-        if (h) h.price = c.newVal;
-      } else if (t.type === 'inv_shares') {
-        const acct = state.investments.accounts[t.acctIdx];
-        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
-        if (h) h.shares = c.newVal;
+      } else if (t.type === 'inv_balance') {
+        const invList = Array.isArray(state.investments) ? state.investments : [];
+        if (invList[t.idx]) invList[t.idx].balance = c.newVal;
       }
     } catch(e) { console.warn('Apply error:', t, e); }
   });

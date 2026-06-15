@@ -18,7 +18,7 @@
  * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
  */
 
-const CACHE_VERSION = 'finance-v96-bridge-new-state-key';
+const CACHE_VERSION = 'finance-v98-inv-fix-car-savings';
 
 /**
  * All URLs that make up the app shell.
@@ -129,5 +129,4 @@ self.addEventListener('message', event => {
     console.log('[KHub SW] SKIP_WAITING received — activating new version.');
     self.skipWaiting();
   }
-});
-
+})
