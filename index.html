@@ -13,10 +13,10 @@
   <title>Finance Dashboard</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="css/dark-mode.css?v=86" />
-  <link rel="stylesheet" href="css/components.css?v=86" />
-  <link rel="stylesheet" href="css/responsive.css?v=86" />
-  <link rel="stylesheet" href="css/styles.css?v=86" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=87" />
+  <link rel="stylesheet" href="css/components.css?v=87" />
+  <link rel="stylesheet" href="css/responsive.css?v=87" />
+  <link rel="stylesheet" href="css/styles.css?v=87" />
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -41,10 +41,13 @@
       <span class="tab-icon"><i class="fa-solid fa-house"></i></span><span class="tab-label">Dashboard</span>
     </button>
     <button class="tab-btn" data-tab="accounts" aria-selected="false" role="tab">
-      <span class="tab-icon"><i class="fa-solid fa-building-columns"></i></span><span class="tab-label">Accounts</span>
+      <span class="tab-icon"><i class="fa-solid fa-building-columns"></i></span><span class="tab-label">Banking</span>
     </button>
     <button class="tab-btn" data-tab="cards" aria-selected="false" role="tab">
       <span class="tab-icon"><i class="fa-solid fa-credit-card"></i></span><span class="tab-label">Cards</span>
+    </button>
+    <button class="tab-btn" data-tab="import" aria-selected="false" role="tab">
+      <span class="tab-icon"><i class="fa-solid fa-file-excel"></i></span><span class="tab-label">Excel Import</span>
     </button>
     <button class="tab-btn" data-tab="paycheck" aria-selected="false" role="tab">
       <span class="tab-icon"><i class="fa-solid fa-money-check-dollar"></i></span><span class="tab-label">Paycheck</span>
@@ -62,8 +65,9 @@
 
   <main class="tab-content" id="main-content">
     <section id="tab-dashboard" class="tab-pane active" role="tabpanel" aria-label="Dashboard"></section>
-    <section id="tab-accounts" class="tab-pane" role="tabpanel" aria-label="Accounts"></section>
+    <section id="tab-accounts" class="tab-pane" role="tabpanel" aria-label="Banking"></section>
     <section id="tab-cards" class="tab-pane" role="tabpanel" aria-label="Credit Cards"></section>
+    <section id="tab-import" class="tab-pane" role="tabpanel" aria-label="Excel Import"></section>
     <section id="tab-paycheck" class="tab-pane" role="tabpanel" aria-label="Next Paycheck"></section>
     <section id="tab-goals" class="tab-pane" role="tabpanel" aria-label="Goals"></section>
     <section id="tab-notes" class="tab-pane" role="tabpanel" aria-label="Notes"></section>
@@ -81,15 +85,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="js/config.js?v=86"></script>
-  <script src="js/error-boundary.js?v=86"></script>
-  <script src="js/a11y.js?v=86"></script>
-  <script src="js/perf.js?v=86"></script>
-  <script src="js/firebase/firebase-config.js?v=86"></script>
-  <script src="js/firebase/cloud-backup.js?v=86"></script>
-  <script src="js/firebase/firebase-sync.js?v=86"></script>
-  <script src="storage.js?v=86"></script>
-  <script src="dashboard.js?v=86"></script>
-  <script src="app.js?v=86"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/config.js?v=87"></script>
+  <script src="js/error-boundary.js?v=87"></script>
+  <script src="js/a11y.js?v=87"></script>
+  <script src="js/perf.js?v=87"></script>
+  <script src="js/firebase/firebase-config.js?v=87"></script>
+  <script src="js/firebase/cloud-backup.js?v=87"></script>
+  <script src="js/firebase/firebase-sync.js?v=87"></script>
+  <script src="storage.js?v=87"></script>
+  <script src="dashboard.js?v=87"></script>
+  <script src="app.js?v=87"></script>
+  <script src="js/excel-import.js?v=87"></script>
 </body>
 </html>
