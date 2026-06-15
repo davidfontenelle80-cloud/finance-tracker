@@ -13,6 +13,7 @@
     dashboard: "tab-dashboard",
     accounts: "tab-accounts",
     cards: "tab-cards",
+    import: "tab-import",
     paycheck: "tab-paycheck",
     goals: "tab-goals",
     notes: "tab-notes",
