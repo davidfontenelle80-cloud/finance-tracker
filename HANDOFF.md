@@ -1,12 +1,41 @@
 # Finance Tracker — Session Handoff
 
 **Date:** 2026-06-14
-**Last version live:** v93 — `finance-v93-bridge-vault-fix`
-**Open issue:** None — vault row fix deployed and verified.
+**Last version live:** v98 — `finance-v98-inv-fix-car-savings`
+**Open issue:** None — all bridge fixes deployed and verified.
 
 ---
 
-## What shipped this session (v93)
+## What shipped this session (v94–v98)
+
+### Root issues fixed
+
+**v94–v96 — Wrong localStorage key (core import bug)**
+Bridge was writing to `financeApp_v1`. App reads from `financeDashboard_v1`. Nothing was actually importing. Fixed localStorage key. Confirmed working — David ran bridge and saw live changes populate.
+
+**v97 — Bank dedup + emergency vault**
+- App state had two "Emergency Fidelity Cash" entries — `usedBankRows` set caused the second to block. Fixed by adding `seenBankNorms` Set that deduplicates app bank accounts by normalized name before matching Excel rows.
+- Removed `'emergency vault': 'emergency account'` from VAULT_NAME_OVERRIDES. Emergency Vault now intentionally skips (no Excel row). Bank sheet is source of truth for that balance, not the vault list.
+
+**v98 — Investment Roth totals + car savings**
+- Root cause: bridge was looking for `ftState.investments.accounts` — that path doesn't exist. App uses flat `state.investments: [{name, balance}]`.
+- Fix: bridge now computes David Roth total and Yamel Roth total from shares × price (reads F col for shares, B col for prices). Finds accounts by keyword match ("david" / "yamel") in name.
+- Car Savings override: Excel name "Car Savings (Fidelity SGOV)" normalizes to `car savings fidelity sgov`. Added three overrides to catch all app name variations.
+
+### Version log
+
+| Version | What shipped |
+|---------|-------------|
+| v98 | Investment section rewrite (shares×price Roth totals), car savings multi-override, bank dedup (`seenBankNorms`) |
+| v97 | Bank dedup fix, emergency vault override removed |
+| v96 | Fixed localStorage key: `financeApp_v1` → `financeDashboard_v1` |
+| v95 | Bridge UI/UX improvements |
+| v94 | (intermediate) |
+| v93 | Vault row range 17-35 → 17-36; Row 36 (Food $300) was missing |
+
+---
+
+## What shipped in earlier sessions (v93)
 
 **Root cause found:** `excel-import-bridge.html` was reading `VAULT_ROWS` only up to row 35, but the Bank Accounts sheet has 20 vaults (rows 17–36). Row 36 = Food ($300.00) was never imported.
 

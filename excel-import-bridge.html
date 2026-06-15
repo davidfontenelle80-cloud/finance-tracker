@@ -166,6 +166,7 @@
     <h2>Skipped cells</h2>
     <div id="skipped-body" style="font-size:13px;color:var(--yellow)"></div>
   </div>
+  <div id="wb-totals" class="card" style="display:none;font-size:14px;gap:8px;flex-wrap:wrap"></div>
   <div class="btn-row">
     <button class="btn btn-green" id="btn-confirm">Confirm Import</button>
     <button class="btn btn-gray" id="btn-cancel">Cancel</button>
@@ -207,7 +208,7 @@
 // by position within state.accounts.bank/vaults/cards arrays.
 // Investments match by ticker name.
 // ============================================================
-const FT_STATE_KEY   = 'financeDashboard_v1';
+const FT_STATE_KEY   = 'financeApp_v1';
 const FT_LOG_KEY     = 'ft_import_log';
 const LOG_MAX        = 20; // max log entries to keep
 
@@ -334,7 +335,7 @@ function buildChanges(wb, ftState) {
 
   // ---- CREDIT CARDS ----
   const ccSheet = findSheet(wb, SHEET_CC);
-  const ftCards = ftState ? (Array.isArray(ftState.creditCards) ? ftState.creditCards : (ftState.accounts && ftState.accounts.cards || [])) : [];
+  const ftCards = ftState ? (ftState.accounts && ftState.accounts.cards || []) : [];
 
   CC_ROWS.forEach((row, idx) => {
     const cardName = ftCards[idx] ? ftCards[idx].name : `Card ${idx+1}`;
@@ -370,8 +371,8 @@ function buildChanges(wb, ftState) {
 
   // ---- BANK ACCOUNTS + VAULTS (name-based matching) ----
   const bankSheet = findSheet(wb, SHEET_BANK);
-  const ftBanks   = ftState ? (Array.isArray(ftState.accounts) ? ftState.accounts.filter(a => a.type === 'bank') : (ftState.accounts && ftState.accounts.bank || [])) : [];
-  const ftVaults  = ftState ? (Array.isArray(ftState.vaults) ? ftState.vaults : (ftState.accounts && ftState.accounts.vaults || [])) : [];
+  const ftBanks   = ftState ? (ftState.accounts && ftState.accounts.bank   || []) : [];
+  const ftVaults  = ftState ? (ftState.accounts && ftState.accounts.vaults || []) : [];
 
   // Normalize a display name for comparison:
   // strip non-ASCII (emoji), turn slashes into spaces, lowercase, collapse whitespace, drop punctuation
@@ -386,36 +387,39 @@ function buildChanges(wb, ftState) {
 
   // Manual overrides for names that differ between the app and the workbook
   // Key = normalized app name, Value = normalized Excel name
-  const BANK_NAME_OVERRIDES  = {
-    'car savings sgov':          'car savings fidelity sgov',
-    'car savings fidelity sgov': 'car savings fidelity sgov', // exact match passthrough
-    'car savings':               'car savings fidelity sgov', // short name fallback
+  const BANK_NAME_OVERRIDES = {
+    'sofi checking joint':    'sofi transfer account',   // app "SoFi Checking (Joint)" → Excel row 7
+    'american eagle savings': 'savings account',          // app "American Eagle Savings" → Excel row 9
+    'car savings sgov':       'car savings fidelity sgov', // backward-compat for older app states
   };
   const VAULT_NAME_OVERRIDES = {
-    'amica insurance': 'amica insurances',
-    'slush': 'slush fund',
-    'misc': 'slush fund',
+    'amica insurance': 'amica insurances',   // row 19
+    'emergency vault': 'emergency account',  // row 17 — if vault renamed "Emergency Vault"
+    'emergency':       'emergency account',  // row 17 — default app vault name "Emergency"
+    'rent':            'bilt rent',          // row 28 "Bilt/Rent"
+    'slush':           'slush fund',         // row 26
+    'misc':            'slush fund',         // row 26
   };
 
-  // Build Excel bank map from rows 7-12, col B (name) / col C (balance)
+  // Build Excel bank map from rows 7-12, col B (name) / col C (balance).
+  // Accept formula cells (t='f') by reading their cached value (v).
   const excelBankMap = {};
   [7,8,9,10,11,12].forEach(r => {
     const nc = bankSheet ? bankSheet['B' + r] : null;
     const vc = bankSheet ? bankSheet['C' + r] : null;
-    if (!nc || !vc || vc.t === 'f' || vc.t !== 'n') return;
+    if (!nc || !vc || typeof vc.v !== 'number') return;
     const norm = normName(nc.v);
     if (norm && !excelBankMap[norm]) excelBankMap[norm] = { row: r, value: vc.v };
   });
 
   // Match each app bank account to its Excel row by name
-  // Deduplicate by normalized name so duplicate app entries don't collide on the same Excel row
   const usedBankRows = new Set();
-  const seenBankNorms = new Set();
+  // DEBUG: log Excel bank names vs app bank names
+  console.log('[Bridge Debug] Excel bank rows found:', Object.keys(excelBankMap));
+  console.log('[Bridge Debug] App bank accounts:', ftBanks.map(b => b ? normName(b.name||'') : null));
   ftBanks.forEach((bank, idx) => {
     if (!bank) return;
     const appNorm   = normName(bank.name || '');
-    if (seenBankNorms.has(appNorm)) return; // skip duplicate app account names
-    seenBankNorms.add(appNorm);
     const lookupKey = BANK_NAME_OVERRIDES[appNorm] || appNorm;
     const match     = excelBankMap[lookupKey];
     if (!match || usedBankRows.has(match.row)) {
@@ -431,12 +435,14 @@ function buildChanges(wb, ftState) {
     }
   });
 
-  // Build Excel vault map from rows 17-36, col B (name) / col C (balance)
+  // Build Excel vault map from rows 17-36, col B (name) / col C (balance).
+  // Skip row 25 (Transfer Account) — it's a formula mirror of bank C7, not a real vault.
   const excelVaultMap = {};
   for (let r = 17; r <= 36; r++) {
+    if (r === 25) continue; // Transfer Account — skip, bank row 7 covers it
     const nc = bankSheet ? bankSheet['B' + r] : null;
     const vc = bankSheet ? bankSheet['C' + r] : null;
-    if (!nc || !vc || vc.t === 'f' || vc.t !== 'n') continue;
+    if (!nc || !vc || typeof vc.v !== 'number') continue;
     const norm = normName(nc.v);
     if (norm && !excelVaultMap[norm]) excelVaultMap[norm] = { row: r, value: vc.v };
   }
@@ -460,73 +466,76 @@ function buildChanges(wb, ftState) {
   });
 
   // ---- INVESTMENTS ----
-  // App state: investments = [{ name, balance }] flat array — no holdings structure.
-  // Strategy: compute total value per Roth account (shares × price) and update balance.
   const invSheet = findSheet(wb, SHEET_INV);
-  const ftInvList = ftState ? (Array.isArray(ftState.investments) ? ftState.investments : []) : [];
+  const ftInvAccts = ftState ? (ftState.investments && ftState.investments.accounts || []) : [];
 
-  // Build ticker → price map from B column
+  // Build a flat map of ticker → price from B column
   const priceMap = {};
   INV_PRICE_ROWS.forEach(({ row, ticker }) => {
     const v = readCell(invSheet, 'B', row);
     if (v !== null) priceMap[ticker] = v;
+    else addSkip(SHEET_INV, `B${row}`, `Price for ${ticker} — empty or formula`);
   });
 
-  // Compute total value for a set of share rows
-  function computeRothTotal(shareRows) {
-    let total = 0;
-    let allFound = true;
-    shareRows.forEach(({ row, ticker }) => {
-      const shares = readCell(invSheet, 'F', row);
-      const price  = priceMap[ticker];
-      if (shares !== null && price != null) {
-        total += shares * price;
-      } else {
-        allFound = false;
+  // Helper: find a holding by ticker across all investment accounts
+  function findHolding(acctIdx, ticker) {
+    const acct = ftInvAccts[acctIdx];
+    if (!acct || !acct.holdings) return null;
+    return acct.holdings.find(h => h.ticker && h.ticker.toUpperCase() === ticker.toUpperCase());
+  }
+
+  // Update prices for any matching holding across all accounts
+  Object.entries(priceMap).forEach(([ticker, newPrice]) => {
+    ftInvAccts.forEach((acct, ai) => {
+      const h = findHolding(ai, ticker);
+      if (!h) return;
+      const oldPrice = round2(h.price || 0);
+      const np = round2(newPrice);
+      if (oldPrice !== np) {
+        addChange('inv', 'Investment', `${ticker} price (${acct.name})`, 'price',
+          oldPrice, np,
+          { type: 'inv_price', acctIdx: ai, ticker });
       }
     });
-    return allFound ? round2(total) : null;
-  }
+  });
 
-  // Find an investment account in the flat list by keyword in name
-  function findInvAcct(keyword) {
-    const kw = keyword.toLowerCase();
-    return ftInvList.findIndex(a => a.name && a.name.toLowerCase().includes(kw));
-  }
-
-  // David's Roth — keyword "david"
-  const davidTotal = computeRothTotal(INV_DAVID_ROWS);
-  const davidIdx   = findInvAcct('david');
-  if (davidTotal !== null && davidIdx >= 0) {
-    const acct   = ftInvList[davidIdx];
-    const oldBal = round2(acct.balance || 0);
-    if (oldBal !== davidTotal) {
-      addChange('inv', 'Investment', acct.name, 'balance', oldBal, davidTotal,
-        { type: 'inv_balance', idx: davidIdx });
+  // David shares (F3:F7 → acct index 0)
+  const davidAcct = ftInvAccts[0] ? ftInvAccts[0].name : "David's Roth";
+  INV_DAVID_ROWS.forEach(({ row, ticker }) => {
+    const v = readCell(invSheet, 'F', row);
+    if (v === null) { addSkip(SHEET_INV, `F${row}`, `David shares ${ticker}`); return; }
+    const h = findHolding(0, ticker);
+    if (!h) { addSkip(SHEET_INV, `F${row}`, `${ticker} not found in ${davidAcct}`); return; }
+    const oldShares = h.shares || 0;
+    const newShares = round2(v);
+    if (round2(oldShares) !== newShares) {
+      addChange('inv', 'Investment', `${ticker} shares (${davidAcct})`, 'shares',
+        oldShares, newShares,
+        { type: 'inv_shares', acctIdx: 0, ticker });
     }
-  } else if (davidTotal === null) {
-    addSkip(SHEET_INV, 'F3:F7', 'David Roth — one or more prices/shares missing');
-  } else {
-    addSkip(SHEET_INV, 'F3:F7', 'David Roth — no account found with "david" in name');
-  }
+  });
 
-  // Yamel's Roth — keyword "yamel"
-  const yamelTotal = computeRothTotal(INV_YAMEL_ROWS);
-  const yamelIdx   = findInvAcct('yamel');
-  if (yamelTotal !== null && yamelIdx >= 0) {
-    const acct   = ftInvList[yamelIdx];
-    const oldBal = round2(acct.balance || 0);
-    if (oldBal !== yamelTotal) {
-      addChange('inv', 'Investment', acct.name, 'balance', oldBal, yamelTotal,
-        { type: 'inv_balance', idx: yamelIdx });
+  // Yamel shares (F8:F12 → acct index 1)
+  const yamelAcct = ftInvAccts[1] ? ftInvAccts[1].name : "Yamel's Roth";
+  INV_YAMEL_ROWS.forEach(({ row, ticker }) => {
+    const v = readCell(invSheet, 'F', row);
+    if (v === null) { addSkip(SHEET_INV, `F${row}`, `Yamel shares ${ticker}`); return; }
+    const h = findHolding(1, ticker);
+    if (!h) { addSkip(SHEET_INV, `F${row}`, `${ticker} not found in ${yamelAcct}`); return; }
+    const oldShares = h.shares || 0;
+    const newShares = round2(v);
+    if (round2(oldShares) !== newShares) {
+      addChange('inv', 'Investment', `${ticker} shares (${yamelAcct})`, 'shares',
+        oldShares, newShares,
+        { type: 'inv_shares', acctIdx: 1, ticker });
     }
-  } else if (yamelTotal === null) {
-    addSkip(SHEET_INV, 'F8:F12', 'Yamel Roth — one or more prices/shares missing');
-  } else {
-    addSkip(SHEET_INV, 'F8:F12', 'Yamel Roth — no account found with "yamel" in name');
-  }
+  });
 
-  return { changes, skips };
+  // ---- WORKBOOK TOTALS (for summary display) ----
+  const wbBankTotal  = bankSheet && bankSheet['C13'] ? bankSheet['C13'].v : null;
+  const wbVaultTotal = bankSheet && bankSheet['C37'] ? bankSheet['C37'].v : null;
+
+  return { changes, skips, wbBankTotal, wbVaultTotal };
 }
 
 // ============================================================
@@ -541,21 +550,19 @@ function applyChanges(changes, ftState) {
     if (!t) return;
     try {
       if (t.type === 'card') {
-        const cards = Array.isArray(state.creditCards) ? state.creditCards : (state.accounts && state.accounts.cards || []);
-        if (cards[t.idx]) cards[t.idx][t.field] = c.newVal;
+        state.accounts.cards[t.idx][t.field] = c.newVal;
       } else if (t.type === 'bank') {
-        if (Array.isArray(state.accounts)) {
-          const banks = state.accounts.filter(a => a.type === 'bank');
-          if (banks[t.idx]) banks[t.idx][t.field] = c.newVal;
-        } else if (state.accounts && state.accounts.bank) {
-          state.accounts.bank[t.idx][t.field] = c.newVal;
-        }
+        state.accounts.bank[t.idx][t.field] = c.newVal;
       } else if (t.type === 'vault') {
-        const vaults = Array.isArray(state.vaults) ? state.vaults : (state.accounts && state.accounts.vaults || []);
-        if (vaults[t.idx]) vaults[t.idx][t.field] = c.newVal;
-      } else if (t.type === 'inv_balance') {
-        const invList = Array.isArray(state.investments) ? state.investments : [];
-        if (invList[t.idx]) invList[t.idx].balance = c.newVal;
+        state.accounts.vaults[t.idx][t.field] = c.newVal;
+      } else if (t.type === 'inv_price') {
+        const acct = state.investments.accounts[t.acctIdx];
+        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
+        if (h) h.price = c.newVal;
+      } else if (t.type === 'inv_shares') {
+        const acct = state.investments.accounts[t.acctIdx];
+        const h = acct.holdings.find(h => h.ticker.toUpperCase() === t.ticker.toUpperCase());
+        if (h) h.shares = c.newVal;
       }
     } catch(e) { console.warn('Apply error:', t, e); }
   });
@@ -620,7 +627,7 @@ function renderLog(containerId) {
 // ============================================================
 // RENDER PREVIEW
 // ============================================================
-function renderPreview(changes, skips) {
+function renderPreview(changes, skips, wbBankTotal, wbVaultTotal) {
   const tbody = $('preview-body');
   const tagLabels = { cc:'Credit Card', bank:'Bank', vault:'Vault', inv:'Investment' };
   const tagClass  = { cc:'tag-cc', bank:'tag-bank', vault:'tag-vault', inv:'tag-inv' };
@@ -655,6 +662,20 @@ function renderPreview(changes, skips) {
     ).join('');
   } else {
     $('skipped-section').style.display = 'none';
+  }
+
+  // Workbook totals summary
+  const totalsEl = $('wb-totals');
+  if (totalsEl) {
+    if (wbBankTotal !== null || wbVaultTotal !== null) {
+      totalsEl.style.display = 'block';
+      totalsEl.innerHTML =
+        `<strong style="color:var(--accent)">Workbook Totals Read</strong>` +
+        (wbBankTotal  !== null ? `<span style="margin-left:16px">🏦 Banks: <strong>${fmt(wbBankTotal)}</strong></span>`  : '') +
+        (wbVaultTotal !== null ? `<span style="margin-left:16px">🔒 Vaults: <strong>${fmt(wbVaultTotal)}</strong></span>` : '');
+    } else {
+      totalsEl.style.display = 'none';
+    }
   }
 }
 
@@ -700,13 +721,13 @@ async function processFile(file) {
       showStatus('Warning: Finance Tracker has no saved data. Old values will show as "no data". Continue to preview.', 'warn');
     }
 
-    const { changes, skips } = buildChanges(wb, ftState || { accounts: { cards:[], bank:[], vaults:[] }, investments: { accounts:[] } });
+    const { changes, skips, wbBankTotal, wbVaultTotal } = buildChanges(wb, ftState || { accounts: { cards:[], bank:[], vaults:[] }, investments: { accounts:[] } });
     pendingChanges = changes;
     pendingSkips   = skips;
     pendingState   = ftState;
 
     $('loading-msg').style.display = 'none';
-    renderPreview(changes, skips);
+    renderPreview(changes, skips, wbBankTotal, wbVaultTotal);
     showScreen('screen-preview');
 
     if (!hasCC)   showStatus('Sheet "Credit Cards" not found — skipped.', 'warn');
