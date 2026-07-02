@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v101-bridge-dashboard-key';
+const CACHE_VERSION = 'finance-v102-audit-token-cache-fixes';
 
 const PRECACHE_URLS = [
 './',
@@ -85,7 +85,7 @@ caches.open(CACHE_VERSION).then(cache => cache.put(event.request, cloned));
 }
 return response;
 })
-.catch(() => caches.match(event.request))
+.catch(() => caches.match(event.request, { ignoreSearch: true }))
 );
 });
 

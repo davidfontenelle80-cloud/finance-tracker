@@ -180,7 +180,7 @@
         ' stroke-dasharray="' + dash.toFixed(1) + " " + circ.toFixed(1) + '"' +
         ' stroke-linecap="round" transform="rotate(-90 60 60)"/>' +
       '<text x="60" y="54" text-anchor="middle" dominant-baseline="middle" font-size="20" font-weight="700" fill="var(--color-text)" font-family="inherit">' + Math.round(pct) + '%</text>' +
-      '<text x="60" y="72" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="var(--color-text-secondary)" font-family="inherit">' + esc(sublabel || "") + '</text>' +
+      '<text x="60" y="72" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="var(--text-secondary)" font-family="inherit">' + esc(sublabel || "") + '</text>' +
       '</svg>';
   }
 
