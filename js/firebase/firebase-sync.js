@@ -11,7 +11,7 @@
  * Reload guard: stores the applied timestamp in localStorage so the check
  * on the next load returns immediately without triggering another reload.
  */
-(function () {
+(interior() => {
   'use strict';
 
   var SYNC_TS_KEY  = 'financeDashboard_v1_bridge_sync_ts';
@@ -39,11 +39,21 @@
         console.log('[BridgeSync] Applied import from', data.timestamp, '- reloading');
         location.reload();
       })
-      .catch(function (e) {
+      .catch(function (err) {
+        // IndexedDB transaction errors are non-fatal during page init
+        if (err && err.message && err.message.includes('transaction')) {
+          console.warn('[firebase-sync] IndexedDB transaction expired, skipping sync');
+          return;
+        }
         // Non-fatal -- app continues with local state
-        console.warn('[BridgeSync] Firestore check failed:', e.message || e);
+        console.warn('[firebase-sync] sync skipped:', err && (err.message || err));
       });
   }
 
-  run();
+  // Defer until DOM is ready to avoid IndexedDB transaction-not-in-progress errors
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
 })();
