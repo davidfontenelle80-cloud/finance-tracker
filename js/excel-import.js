@@ -34,6 +34,12 @@
     return Math.round((Number(value) || 0) * 100) / 100;
   }
 
+  function parseCurrency(val) {
+    if (val == null || val === '') return 0;
+    var n = parseFloat(String(val).replace(/[$,\s%]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+
   function cleanName(value) {
     return String(value || "")
       .replace(/[🔑🏦💰💳📊📈🎯✅❌⚠️🔄]/g, "")
@@ -241,8 +247,8 @@
   // ── Goals parsing (NEW) ───────────────────────────────────────────────────
 
   function buildGoalRow(name, target, saved, sheetName, row) {
-    const t = round(Math.max(0, Number(target) || 0));
-    const s = round(Math.max(0, Number(saved) || 0));
+    const t = round(Math.max(0, parseCurrency(target)));
+    const s = round(Math.max(0, parseCurrency(saved)));
     const remaining = round(Math.max(0, t - s));
     const percentComplete = t > 0 ? Math.min(100, Math.round((s / t) * 100)) : 0;
     const status = percentComplete >= 100 ? "complete" : percentComplete >= 75 ? "on-track" : "in-progress";
@@ -500,7 +506,7 @@
     });
     next.notes = next.notes || [];
     if (preview.warnings.length) {
-      next.notes.unshift({ id: App.Storage.id(), date: App.Storage.todayISO(), text: "Excel import warnings: " + preview.warnings.join(" "), status: "open", source: "excel-import" });
+      console.warn("[ExcelImport] Validation warnings:", preview.warnings.join(" "));
     }
     return next;
   }
