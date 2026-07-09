@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v102-audit-token-cache-fixes';
+const CACHE_VERSION = 'finance-v103-dynamic-importer';
 
 const PRECACHE_URLS = [
 './',
@@ -35,6 +35,7 @@ const PRECACHE_URLS = [
 './js/firebase/firebase-sync.js',
 './storage.js',
 './dashboard.js',
+'./js/excel-import.js',
 './app.js',
 ];
 
