@@ -409,17 +409,17 @@
       "</div>" +
       '<div class="card">' +
         sorted.map(function(g) {
-          var pct = Number(g.pct) || 0;
+          var pct = Number(g.percentComplete) || Number(g.pct) || 0;
           var saved = Number(g.saved) || 0;
           var target = Number(g.target) || 0;
-          var color = pct >= 75 ? "var(--color-primary)" : pct >= 40 ? "var(--color-warning)" : "var(--color-error)";
+          var barColor = pct >= 75 ? '#4CAF50' : pct >= 25 ? '#FFC107' : '#F44336';
           return '<div style="margin-bottom:16px">' +
             '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">' +
-              "<span style=\"font-weight:600\">" + esc(g.name) + " " + emoji(pct) + "</span>" +
-              '<span class="text-secondary text-sm">' + pct.toFixed(1) + "%</span></div>" +
+              "<span style=\"font-weight:600\">" + esc(g.name) + " " + emoji(pct) + "</span></div>" +
             '<div class="text-secondary text-sm" style="margin-bottom:4px">' + money(saved) + " / " + money(target) + "</div>" +
-            '<div style="height:8px;background:var(--color-surface-2,rgba(143,151,184,.18));border-radius:999px;overflow:hidden">' +
-              '<div style="width:' + Math.min(100, pct).toFixed(1) + "%;height:8px;background:" + color + ";border-radius:999px;transition:width .4s ease\"></div></div></div>";
+            '<div style="background:#333;border-radius:4px;height:8px;margin:6px 0 2px;overflow:hidden;">' +
+              '<div style="height:100%;border-radius:4px;width:' + Math.min(100, pct) + '%;background:' + barColor + ';transition:width 0.3s;"></div></div>' +
+            '<div style="font-size:11px;color:#aaa;text-align:right;">' + pct + '%</div></div>';
         }).join("") +
       "</div>";
   }
