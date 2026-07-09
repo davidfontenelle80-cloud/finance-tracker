@@ -11,7 +11,7 @@
  * Reload guard: stores the applied timestamp in localStorage so the check
  * on the next load returns immediately without triggering another reload.
  */
-(interior() => {
+(() => {
   'use strict';
 
   var SYNC_TS_KEY  = 'financeDashboard_v1_bridge_sync_ts';
