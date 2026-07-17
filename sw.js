@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v104-goal-progress';
+const CACHE_VERSION = 'finance-v104-goal-progress-no-pinch-zoom';
 
 const PRECACHE_URLS = [
 './',
