@@ -56,33 +56,53 @@ export function scanText(text) {
         issues.push({
           line: i + 1,
           col: j + 1,
-          codePoint:(JÉØÜÔÝš[™ÊMŠKÕ\\Ø\ÙJ
-KœYÝ\
-	Ì	Ê_XˆÚ[™ˆ\Ô™\È	Ü™\XÙ[Y[XÚ\‰Èˆ	Û[ÚšX˜ZÙKXÌIËˆÛÛ^ˆ”ÓÓ‹œÝš[™ÚYžJ[™KœÛXÙJÝ\ˆ
-ÈLŠJKˆJNÂˆBˆBˆBˆ™]\›ˆ\ÜÝY\ÎÂŸB‚™^Ü[˜Ý[Ûˆš[™[˜ÛÙ[™Ò\ÜÝY\Êš[\ÊHÂˆÛÛœÝ™\ÜH×NÂˆ›Üˆ
-ÛÛœÝˆÙˆš[\ÊHÂˆYˆ
-UVÑVš\Ê]™^˜[YJŠKÓÝÙ\Ø\ÙJ
-JJHÛÛ[YNÂˆ]^ÂˆžHÂˆ^HœËœ™XYš[TÞ[˜Ê‹	Ý]Ž	ÊNÂˆHØ]ÚÂˆÛÛ[YNÂˆBˆÛÛœÝ\ÜÝY\ÈHØØ[•^
-^
-NÂˆYˆ
-\ÜÝY\Ë›[™Ý
-H™\Üœ\Ú
-Èš[Nˆ‹\ÜÝY\ÈJNÂˆBˆ™]\›ˆ™\ÜÂŸB‚‹ËÈKKHÓHKKB‹ËÈ[\Ü›Y]K\›X]Ú\È\™Ý–ÌWHÛ›HÚ[ˆ\Èš[H\È[ˆ\™XÝK‚˜ÛÛœÝ[›ÚÙY\™XÝHBˆ›ØÙ\ÜË˜\™Ý–ÌWH	‰‚ˆ]œ™\ÛÛ™J›ØÙ\ÜË˜\™Ý–ÌWJHOOH]œ™\ÛÛ™J™]ÈT“
-[\Ü›Y]K\›
-Kœ]˜[YJNÂ‚šYˆ
-[›ÚÙY\™XÝJHÂˆÛÛœÝ\™Ù]H›ØÙ\ÜË˜\™Ý–Ì—H	Ë‰ÎÂˆÛÛœÝÝ]HœËœÝ]Þ[˜Ê\™Ù]
-NÂˆÛÛœÝš[\ÈHÝ]š\Ñ\™XÝÜžJ
-HÈØ[Ê\™Ù]
-HˆÝ\™Ù]NÂˆÛÛœÝ™\ÜHš[™[˜ÛÙ[™Ò\ÜÝY\Êš[\ÊNÂ‚ˆYˆ
-™\Ü›[™ÝOOH
-HÂˆÛÛœÛÛK›ÙÊ[˜ÛÙ[™ÈÚXÚÎˆÛX[ˆ
-	Ùš[\Ë›[™ÝHš[\ÈØØ[›™Y›È[ÚšX˜ZÙJX
-NÂˆ›ØÙ\ÜË™^]
-
-NÂˆB‚ˆ]Ý[HÂˆ›Üˆ
-ÛÛœÝÈš[K\ÜÝY\ÈHÙˆ™\Ü
-HÂˆÛÛœÛÛK™\œ›ÜŠ‘RS
-G¶f–ÆWÒÒG¶—77VW2æÆVæwF‡Ò½ÉÉÕÁÑ•¡…É…Ñ•È¡Ì¤é€¤ì(€€€™½È€¡½¹ÍÐ¥Ð½˜©ssues.slice(0, 8)) {
+          codePoint: `U+${cp.toString(16).toUpperCase().padStart(4, '0')}`,
+          kind: isRepl ? 'replacement-char' : 'mojibake-c1',
+          context: JSON.stringify(line.slice(start, j + 12)),
+        });
+      }
+    }
+  }
+  return issues;
+}
+
+export function findEncodingIssues(files) {
+  const report = [];
+  for (const f of files) {
+    if (!TEXT_EXT.has(path.extname(f).toLowerCase())) continue;
+    let text;
+    try {
+      text = fs.readFileSync(f, 'utf8');
+    } catch {
+      continue;
+    }
+    const issues = scanText(text);
+    if (issues.length) report.push({ file: f, issues });
+  }
+  return report;
+}
+
+// --- CLI ---
+// import.meta.url matches argv[1] only when this file is run directly.
+const invokedDirectly =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+
+if (invokedDirectly) {
+  const target = process.argv[2] || '.';
+  const stat = fs.statSync(target);
+  const files = stat.isDirectory() ? walk(target) : [target];
+  const report = findEncodingIssues(files);
+
+  if (report.length === 0) {
+    console.log(`encoding check: clean (${files.length} files scanned, no mojibake)`);
+    process.exit(0);
+  }
+
+  let total = 0;
+  for (const { file, issues } of report) {
+    console.error(`\nFAIL ${file} - ${issues.length} corrupted character(s):`);
+    for (const it of issues.slice(0, 8)) {
       console.error(`  line ${it.line}:${it.col}  ${it.codePoint} (${it.kind})  near ${it.context}`);
     }
     if (issues.length > 8) console.error(`  ... and ${issues.length - 8} more`);
@@ -92,10 +112,8 @@ G¶f–ÆWÒÒG¶—77VW2æÆVæwF‡Ò½ÉÉÕÁÑ•¡…É…Ñ•È¡Ì¤é€¤ì(€€€™½È€¡½¹ÍÐ¥Ð½˜©ssues.
     `\nencoding check FAILED: ${total} corrupted character(s) in ${report.length} file(s).`
   );
   console.error(
-    'Cause: double-encoded UTF-8 (file decoded as Latin-1([™™K\Ø]™Y
-Kˆ	È
-Âˆ	Ñš^ˆ™KYXÛÙHHÛÜœ\Yž]K\[œÈ
-][‹LHOˆ]‹N
-K[ˆ™K\Ø]™H\ÈU‹N‰Âˆ
-NÂˆ›ØÙ\ÜË™^]
-JNÂŸB
+    'Cause: double-encoded UTF-8 (file decoded as Latin-1 and re-saved). ' +
+      'Fix: re-decode the corrupted byte-runs (latin-1 -> utf-8), then re-save as UTF-8.'
+  );
+  process.exit(1);
+}
