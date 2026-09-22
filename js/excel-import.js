@@ -180,18 +180,62 @@
     return blocks;
   }
 
+  function findTableHeader(sheet, checks, maxRow) {
+    for (let r = 1; r <= (maxRow || 120); r++) {
+      const matches = checks.every(function (check) {
+        return check.regex.test(cleanName(cellText(sheet, check.col + r)));
+      });
+      if (matches) return r;
+    }
+    return -1;
+  }
+
+  function readTableUntil(sheet, startRow, nameCol, valueCol, kind, sheetName, stopRegex) {
+    const rows = [];
+    let blankRun = 0;
+    for (let r = startRow; r <= 220; r++) {
+      const name = cleanName(cellText(sheet, nameCol + r));
+      if (!name) {
+        blankRun++;
+        if (blankRun >= 2) break;
+        continue;
+      }
+      blankRun = 0;
+      if (stopRegex && stopRegex.test(name)) break;
+      rows.push({
+        id: normalizeKey(kind + " " + name) || kind + "-" + r,
+        name: name,
+        balance: cellNumber(sheet, valueCol + r),
+        sourceSheet: sheetName,
+        sourceRange: nameCol + r + ":" + valueCol + r,
+        sourceRow: r,
+      });
+    }
+    return rows;
+  }
+
   function parseBanks(bankSheet, sheetName) {
-    const rows = parseDynamicRows(bankSheet, "B", "C", /bank\s*account|banking|accounts?\s*&?\s*savings/i, "bank", sheetName);
-    if (rows.length > 0) return rows;
-    const blocks = parseColumnBlocks(bankSheet, "B", "C", "bank", sheetName, 20);
-    return blocks[0] || [];
+    // Match the real table header, not the decorative sheet/title rows.
+    const headerRow = findTableHeader(bankSheet, [
+      { col: "B", regex: /^account\s*name$/i },
+      { col: "C", regex: /^balance$/i },
+    ], 80);
+    if (headerRow >= 0) {
+      return readTableUntil(bankSheet, headerRow + 1, "B", "C", "bank", sheetName, /^total\s+in\s+banks$/i);
+    }
+    return parseDynamicRows(bankSheet, "B", "C", /^account\s*name$/i, "bank", sheetName);
   }
 
   function parseVaults(bankSheet, sheetName) {
-    const rows = parseDynamicRows(bankSheet, "B", "C", /^vaults?$|savings\s+vaults?|^buckets?$/i, "vault", sheetName);
-    if (rows.length > 0) return rows;
-    const blocks = parseColumnBlocks(bankSheet, "B", "C", "vault", sheetName, 60);
-    return blocks[1] || [];
+    // Vaults have their own explicit header row in the workbook.
+    const headerRow = findTableHeader(bankSheet, [
+      { col: "B", regex: /^vault\s*name$/i },
+      { col: "C", regex: /^(amount\s*saved|balance)$/i },
+    ], 120);
+    if (headerRow >= 0) {
+      return readTableUntil(bankSheet, headerRow + 1, "B", "C", "vault", sheetName, /^total\s+in\s+vaults$/i);
+    }
+    return parseDynamicRows(bankSheet, "B", "C", /^vault\s*name$/i, "vault", sheetName);
   }
 
   function parseFidelity(bankSheet, sheetName) {
@@ -205,15 +249,22 @@
   function parseCards(cardSheet, sheetName) {
     if (!cardSheet) return [];
     const cards = [];
-    const hRow = findSectionHeader(cardSheet, "B", /credit\s*card|card\s*name|\bcards?\b/i, 20);
-    const startRow = hRow >= 0 ? hRow + 1 : 1;
-    for (let r = startRow; r <= 100; r++) {
+    // Require the actual four-column card table header. This avoids matching
+    // decorative titles such as "💳 Credit Cards" or "All Credit Cards".
+    const hRow = findTableHeader(cardSheet, [
+      { col: "B", regex: /^card\s*name$/i },
+      { col: "C", regex: /^available\s*credit$/i },
+      { col: "D", regex: /^credit\s*limit$/i },
+      { col: "E", regex: /^balance$/i },
+    ], 60);
+    if (hRow < 0) return [];
+    for (let r = hRow + 1; r <= 160; r++) {
       const name = cleanName(cellText(cardSheet, "B" + r));
-      if (!name) break;
-      if (/^(total|subtotal|credit card balance|transfer)\b/i.test(name)) break;
+      if (!name) continue;
+      if (/^(credit\s*card\s*balance|total|subtotal|transfer)\b/i.test(name)) break;
       cards.push({
         id: normalizeKey("card " + name) || "card-" + r,
-        name,
+        name: name,
         available: cellNumber(cardSheet, "C" + r),
         limit: cellNumber(cardSheet, "D" + r),
         balance: cellNumber(cardSheet, "E" + r),
