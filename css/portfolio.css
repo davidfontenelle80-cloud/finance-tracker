@@ -1,0 +1,27 @@
+/* Finance Tracker + Umbriq portfolio merge */
+.portfolio-account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.portfolio-account{appearance:none;text-align:left;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;color:var(--text-primary);cursor:pointer;min-width:0;transition:border-color .15s,transform .15s,background .15s}
+.portfolio-account:hover{border-color:var(--neon-green);transform:translateY(-1px)}
+.portfolio-account.active{border-color:var(--neon-green);background:color-mix(in srgb,var(--neon-green) 10%,var(--bg-tertiary));box-shadow:var(--glow-green)}
+.portfolio-account span,.portfolio-account small,.portfolio-account strong{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portfolio-account span{font-size:.86rem;font-weight:750}
+.portfolio-account small{font-size:.68rem;color:var(--text-secondary);margin:3px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+.portfolio-account strong{font-family:var(--font-mono);font-size:.95rem;color:var(--neon-green)}
+.portfolio-position-list{display:flex;flex-direction:column}
+.portfolio-position{padding:11px 0;border-top:1px solid color-mix(in srgb,var(--border) 60%,transparent)}
+.portfolio-position:first-child{border-top:none}
+.portfolio-position__main,.portfolio-position__alloc{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.portfolio-position__main>div{min-width:0}
+.portfolio-position__main strong{font-family:var(--font-mono)}
+.portfolio-position__main div strong{display:block;font-family:var(--font);font-size:.9rem}
+.portfolio-position__main div span{display:block;color:var(--text-secondary);font-size:.72rem;margin-top:2px}
+.portfolio-position__alloc{margin-top:6px;font-size:.71rem;color:var(--text-secondary);flex-wrap:wrap}
+.portfolio-planner-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 12px}
+.portfolio-plan-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.portfolio-plan-summary>div{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+.portfolio-plan-summary span{display:block;color:var(--text-secondary);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.portfolio-plan-summary strong{font-family:var(--font-mono);font-size:.95rem}
+#portfolio-plan-result .mini-row span{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+#portfolio-plan-result .mini-row span strong{font-family:var(--font);color:var(--text-primary)}
+#portfolio-plan-result .mini-row small{font-size:.69rem;color:var(--text-secondary)}
+@media(max-width:520px){.portfolio-account-grid{grid-template-columns:1fr}.portfolio-planner-controls{grid-template-columns:1fr}.portfolio-position__alloc{justify-content:flex-start;gap:8px 14px}}
