@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v105-umbriq-portfolio-merge';
+const CACHE_VERSION = 'finance-v106-excel-table-detection';
 
 const PRECACHE_URLS = [
 './',
