@@ -18,6 +18,7 @@
     goals: "tab-goals",
     notes: "tab-notes",
     settings: "tab-settings",
+    portfolio: "tab-portfolio",
   };
 
   function $(id) {
@@ -36,7 +37,7 @@
     const toast = $("toast");
     if (!toast) return;
     toast.textContent = message;
-    toast.className = `toast toast--${type || "success"} toast--visible`;
+    toast.className = "toast toast--" + (type || "success") + " toast--visible";
     clearTimeout(showToast.timer);
     showToast.timer = setTimeout(() => toast.classList.remove("toast--visible"), 2800);
   }
@@ -134,7 +135,7 @@
     if (!cloudReady()) return showToast("Cloud backup is not ready yet.", "error");
     if (KHub.CloudBackup.isSignedIn()) {
       const email = cloudUser && cloudUser.email ? cloudUser.email : "this cloud account";
-      if (!confirm(`Signed in as ${email}. Sign out of cloud backup on this device?`)) return;
+      if (!confirm("Signed in as " + email + ". Sign out of cloud backup on this device?")) return;
       await KHub.CloudAuth.signOut();
       cloudUser = null;
       render();
