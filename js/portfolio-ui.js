@@ -148,8 +148,7 @@
   }
 
   function wireImport(container) {
-    if (!container || container.dataset.portfolioImportWired === "true") return;
-    container.dataset.portfolioImportWired = "true";
+    if (!container) return;
     container.insertAdjacentHTML("beforeend", importStatus(pendingPortfolioPreview, null));
     const input = container.querySelector("#excel-import-file");
     if (input) input.addEventListener("change", function () {
