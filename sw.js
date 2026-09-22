@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v104-goal-progress-no-pinch-zoom';
+const CACHE_VERSION = 'finance-v105-umbriq-portfolio-merge';
 
 const PRECACHE_URLS = [
 './',
@@ -23,6 +23,7 @@ const PRECACHE_URLS = [
 './icons/excel-bridge-384.png',
 './icons/excel-bridge-512.png',
 './css/styles.css',
+'./css/portfolio.css',
 './css/dark-mode.css',
 './css/components.css',
 './css/responsive.css',
@@ -36,6 +37,8 @@ const PRECACHE_URLS = [
 './storage.js',
 './dashboard.js',
 './js/excel-import.js',
+'./js/portfolio-engine.js',
+'./js/portfolio-ui.js',
 './app.js',
 ];
 
