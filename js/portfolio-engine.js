@@ -259,9 +259,9 @@
   function mergePortfolioIntoState(state, portfolio) {
     const next = App.Storage.clone(state);
     next.portfolio = portfolio;
-    next.investments = (portfolio.accounts || [])
-      .filter(function (account) { return ["roth", "retirement", "taxable", "investment"].includes(account.type); })
-      .map(function (account) { return { id: account.id, name: account.name, balance: Number(account.balance) || 0 }; });
+    // Keep Finance Tracker's existing investments summary untouched. The rich
+    // Umbriq portfolio runs in parallel until the legacy view is intentionally
+    // migrated, so importing portfolio detail cannot change Banking totals.
     next.workbook = Object.assign({}, next.workbook || {}, {
       portfolio: {
         sourceSheet: portfolio.sourceSheet,
