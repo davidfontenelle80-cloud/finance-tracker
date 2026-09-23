@@ -5,12 +5,14 @@
 (function () {
   'use strict';
 
+
   if (!window.KHub?.Config?.features?.firebase) {
     return;
   }
 
+
   const firebaseConfig = {
-    apiKey:            "AIzaSyAUiVMxG1JbtpaW3KKmYSsTheMP473uTbQ",
+    apiKey:            "AIzaSyBG6H6T147vMUeRtWdLcU_WtXZIR_ltrS4",
     authDomain:        "khub-apps.firebaseapp.com",
     projectId:         "khub-apps",
     storageBucket:     "khub-apps.firebasestorage.app",
@@ -19,13 +21,16 @@
     measurementId:     "G-613M7EM3ZZ",
   };
 
+
   try {
     const app = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
 
+
     window.KHub = window.KHub || {};
     window.KHub.Firebase = { app, db, auth };
+
 
     KHub.Config.log('[Firebase] initialized - project:', firebaseConfig.projectId);
   } catch (err) {
