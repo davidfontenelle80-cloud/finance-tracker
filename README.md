@@ -1,3 +1,5 @@
+> **Archived September 24, 2026.** Finance Tracker is retired and replaced by Umbriq (https://umbriq-preview.davidfontenelle80.workers.dev/). This repository is kept read-only for reference.
+
 # Finance Tracker
 
 Personal finance tracker for David & Yamel. Tracks paychecks, budgets, transfers, investments, goals, savings plans, and calendar events. EN/ES bilingual via lang.js. Dark neon theme.

@@ -5,7 +5,7 @@
 * BUMP THIS VERSION STRING on every deploy that changes HTML, CSS, JS, manifest, or SW behavior.
 */
 
-const CACHE_VERSION = 'finance-v105-excel-table-detection-hotfix';
+const CACHE_VERSION = 'finance-v106-retired-banner';
 
 const PRECACHE_URLS = [
 './',
